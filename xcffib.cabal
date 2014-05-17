@@ -1,0 +1,39 @@
+name:                xcffib
+version:             0.1.0.0
+synopsis:            A cffi-based python binding for X
+homepage:            http://github.com/tych0/xcffib
+license:             MIT
+license-file:        LICENSE
+author:              Tycho Andersen
+maintainer:          Tycho Andersen <tycho@tycho.ws>
+category:            Apple
+build-type:          Simple
+cabal-version:       >=1.8
+bug-reports:         https://github.com/tych0/xcffib/issues
+description: A cffi-based python binding for X, comparable to xpyb
+
+source-repository head
+  type:              git
+  location:          git://github.com/tych0/xcffib.git
+
+library
+  build-depends: base ==4.*,
+                 xcb-types >= 0.6,
+                 language-python,
+                 filepath,
+                 Glob >= 0.7
+  hs-source-dirs: generator
+  exposed-modules: Data.XCB.Python.Parse
+  ghc-options: -Wall
+
+executable xcffibgen
+  main-is: xcffibgen.hs
+  hs-source-dirs: generator
+  build-depends: base ==4.*,
+                 optparse-applicative >= 0.5,
+                 language-python >= 0.4.0,
+                 xcffib >= 0.1.0.0,
+                 Glob >= 0.7,
+                 xcb-types >= 0.6,
+                 language-python
+  ghc-options: -Wall
