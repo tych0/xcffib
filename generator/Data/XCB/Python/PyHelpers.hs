@@ -4,8 +4,10 @@ module Data.XCB.Python.PyHelpers (
   mkInt,
   mkAssign,
   mkCall,
-  mkArg)
-  where
+  mkArg,
+  mkEnum,
+  pyRaise,
+  ) where
 
 import Language.Python.Common
 
@@ -44,3 +46,6 @@ mkEnum :: String -> [(String, Expr ())] -> Statement ()
 mkEnum cname values =
   let body = map (uncurry mkAssign) values
   in Class (Ident cname ()) [] body ()
+
+pyRaise :: String -> Statement ()
+pyRaise = undefined
