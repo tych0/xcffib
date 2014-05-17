@@ -18,7 +18,7 @@ source-repository head
 
 library
   build-depends: base ==4.*,
-                 xcb-types >= 0.6,
+                 xcb-types >= 0.7.1,
                  language-python,
                  filepath,
                  Glob >= 0.7
@@ -34,6 +34,7 @@ executable xcffibgen
                  language-python >= 0.4.0,
                  xcffib >= 0.1.0.0,
                  Glob >= 0.7,
-                 xcb-types >= 0.6,
+                 filepath,
+                 xcb-types >= 0.7.1,
                  language-python
   ghc-options: -Wall

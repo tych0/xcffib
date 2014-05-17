@@ -1,11 +1,14 @@
 module Main where
 
 import Data.XCB.Python.Parse
+import Data.XCB.Types
 
-import Language.Python.Common
-
-main :: IO ()
+main :: IO [()]
 main = do
-  let imp = mkImport "StringIO"
-  putStrLn $ prettyText warning
-  putStrLn $ prettyText imp
+  headers <- parse "/usr/share/xcb"
+  sequence $ map renderHeader headers
+  where
+    renderHeader :: XHeader -> IO ()
+    renderHeader header = do
+      putStrLn $ "\nextension:" ++ (xheader_header header)
+      putStrLn $ renderPy $ xform header
