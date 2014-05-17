@@ -40,5 +40,7 @@ mkCall name args = Call (mkName name) args ()
 mkArg :: Expr () -> Argument ()
 mkArg e = ArgExpr e ()
 
-mkEnum :: String -> [(String, Int)] -> Statement ()
-mkEnum cname values = undefined
+mkEnum :: String -> [(String, Expr ())] -> Statement ()
+mkEnum cname values =
+  let body = map (uncurry mkAssign) values
+  in Class (Ident cname ()) [] body ()
