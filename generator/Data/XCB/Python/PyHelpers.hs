@@ -38,16 +38,16 @@ ident s = Ident s ()
 
 -- Make a DottedName out of a string like "foo.bar" for use in imports.
 mkDottedName :: String -> DottedName ()
-mkDottedName = undefined -- TODO FIXME
+mkDottedName = map ident . splitOn "."
 
 -- TODO: everything should really use mkName.
 mkVar :: String -> Expr ()
-mkVar name = Var (Ident name ()) ()
+mkVar name = Var (ident name) ()
 
 -- | Make an Expr out of a string like "foo.bar" describing the name.
 mkName :: String -> Expr ()
 mkName s =
-  let strings = map mkVar $ reverse ["struct", "unpack"] -- TODO FIXME
+  let strings = map mkVar $ reverse  $ splitOn "." s
   in foldr mkDot (head strings) (tail strings)
   where
     mkDot :: Expr () -> Expr () -> Expr ()
