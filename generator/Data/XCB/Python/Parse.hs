@@ -37,7 +37,7 @@ xform header =
   let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
       decls = catMaybes $ map processXDecl $ xheader_decls header
       version = mkVersion header
-      key = [mkKey header]
+      key = maybeToList $ mkKey header
   in concat [imports, decls, version, key]
 
 -- | Get the type info (python's struct.pack string and size).
@@ -133,8 +133,8 @@ mkVersion header =
     ver :: String -> Maybe Int -> Suite ()
     ver target i = maybeToList $ fmap (\x -> mkAssign target (mkInt x)) i
 
-mkKey :: XHeader -> Statement ()
-mkKey header =
-  let Just name = xheader_xname header
-      call = mkCall "xcffib.ExtensionKey" [mkStr name]
-  in mkAssign "key" call
+mkKey :: XHeader -> Maybe (Statement ())
+mkKey header = do
+  name <- xheader_xname header
+  let call = mkCall "xcffib.ExtensionKey" [mkStr name]
+  return $ mkAssign "key" call
