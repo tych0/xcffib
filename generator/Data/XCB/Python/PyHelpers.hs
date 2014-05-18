@@ -13,7 +13,28 @@ module Data.XCB.Python.PyHelpers (
   mkStr
   ) where
 
+import Data.List.Split
+import Data.Maybe
+
 import Language.Python.Common
+
+_reserved :: [String]
+_reserved = [ "None"
+            , "def"
+            , "class"
+            , "and"
+            , "or"
+            ]
+
+
+-- | Create and sanatize a python identifier.
+ident :: String -> Ident ()
+ident s | s `elem` _reserved = Ident ("_" ++ s) ()
+ident s | isInt s = Ident ("_" ++ s) ()
+  where
+    isInt s = isJust $ ((maybeRead s) :: Maybe Int)
+    maybeRead = fmap fst . listToMaybe . reads
+ident s = Ident s ()
 
 -- Make a DottedName out of a string like "foo.bar" for use in imports.
 mkDottedName :: String -> DottedName ()
