@@ -1,12 +1,16 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Data.XCB.Python.PyHelpers (
   mkImport,
   mkVar,
   mkInt,
   mkAssign,
   mkCall,
-  mkArg,
   mkEnum,
-  pyRaise,
+  mkName,
+  mkAttr,
+  mkIncr,
+  mkClass,
+  mkStr
   ) where
 
 import Language.Python.Common
@@ -29,7 +33,7 @@ mkName s =
     mkDot e1 e2 = BinaryOp (Dot ()) e1 e2 ()
 
 -- | Make an attribute access, i.e. self.<string>.
-mkAtrr :: String -> Expr ()
+mkAttr :: String -> Expr ()
 mkAttr s = mkName ("self." ++ s)
 
 mkImport :: String -> Statement ()
@@ -38,25 +42,30 @@ mkImport name = Import [ImportItem (mkDottedName name) Nothing ()] ()
 mkInt :: Int -> Expr ()
 mkInt i = Int (toInteger i) (show i) ()
 
-mkAssign :: String -> Expr () -> Statement ()
-mkAssign name expr = Assign [mkName name] expr ()
+class Assignable a where
+  assignExpr :: a -> Expr ()
+
+instance Assignable String where
+  assignExpr s = mkName s
+instance Assignable (Expr ()) where
+  assignExpr = id
+
+mkAssign :: Assignable a => a -> Expr () -> Statement ()
+mkAssign name expr = Assign [assignExpr name] expr ()
 
 mkIncr :: String -> Expr () -> Statement ()
-mkIncr name expr = AugmentedAssign (mkName name) PlusAssign expr ()
+mkIncr name expr = AugmentedAssign (mkName name) (PlusAssign ()) expr ()
 
-mkCall :: String -> [Argument ()] -> Expr ()
-mkCall name args = Call (mkName name) args ()
-
-mkArg :: Expr () -> Argument ()
-mkArg e = ArgExpr e ()
+mkCall :: String -> [Expr ()] -> Expr ()
+mkCall name args = Call (mkName name) (map (\e -> ArgExpr e ()) args) ()
 
 mkEnum :: String -> [(String, Expr ())] -> Statement ()
 mkEnum cname values =
   let body = map (uncurry mkAssign) values
   in Class (Ident cname ()) [] body ()
 
-pyRaise :: String -> Statement ()
-pyRaise = undefined
-
 mkClass :: String -> String -> Suite () -> Statement ()
-mkClass clazz superclazz init = undefined
+mkClass clazz superclazz constructor = undefined
+
+mkStr :: String -> Expr ()
+mkStr s = Strings [s] ()

@@ -41,8 +41,8 @@ xform header =
   in concat [imports, decls, version, key]
 
 -- | Get the type info (python's struct.pack string and size).
-typeInfo :: X.Type -> (Char, Int)
-typeInfo (UnQualType "CARD8") = ('B', 1)
+typeInfo :: X.Type -> (String, Int)
+typeInfo (UnQualType "CARD8") = ("B", 1)
 typeInfo t = error ("unknown type: " ++ show t)
 
 xBinopToPyOp :: X.Binop -> P.Op ()
@@ -87,36 +87,33 @@ xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
       in conv els acc' is'
     conv [] acc _ = acc
 
-structListToPyUnpack :: X.List -> Suite ()
-structListToPyUnpack = undefined
-
 structElemToPyUnpack :: GenStructElem Type
                      -> Either (Maybe String, String, Int) (Suite ())
 structElemToPyUnpack (Pad i) = Left (Nothing, (show i) ++ "x", i)
 
 -- The enum field is mostly for user information, so we ignore it.
-structElemToPyUnpack (List n typ (Just exp) _) =
+structElemToPyUnpack (X.List n typ (Just exp) _) =
   let len = xExpressionToPyExpr exp
       (c, i) = typeInfo typ
       list = mkCall "xcb.List" [ (mkName "parent")
                                , (mkName "offset")
-                               , exp
-                               , c
-                               , i
+                               , len
+                               , mkStr c
+                               , mkInt i
                                ]
       assign = mkAssign (mkAttr n) list
-      totalBytes = BinaryOp Multiply (mkCall "len" [mkAttr n]) (mkInt i)
+      totalBytes = BinaryOp (Multiply ()) (mkCall "len" [mkAttr n]) (mkInt i) ()
       incr = mkIncr "offset" totalBytes
-  in [assign, incr]
+  in Right [assign, incr]
 
-structElemToPyUnpack (List n typ Nothing _) =
-  error "Invalid XCB XML; list " ++ n ++ " requires a length"
+structElemToPyUnpack (X.List n typ Nothing _) =
+  error ("Invalid XCB XML; list " ++ n ++ " requires a length")
 
 -- The mask and enum fields are for user information, we can ignore them here.
 structElemToPyUnpack (SField n typ _ _) =
-  let (c, i) = typeInfo typ in (Just n, c, i)
-structElemToPyUnpack (ExprField i) = error "Only valid for requests"
-structElemToPyUnpack (ValueParam i) = error "Only valid for requests"
+  let (c, i) = typeInfo typ in Left (Just n, c, i)
+structElemToPyUnpack (ExprField _ _ _) = error "Only valid for requests"
+structElemToPyUnpack (ValueParam _ _ _ _) = error "Only valid for requests"
 
 xStructToPyClass :: String -> [GenStructElem Type] -> Statement ()
 xStructToPyClass cname membs = undefined
@@ -139,6 +136,5 @@ mkVersion header =
 mkKey :: XHeader -> Statement ()
 mkKey header =
   let Just name = xheader_xname header
-      args = [mkArg $ Strings [name] ()]
-      call = mkCall "xcffib.ExtensionKey" args
+      call = mkCall "xcffib.ExtensionKey" [mkStr name]
   in mkAssign "key" call
