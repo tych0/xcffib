@@ -10,6 +10,7 @@ import Data.Bits
 import qualified Data.Bits.Bitwise as BW
 import Data.Either
 import Data.List
+import qualified Data.Map as M
 import Data.Maybe
 import Data.XCB.FromXML
 import Data.XCB.Types as X
@@ -36,32 +37,37 @@ renderPy = (intercalate "\n") . map prettyText
 xform :: XHeader -> Suite ()
 xform header =
   let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
-      decls = catMaybes $ map processXDecl $ xheader_decls header
+      decls = xheader_decls header
+      typeInfo = mkTypeInfo $ collectTypes decls
+      decls = catMaybes $ map (processXDecl typeInfo) $ xheader_decls header
       version = mkVersion header
       key = maybeToList $ mkKey header
   in concat [imports, decls, version, key]
 
 -- | Get the type info (python's struct.pack string and size).
-typeInfo :: X.Type -> (String, Int)
-typeInfo (UnQualType "CARD8")    = ("B", 1)
-typeInfo (UnQualType "uint8_t")  = ("B", 1)
-typeInfo (UnQualType "CARD16")   = ("H", 2)
-typeInfo (UnQualType "uint16_t") = ("H", 2)
-typeInfo (UnQualType "CARD32")   = ("I", 4)
-typeInfo (UnQualType "uint32_t") = ("I", 4)
-typeInfo (UnQualType "INT8")     = ("b", 1)
-typeInfo (UnQualType "int8_t")   = ("b", 1)
-typeInfo (UnQualType "INT16")    = ("h", 2)
-typeInfo (UnQualType "int16_t")  = ("h", 2)
-typeInfo (UnQualType "INT32")    = ("i", 4)
-typeInfo (UnQualType "int32_t")  = ("i", 4)
-typeInfo (UnQualType "BYTE")     = ("B", 1)
-typeInfo (UnQualType "BOOL")     = ("B", 1)
-typeInfo (UnQualType "char")     = ("b", 1)
-typeInfo (UnQualType "void")     = ("B", 1)
-typeInfo (UnQualType "float")    = ("f", 4)
-typeInfo (UnQualType "double")   = ("d", 8)
-typeInfo t = error ("unknown type: " ++ show t)
+mkTypeInfo :: Map X.Type X.Type -> X.Type -> (String, Int)
+mkTypeInfo typedefs = fromMaybe (baseType t) $ fmap lookup $ M.lookup t typedefs
+  where
+    baseType :: X.Type -> (String, Int)
+    baseType (UnQualType "CARD8")    = ("B", 1)
+    baseType (UnQualType "uint8_t")  = ("B", 1)
+    baseType (UnQualType "CARD16")   = ("H", 2)
+    baseType (UnQualType "uint16_t") = ("H", 2)
+    baseType (UnQualType "CARD32")   = ("I", 4)
+    baseType (UnQualType "uint32_t") = ("I", 4)
+    baseType (UnQualType "INT8")     = ("b", 1)
+    baseType (UnQualType "int8_t")   = ("b", 1)
+    baseType (UnQualType "INT16")    = ("h", 2)
+    baseType (UnQualType "int16_t")  = ("h", 2)
+    baseType (UnQualType "INT32")    = ("i", 4)
+    baseType (UnQualType "int32_t")  = ("i", 4)
+    baseType (UnQualType "BYTE")     = ("B", 1)
+    baseType (UnQualType "BOOL")     = ("B", 1)
+    baseType (UnQualType "char")     = ("b", 1)
+    baseType (UnQualType "void")     = ("B", 1)
+    baseType (UnQualType "float")    = ("f", 4)
+    baseType (UnQualType "double")   = ("d", 8)
+    baseType t = error ("unknown type " ++ show t)
 
 xBinopToPyOp :: X.Binop -> P.Op ()
 xBinopToPyOp X.Add = P.Plus ()
@@ -105,12 +111,13 @@ xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
       in conv els acc' is'
     conv [] acc _ = acc
 
-structElemToPyUnpack :: GenStructElem Type
+structElemToPyUnpack :: X.Type -> (String, Int)
+                     -> GenStructElem Type
                      -> Either (Maybe String, String, Int) (Suite ())
-structElemToPyUnpack (Pad i) = Left (Nothing, (show i) ++ "x", i)
+structElemToPyUnpack _ (Pad i) = Left (Nothing, (show i) ++ "x", i)
 
 -- The enum field is mostly for user information, so we ignore it.
-structElemToPyUnpack (X.List n typ (Just exp) _) =
+structElemToPyUnpack typeInfo (X.List n typ (Just exp) _) =
   let len = xExpressionToPyExpr exp
       (c, i) = typeInfo typ
       list = mkCall "xcb.List" [ (mkName "parent")
@@ -124,31 +131,42 @@ structElemToPyUnpack (X.List n typ (Just exp) _) =
       incr = mkIncr "offset" totalBytes
   in Right [assign, incr]
 
-structElemToPyUnpack (X.List n typ Nothing _) =
+structElemToPyUnpack _ (X.List n typ Nothing _) =
   error ("Invalid XCB XML; list " ++ n ++ " requires a length")
 
 -- The mask and enum fields are for user information, we can ignore them here.
-structElemToPyUnpack (SField n typ _ _) =
+structElemToPyUnpack typeInfo (SField n typ _ _) =
   let (c, i) = typeInfo typ in Left (Just n, c, i)
-structElemToPyUnpack (ExprField _ _ _) = error "Only valid for requests"
-structElemToPyUnpack (ValueParam _ _ _ _) = error "Only valid for requests"
+structElemToPyUnpack _ (ExprField _ _ _) = error "Only valid for requests"
+structElemToPyUnpack _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
-xStructToPyClass :: String -> [GenStructElem Type] -> Statement ()
-xStructToPyClass cname membs =
-  let (toUnpack, lists) = partitionEithers $ map structElemToPyUnpack membs
+processXDecl :: (X.Type -> (String, Int)) -> XDecl -> Maybe (Statement ())
+processXDecl _ (XTypeDef _ _) = Nothing
+processXDecl _ (XidType _) = Nothing
+processXDecl _ (XImport n) = return $ mkImport n
+processXDecl _ (XEnum name membs) = return $ mkEnum name $ xEnumElemsToPyEnum membs
+processXDecl typeInfo (XStruct n membs) = do
+  let (toUnpack, lists) = partitionEithers $ map (structElemToPyUnpack typeInfo) membs
       -- XXX: Here we assume that all the lists come after all the unpacked
       -- members. While (I think) this is true today, it may not always be
       -- true and we should probably fix this.
       (names, packs, lengths) = unzip3 toUnpack
       assign = mkUnpackFrom (catMaybes names) packs
       incr = mkIncr "offset" $ mkInt $ sum lengths
-  in mkClass cname "xcffib.Protobj" $ [assign, incr] ++ concat lists
+  return $ mkClass cname "xcffib.Protobj" $ [assign, incr] ++ concat lists
+processXDecl typeInfo (XEvent n membs hasSequence) = Nothing
+processXDecl typeInfo (XRequest n membs reply) = Nothing
+processXDecl typeInfo (XUnion n membs) = Nothing
+processXDecl typeInfo (XError n membs) = Nothing
 
-processXDecl :: XDecl -> Maybe (Statement ())
-processXDecl (XImport n) = Just $ mkImport n
-processXDecl (XEnum name membs) = Just $ mkEnum name $ xEnumElemsToPyEnum membs
-processXDecl (XStruct n membs) = Just $ xStructToPyClass n membs
-processXDecl _ = Nothing
+collectTypes :: [XDecl] -> Map X.Type X.Type
+collectTypes = foldr collectType M.empty
+  where
+    collectType :: XDecl -> Map X.Type X.Type -> Map X.Type X.Type
+    collectType (XTypeDef name typ) = insert (UnQualType name) typ
+    -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
+    collectType (XidType name) = insert (UnQualType name) (UnQualType "CARD32")
+    collectType _ = id
 
 mkVersion :: XHeader -> Suite ()
 mkVersion header =
