@@ -8,6 +8,7 @@ module Data.XCB.Python.Parse (
 
 import Data.Bits
 import qualified Data.Bits.Bitwise as BW
+import Data.Either
 import Data.List
 import Data.Maybe
 import Data.XCB.FromXML
@@ -116,12 +117,20 @@ structElemToPyUnpack (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack (ValueParam _ _ _ _) = error "Only valid for requests"
 
 xStructToPyClass :: String -> [GenStructElem Type] -> Statement ()
-xStructToPyClass cname membs = undefined
+xStructToPyClass cname membs =
+  let (toUnpack, lists) = partitionEithers $ map structElemToPyUnpack membs
+      -- XXX: Here we assume that all the lists come after all the unpacked
+      -- members. While (I think) this is true today, it may not always be
+      -- true and we should probably fix this.
+      (names, packs, lengths) = unzip3 toUnpack
+      assign = mkUnpackFrom (catMaybes names) packs
+      incr = mkIncr "offset" $ mkInt $ sum lengths
+  in mkClass cname "xcffib.Protobj" $ [assign, incr] ++ concat lists
 
 processXDecl :: XDecl -> Maybe (Statement ())
 processXDecl (XImport n) = Just $ mkImport n
 processXDecl (XEnum name membs) = Just $ mkEnum name $ xEnumElemsToPyEnum membs
-processXDecl (XStruct n elems) = Nothing
+processXDecl (XStruct n membs) = Just $ xStructToPyClass n membs
 processXDecl _ = Nothing
 
 mkVersion :: XHeader -> Suite ()

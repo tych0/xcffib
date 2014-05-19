@@ -10,9 +10,11 @@ module Data.XCB.Python.PyHelpers (
   mkAttr,
   mkIncr,
   mkClass,
-  mkStr
+  mkStr,
+  mkUnpackFrom
   ) where
 
+import Data.List
 import Data.List.Split
 import Data.Maybe
 
@@ -85,8 +87,34 @@ mkEnum cname values =
   let body = map (uncurry mkAssign) values
   in Class (Ident cname ()) [] body ()
 
+mkParams :: [String] -> [Parameter ()]
+mkParams = map (\x -> Param (ident x) Nothing Nothing ())
+
+mkArg :: String -> Argument ()
+mkArg n = ArgExpr (mkName n) ()
+
 mkClass :: String -> String -> Suite () -> Statement ()
-mkClass clazz superclazz constructor = undefined
+mkClass clazz superclazz constructor =
+  -- TODO: Can we move size to a dynamically calculated property?
+  let super = mkCall (superclazz ++ ".__init__") [ mkName "self"
+                                                 , mkName "parent"
+                                                 , mkName "offset"
+                                                 , mkName "size"
+                                                 ]
+      body = [(StmtExpr super ())] ++ constructor
+      initParams = mkParams ["self", "parent", "offset", "size"]
+      initMethod = Fun (ident "__init__") initParams Nothing body ()
+  in Class (ident clazz) [mkArg superclazz] [initMethod] ()
 
 mkStr :: String -> Expr ()
 mkStr s = Strings [s] ()
+
+mkTuple :: [Expr ()] -> Expr ()
+mkTuple = flip Tuple ()
+
+mkUnpackFrom :: [String] -> [String] -> Statement ()
+mkUnpackFrom names packs =
+  let lhs = mkTuple $ map mkAttr names
+      unpackStr = mkStr $ intercalate "" packs
+      rhs = mkCall "unpack_from" [unpackStr, mkName "parent", mkName "offset"]
+  in mkAssign lhs rhs
