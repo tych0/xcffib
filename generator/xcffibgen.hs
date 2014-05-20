@@ -6,9 +6,9 @@ import Data.XCB.Types
 main :: IO [()]
 main = do
   headers <- parse "/usr/share/xcb"
-  sequence $ map renderHeader headers
+  let headersAndNames = zip (map xheader_name headers) (xform headers)
+  sequence $ map printHeader headersAndNames
   where
-    renderHeader :: XHeader -> IO ()
-    renderHeader header = do
-      putStrLn $ "\nextension:" ++ (xheader_header header)
-      putStrLn $ renderPy $ xform header
+    printHeader (name, py) = do
+      putStrLn (show name)
+      putStrLn $ renderPy py

@@ -1,6 +1,5 @@
 module Data.XCB.Python.Parse (
   parse,
-  emit,
   mkImport,
   xform,
   renderPy
@@ -21,28 +20,28 @@ import Language.Python.Common as P
 import System.FilePath
 import System.FilePath.Glob
 
+import Debug.Trace
+
 parse :: FilePath -> IO [XHeader]
 parse fp = do
   files <- globDir1 (compile "*") fp
   fromFiles files
 
-emit :: XHeader -> FilePath -> IO ()
-emit header dir = do
-  let fname = dir </> xheader_header header ++ ".py"
-  writeFile fname $ renderPy $ xform header
-
 renderPy :: Suite () -> String
 renderPy = (intercalate "\n") . map prettyText
 
-xform :: XHeader -> Suite ()
-xform header =
-  let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
-      decls = xheader_decls header
-      typeInfo = mkTypeInfo $ collectTypes decls
-      decls' = catMaybes $ map (processXDecl typeInfo) decls
-      version = mkVersion header
-      key = maybeToList $ mkKey header
-  in concat [imports, decls', version, key]
+xform :: [XHeader] -> [Suite ()]
+xform headers =
+  let typeInfo = mkTypeInfo $ collectTypes headers
+  in map (single typeInfo) headers
+  where
+    single :: (X.Type -> (String, Int)) -> XHeader -> Suite ()
+    single typeInfo header =
+      let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
+          decls' = catMaybes $ map (processXDecl typeInfo) $ xheader_decls header
+          version = mkVersion header
+          key = maybeToList $ mkKey header
+      in concat [imports, decls', version, key]
 
 -- | Get the type info (python's struct.pack string and size).
 mkTypeInfo :: M.Map X.Type X.Type -> X.Type -> (String, Int)
@@ -162,9 +161,11 @@ processXDecl typeInfo (XUnion name membs) = Nothing
 processXDecl typeInfo (XidUnion name membs) = Nothing
 processXDecl typeInfo (XError name number membs) = Nothing
 
-collectTypes :: [XDecl] -> M.Map X.Type X.Type
-collectTypes = foldr collectType M.empty
+collectTypes :: [XHeader] -> M.Map X.Type X.Type
+collectTypes = foldr collectAll M.empty
   where
+    collectAll :: XHeader -> M.Map X.Type X.Type -> M.Map X.Type X.Type
+    collectAll header m = foldr collectType m $ xheader_decls header
     collectType :: XDecl -> M.Map X.Type X.Type -> M.Map X.Type X.Type
     collectType (XTypeDef name typ) = M.insert (UnQualType name) typ
     -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
