@@ -39,15 +39,17 @@ xform header =
   let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
       decls = xheader_decls header
       typeInfo = mkTypeInfo $ collectTypes decls
-      decls = catMaybes $ map (processXDecl typeInfo) $ xheader_decls header
+      decls' = catMaybes $ map (processXDecl typeInfo) decls
       version = mkVersion header
       key = maybeToList $ mkKey header
-  in concat [imports, decls, version, key]
+  in concat [imports, decls', version, key]
 
 -- | Get the type info (python's struct.pack string and size).
-mkTypeInfo :: Map X.Type X.Type -> X.Type -> (String, Int)
-mkTypeInfo typedefs = fromMaybe (baseType t) $ fmap lookup $ M.lookup t typedefs
+mkTypeInfo :: M.Map X.Type X.Type -> X.Type -> (String, Int)
+mkTypeInfo typedefs t = fromMaybe (baseType t) $ fmap lookupR $ M.lookup t typedefs
   where
+    lookupR :: X.Type -> (String, Int)
+    lookupR = mkTypeInfo typedefs
     baseType :: X.Type -> (String, Int)
     baseType (UnQualType "CARD8")    = ("B", 1)
     baseType (UnQualType "uint8_t")  = ("B", 1)
@@ -67,7 +69,7 @@ mkTypeInfo typedefs = fromMaybe (baseType t) $ fmap lookup $ M.lookup t typedefs
     baseType (UnQualType "void")     = ("B", 1)
     baseType (UnQualType "float")    = ("f", 4)
     baseType (UnQualType "double")   = ("d", 8)
-    baseType t = error ("unknown type " ++ show t)
+    baseType typ = error ("unknown type " ++ show typ)
 
 xBinopToPyOp :: X.Binop -> P.Op ()
 xBinopToPyOp X.Add = P.Plus ()
@@ -111,14 +113,14 @@ xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
       in conv els acc' is'
     conv [] acc _ = acc
 
-structElemToPyUnpack :: X.Type -> (String, Int)
+structElemToPyUnpack :: (X.Type -> (String, Int))
                      -> GenStructElem Type
                      -> Either (Maybe String, String, Int) (Suite ())
 structElemToPyUnpack _ (Pad i) = Left (Nothing, (show i) ++ "x", i)
 
 -- The enum field is mostly for user information, so we ignore it.
-structElemToPyUnpack typeInfo (X.List n typ (Just exp) _) =
-  let len = xExpressionToPyExpr exp
+structElemToPyUnpack typeInfo (X.List n typ (Just expr) _) =
+  let len = xExpressionToPyExpr expr
       (c, i) = typeInfo typ
       list = mkCall "xcb.List" [ (mkName "parent")
                                , (mkName "offset")
@@ -153,19 +155,20 @@ processXDecl typeInfo (XStruct n membs) = do
       (names, packs, lengths) = unzip3 toUnpack
       assign = mkUnpackFrom (catMaybes names) packs
       incr = mkIncr "offset" $ mkInt $ sum lengths
-  return $ mkClass cname "xcffib.Protobj" $ [assign, incr] ++ concat lists
-processXDecl typeInfo (XEvent n membs hasSequence) = Nothing
-processXDecl typeInfo (XRequest n membs reply) = Nothing
-processXDecl typeInfo (XUnion n membs) = Nothing
-processXDecl typeInfo (XError n membs) = Nothing
+  return $ mkClass n "xcffib.Protobj" $ [assign, incr] ++ concat lists
+processXDecl typeInfo (XEvent name number membs hasSequence) = Nothing
+processXDecl typeInfo (XRequest name number membs reply) = Nothing
+processXDecl typeInfo (XUnion name membs) = Nothing
+processXDecl typeInfo (XidUnion name membs) = Nothing
+processXDecl typeInfo (XError name number membs) = Nothing
 
-collectTypes :: [XDecl] -> Map X.Type X.Type
+collectTypes :: [XDecl] -> M.Map X.Type X.Type
 collectTypes = foldr collectType M.empty
   where
-    collectType :: XDecl -> Map X.Type X.Type -> Map X.Type X.Type
-    collectType (XTypeDef name typ) = insert (UnQualType name) typ
+    collectType :: XDecl -> M.Map X.Type X.Type -> M.Map X.Type X.Type
+    collectType (XTypeDef name typ) = M.insert (UnQualType name) typ
     -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
-    collectType (XidType name) = insert (UnQualType name) (UnQualType "CARD32")
+    collectType (XidType name) = M.insert (UnQualType name) (UnQualType "CARD32")
     collectType _ = id
 
 mkVersion :: XHeader -> Suite ()

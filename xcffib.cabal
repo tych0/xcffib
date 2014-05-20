@@ -23,7 +23,8 @@ library
                  filepath,
                  Glob >= 0.7,
                  bitwise >= 0.1.0.1,
-                 split
+                 split,
+                 containers
   hs-source-dirs: generator
   exposed-modules: Data.XCB.Python.Parse
   ghc-options: -Wall
@@ -40,5 +41,6 @@ executable xcffibgen
                  xcb-types >= 0.7.1,
                  language-python,
                  bitwise >= 0.1.0.1,
-                 split
+                 split,
+                 containers
   ghc-options: -Wall
