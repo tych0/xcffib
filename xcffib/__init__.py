@@ -34,6 +34,10 @@ class ExtensionKey(object):
     def __ne__(self, o):
         return self.name != o.name
 
+class Extension(object):
+    # TODO: implement
+    pass
+
 class ProtoObj(object):
 
     """ Note: Unlike xcb.ProtoObj, this does NOT implement the sequence
@@ -87,6 +91,7 @@ class List(ProtoObj):
         return len(self.list)
     # TODO: implement the rest of the sequence protocol
 
+# These thre are all empty.
 class Struct(ProtoObj):
     pass
 
@@ -95,3 +100,49 @@ class Union(ProtoObj):
 
 class VoidCookie(ProtoObj):
     pass
+
+class Connection(object):
+    def __init__(self, display=None, fd=-1, auth=None):
+        if auth != None:
+            c_auth = C.new("xcb_auth_info_t *")
+            if C.xpyb_parse_auth(auth, len(auth), auth_out) < 0:
+                raise Exception("invalid xauth")
+        else:
+            c_auth = C.NULL
+
+
+        i = C.new("int *")
+
+        if fd > 0:
+            self._conn = C.xcb_connect_to_fd(fd, c_auth)
+        else if c_auth != C.NULL:
+            self._conn = C.xcb_connect_to_display_with_auth(display, c_auth, i)
+        else:
+            self._conn = C.xcb_connect(display, i)
+        self.pref_screen = ffi.int(i)
+
+        self.core = core(self)
+        # TODO: xpybConn_setup
+
+core = None
+core_events = None
+core_errors = None
+setup = None
+
+# This seems a bit over engineered to me; it seems unlikely there will ever be
+# a core besides xproto, so why not just hardcode that?
+def _add_core(value, setup, events, errors):
+    if not isinstance(value, Extension):
+        raise Exception("Extension type not derived from xcffib.Extension")
+    if not isinstance(setup, Struct):
+        raise Exception("Setup type not derived from xcffib.Struct")
+
+    global core
+    global core_events
+    global core_errors
+    global setup
+
+    core = value
+    core_events = events
+    core_errors = errors
+    setup = setup

@@ -6,3 +6,4 @@ run: generator
 .PHONY:
 clean:
 	cabal clean
+	rm -rf xcffib/*pyc xcffib/__pycache__
