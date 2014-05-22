@@ -1,3 +1,5 @@
+import functools
+
 from struct import unpack_from
 
 from ffi import *
@@ -8,16 +10,36 @@ CopyFromParent = XCB_COPY_FROM_PARENT
 CurrentTime = XCB_CURRENT_TIME
 NoSymbol = XCB_NO_SYMBOL
 
-class Exception(object):
+class XcffibException(Exception):
+    """ Generic XcbException; replaces xcb.Exception. """
     pass
 
-class ConnectException(object):
-    pass
+class ConnectionException(XcffibException):
+    REASONS = {
+        XCB_CONN_ERROR: (
+            'xcb connection errors because of socket, '
+            'pipe and other stream errors.'),
+        XCB_CONN_CLOSED_EXT_NOT_SUPPORTED: (
+            'xcb connection shutdown because extension not supported'),
+        XCB_CONN_CLOSED_MEM_INSUFFICIENT: (
+            'malloc(), calloc() and realloc() error upon failure, '
+            'for eg ENOMEM'),
+        XCB_CONN_CLOSED_REQ_LEN_EXCEED: (
+            'Connection closed, exceeding request length that server '
+            'accepts.'),
+        XCB_CONN_CLOSED_PARSE_ERR: (
+            'Connection closed, error during parsing display string.'),
+        XCB_CONN_CLOSED_INVALID_SCREEN: (
+            'Connection closed because the server does not have a screen '
+            'matching the display.'),
+        XCB_CONN_CLOSED_FDPASSING_FAILED: (
+            'Connection closed because some FD passing operation failed'),
+    }
+    def __init__(self, err):
+        XcffibException.__init__(
+            elf, self.REASONS.get(err, "Unknown connection error."))
 
-class ExtensionException(object):
-    pass
-
-class ProtocolException(object):
+class ProtocolException(XcffibException):
     pass
 
 class ExtensionKey(object):
@@ -91,7 +113,7 @@ class List(ProtoObj):
         return len(self.list)
     # TODO: implement the rest of the sequence protocol
 
-# These thre are all empty.
+# These three are all empty.
 class Struct(ProtoObj):
     pass
 
@@ -102,11 +124,31 @@ class VoidCookie(ProtoObj):
     pass
 
 class Connection(object):
+
+    # "Basic" functions in xcb, i.e. those which only take a connection and
+    # return a primitive C type. These are added to connection just below the
+    # class definition.
+    BASIC_FUNCTIONS = [
+        "has_error",
+        "get_file_descriptor",
+        "get_maximum_request_length",
+        "prefetch_maximum_request_length",
+        "flush",
+        "generate_id",
+        "disconnect",
+    ]
+
+    @classmethod
+    def _mk_basic_xcb_call(cls, name):
+        """ Make a call for a "basic" XCB function, i.e. one which takes only a
+        connection and returns a basic C type. """
+
+
     def __init__(self, display=None, fd=-1, auth=None):
         if auth != None:
             c_auth = C.new("xcb_auth_info_t *")
             if C.xpyb_parse_auth(auth, len(auth), auth_out) < 0:
-                raise Exception("invalid xauth")
+                raise XcffibException("invalid xauth")
         else:
             c_auth = C.NULL
 
@@ -124,6 +166,51 @@ class Connection(object):
         self.core = core(self)
         # TODO: xpybConn_setup
 
+    def invalid(self):
+        if self._conn is None:
+            raise XcffibException("Invalid connection.")
+        err = C.xcb_connection_has_error(self._conn)
+        if err > 0
+            raise ConnectionException(err)
+
+    @staticmethod
+    def ensure_connected(f):
+        """
+        Check that the connection is valid both before and
+        after the function is invoked.
+        """
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            self.invalid()
+            return f(*args, **kwargs)
+            self.invalid()
+        return wrapper
+
+    @ensure_connected
+    def get_setup(self):
+        s = C.xcb_get_setup(self._conn)
+        buf = ffi.buffer(s)
+
+        global setup
+        return setup(buf, 0)
+
+    @ensure_connected
+    def wait_for_event(self):
+        # TODO: implement
+        pass
+
+    @ensure_connected
+    def poll_for_event(self):
+        # TODO: implement
+        pass
+
+for name in Connection.BASIC_FUNCTIONS:
+    @Connection.ensure_connected
+    def f(self):
+        return getattr(C, "xcb_" + name)(self._conn)
+    setattr(Connection, name, f)
+
 core = None
 core_events = None
 core_errors = None
@@ -133,9 +220,9 @@ setup = None
 # a core besides xproto, so why not just hardcode that?
 def _add_core(value, setup, events, errors):
     if not isinstance(value, Extension):
-        raise Exception("Extension type not derived from xcffib.Extension")
+        raise XcffibException("Extension type not derived from xcffib.Extension")
     if not isinstance(setup, Struct):
-        raise Exception("Setup type not derived from xcffib.Struct")
+        raise XcffibException("Setup type not derived from xcffib.Struct")
 
     global core
     global core_events

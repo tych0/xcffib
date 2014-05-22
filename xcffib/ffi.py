@@ -30,6 +30,7 @@ ffi.cdef('\n'.join("#define %s ..." % c for c in constants))
 
 # types
 ffi.cdef("""
+    // xcb.h
     typedef struct {
         uint8_t   response_type;  /**< Type of the response */
         uint8_t  pad0;           /**< Padding */
@@ -60,12 +61,50 @@ ffi.cdef("""
     typedef struct {
         unsigned int sequence;  /**< Sequence number */
     } xcb_void_cookie_t;
+
+    typedef struct xcb_auth_info_t {
+        int   namelen;
+        char *name;
+        int   datalen;
+        char *data;
+    } xcb_auth_info_t;
+
+    typedef ... xcb_connection_t;
+    typedef ... xcb_extension_t;
+
+    // xproto.h
+    typedef struct xcb_query_extension_reply_t {
+        uint8_t  response_type;
+        uint8_t  pad0;
+        uint16_t sequence;
+        uint32_t length;
+        uint8_t  present;
+        uint8_t  major_opcode;
+        uint8_t  first_event;
+        uint8_t  first_error;
+    } xcb_query_extension_reply_t;
+
+    typedef ... xcb_setup_t;
 """)
 
-# connection manipulation
+# connection manipulation, mostly generated with:
+# grep -v '^[ \/\}#]' xcb.h | grep -v '^typedef' | grep -v '^extern'
 ffi.cdef("""
-    typedef ... xcb_connection_t;
+    int xcb_flush(xcb_connection_t *c);
+    uint32_t xcb_get_maximum_request_length(xcb_connection_t *c);
+    void xcb_prefetch_maximum_request_length(xcb_connection_t *c);
+    xcb_generic_event_t *xcb_wait_for_event(xcb_connection_t *c);
+    xcb_generic_event_t *xcb_poll_for_event(xcb_connection_t *c);
+    const xcb_query_extension_reply_t *xcb_get_extension_data(xcb_connection_t *c, xcb_extension_t *ext);
+    const xcb_setup_t *xcb_get_setup(xcb_connection_t *c);
+    int xcb_get_file_descriptor(xcb_connection_t *c);
     int xcb_connection_has_error(xcb_connection_t *c);
+    xcb_connection_t *xcb_connect_to_fd(int fd, xcb_auth_info_t *auth_info);
+    void xcb_disconnect(xcb_connection_t *c);
+    int xcb_parse_display(const char *name, char **host, int *display, int *screen);
+    xcb_connection_t *xcb_connect(const char *displayname, int *screenp);
+    xcb_connection_t *xcb_connect_to_display_with_auth_info(const char *display, xcb_auth_info_t *auth, int *screen);
+    uint32_t xcb_generate_id(xcb_connection_t *c);
 """)
 
 C = ffi.verify("""
