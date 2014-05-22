@@ -1,5 +1,13 @@
 from struct import unpack_from
 
+from ffi import *
+
+# For xpyb compatibility
+NONE = XCB_NONE
+CopyFromParent = XCB_COPY_FROM_PARENT
+CurrentTime = XCB_CURRENT_TIME
+NoSymbol = XCB_NO_SYMBOL
+
 class Exception(object):
     pass
 
