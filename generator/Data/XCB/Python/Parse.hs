@@ -137,7 +137,7 @@ xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
 
 structElemToPyUnpack :: M.Map String (String, Int)
                      -> GenStructElem Type
-                     -> Either (Maybe String, String, Int) (Suite ())
+                     -> Either (Maybe String, String, Int) (Statement (), Expr ())
 structElemToPyUnpack _ (Pad i) = Left (Nothing, (show i) ++ "x", i)
 
 -- The enum field is mostly for user information, so we ignore it.
@@ -153,8 +153,7 @@ structElemToPyUnpack m (X.List n typ (Just expr) _) =
                                ]
       assign = mkAssign (mkAttr n) list
       totalBytes = BinaryOp (Multiply ()) (mkCall "len" [mkAttr n]) (mkInt i) ()
-      incr = mkIncr "offset" totalBytes
-  in Right [assign, incr]
+  in Right (assign, totalBytes)
 
 structElemToPyUnpack _ (X.List n typ Nothing _) =
   error ("Invalid XCB XML; list " ++ n ++ " requires a length")
@@ -190,12 +189,31 @@ processXDecl (XStruct n membs) = do
       assign = mkUnpackFrom (catMaybes names) packs
       length = sum lengths
       incr = mkIncr "offset" $ mkInt length
+      lists' = concat $ map (\(l, sz) -> [l, mkIncr "offset" sz]) lists
+  -- Here, we assume the length of a structure is the length of its "basic"
+  -- unpacks, not including lists. Obviously, this won't work if you nest
+  -- lists. However, as far as I'm aware XCB doesn't do this and it's not
+  -- entirely obvious what the semantics would be anyway.
   put $ M.insert n (n, length) m
-  return $ return $ mkClass n "xcffib.Protobj" $ [assign, incr] ++ concat lists
+  return $ return $ mkClass n "xcffib.Protobj" $ [assign, incr] ++ lists'
 processXDecl (XEvent name number membs hasSequence) = return Nothing
 processXDecl (XRequest name number membs reply) = return Nothing
-processXDecl (XUnion name membs) = return Nothing
-processXDecl (XidUnion name membs) = return Nothing
+processXDecl (XUnion name membs) = do
+  m <- get
+  -- XXX: As far as I can tell all the (one) unions in XCB are lists. It's not
+  -- clear to me what the semantics of multiple members would be, so we fail
+  -- hard here.
+  let ([], lists) = partitionEithers $ map (structElemToPyUnpack m) membs
+      (lists', lengths) = unzip lists
+  -- List in list, so we don't know a length here. -1 is the sentinel value
+  -- xpyb uses for this.
+  put $ M.insert name (name, -1) m
+  return $ Just $ mkClass name "xcffib.Union" $ fst $ unzip lists
+processXDecl (XidUnion name _) =
+  -- I think these are always CARD32s since they are only XIDs.
+  do m <- get
+     put $ M.insert name (baseTypeInfo M.! (UnQualType "CARD32")) m
+     return Nothing
 processXDecl (XError name number membs) = return Nothing
 
 collectTypes :: [XHeader] -> M.Map X.Type X.Type
