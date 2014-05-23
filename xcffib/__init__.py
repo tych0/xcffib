@@ -99,7 +99,8 @@ class List(ProtoObj):
         cur = offset
 
         if isinstance(typ, str):
-            self.list = list(unpack_from(typ * length, parent, offset))
+            count = length / size
+            self.list = list(unpack_from(typ * count, parent, offset))
         elif size > 0:
             for _ in range(length):
                 self.list.append(typ(parent, cur, size))
