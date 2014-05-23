@@ -43,7 +43,8 @@ xform headers =
       let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
           version = mkVersion header
           key = maybeToList $ mkKey header
-      fmap catMaybes $ mapM processXDecl $ xheader_decls header
+      defs <- fmap catMaybes $ mapM processXDecl $ xheader_decls header
+      return $ concat [imports, version, key, defs]
     -- Rearrange the headers in dependency order for processing (i.e. put
     -- modules which import others after the modules they import, so typedefs
     -- are propogated appropriately).
