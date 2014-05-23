@@ -107,7 +107,7 @@ mkClass clazz superclazz constructor =
   in Class (ident clazz) [mkArg superclazz] [initMethod] ()
 
 mkStr :: String -> Expr ()
-mkStr s = Strings [s] ()
+mkStr s = Strings ["\"", s, "\""] ()
 
 mkTuple :: [Expr ()] -> Expr ()
 mkTuple = flip Tuple ()
