@@ -161,7 +161,7 @@ structElemToPyUnpack _ (X.List n typ Nothing _) =
 
 -- The mask and enum fields are for user information, we can ignore them here.
 structElemToPyUnpack m (SField n typ _ _) =
-  let (c, i) = M.findWithDefault (baseTypeInfo M.! typ) n m
+  let (c, i) = M.findWithDefault (baseTypeInfo M.! typ) (getName typ) m
   in Left (Just n, c, i)
 structElemToPyUnpack _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ (ValueParam _ _ _ _) = error "Only valid for requests"
