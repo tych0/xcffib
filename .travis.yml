@@ -1,0 +1,14 @@
+before_install:
+  - sudo apt-get update
+
+install:
+  - sudo apt-get install ghc cabal-install git xcb-proto
+  - cabal update
+  - git clone https://github.com/tych0/xcb-types.git
+  - cd xcb-types
+  - cabal install
+  - cd ..
+  - cabal configure
+  - cabal install
+
+script: "make check"
