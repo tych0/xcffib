@@ -219,17 +219,6 @@ processXDecl (XidUnion name _) =
      return Nothing
 processXDecl (XError name number membs) = return Nothing
 
-collectTypes :: [XHeader] -> M.Map X.Type X.Type
-collectTypes = foldr collectAll M.empty
-  where
-    collectAll :: XHeader -> M.Map X.Type X.Type -> M.Map X.Type X.Type
-    collectAll header m = foldr collectType m $ xheader_decls header
-    collectType :: XDecl -> M.Map X.Type X.Type -> M.Map X.Type X.Type
-    collectType (XTypeDef name typ) = M.insert (UnQualType name) typ
-    -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
-    collectType (XidType name) = M.insert (UnQualType name) (UnQualType "CARD32")
-    collectType _ = id
-
 mkVersion :: XHeader -> Suite ()
 mkVersion header =
   let major = ver "MAJOR_VERSION" (xheader_major_version header)
