@@ -1,6 +1,5 @@
 module Data.XCB.Python.Parse (
   parse,
-  mkImport,
   xform,
   renderPy
   ) where
@@ -8,7 +7,6 @@ module Data.XCB.Python.Parse (
 import Control.Monad.State.Strict
 
 import Data.Bits
-import qualified Data.Bits.Bitwise as BW
 import Data.Either
 import Data.List
 import qualified Data.Map as M
