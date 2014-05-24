@@ -44,5 +44,6 @@ executable xcffibgen
                  bitwise >= 0.1.0.1,
                  split,
                  containers,
-                 mtl >= 2.1
+                 mtl >= 2.1,
+                 directory >= 1.2
   ghc-options: -Wall

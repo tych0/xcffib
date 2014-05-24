@@ -39,20 +39,24 @@ parse fp = do
 renderPy :: Suite () -> String
 renderPy = (intercalate "\n") . map prettyText
 
-xform :: [XHeader] -> [Suite ()]
+-- | Generate the code for a set of X headers. Note that the code is generated
+-- in dependency order, NOT in the order you pass them in. Thus, you get a
+-- string (a suggested filename) along with the python code for that XHeader
+-- back.
+xform :: [XHeader] -> [(String, Suite ())]
 xform headers =
   let headers' = dependencyOrder headers
   in evalState (mapM processXHeader headers') baseTypeInfo
   where
     processXHeader :: XHeader
-                   -> State TypeInfoMap (Suite ())
+                   -> State TypeInfoMap (String, Suite ())
     processXHeader header = do
       let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
           version = mkVersion header
           key = maybeToList $ mkKey header
           name = xheader_header header
       defs <- fmap catMaybes $ mapM (processXDecl name) $ xheader_decls header
-      return $ concat [imports, version, key, defs]
+      return $ (name, concat [imports, version, key, defs])
     -- Rearrange the headers in dependency order for processing (i.e. put
     -- modules which import others after the modules they import, so typedefs
     -- are propogated appropriately).
