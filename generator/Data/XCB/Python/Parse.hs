@@ -74,7 +74,7 @@ xform headers =
         matchImport (XImport n) = Just n
         matchImport _ = Nothing
         headerCmp h1 h2 = (xheader_header h1) == (xheader_header h2)
-        postOrder :: Tree a => [a]
+        postOrder :: Tree a -> [a]
         postOrder (Node e cs) = (concat $ map postOrder cs) ++ [e]
 
 -- | Information on basic X types.
