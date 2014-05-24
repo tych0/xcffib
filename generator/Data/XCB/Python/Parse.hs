@@ -211,13 +211,19 @@ processXDecl ext (XStruct n membs) = do
       -- members. While (I think) this is true today, it may not always be
       -- true and we should probably fix this.
       (names, packs, lengths) = unzip3 toUnpack
-      assign = mkUnpackFrom (catMaybes names) packs
+      names' = catMaybes names
+      assign = mkUnpackFrom names' packs
       unpackLength = sum $ catMaybes lengths
       incr = mkIncr "offset" $ mkInt unpackLength
+      baseTUnpack = if length names' > 0 then [assign] else []
+      baseTIncr = if unpackLength > 0 then [incr] else []
+
       lists' = concat $ map (\(l, sz) -> [l, mkIncr "offset" sz]) lists
+
+      statements = baseTUnpack ++ baseTIncr ++ lists'
       structLen = if length lists > 0 then Nothing else Just unpackLength
   modify $ mkModify ext n (CompositeType n structLen)
-  return $ return $ mkClass n "xcffib.Protobj" $ [assign, incr] ++ lists'
+  return $ return $ mkClass n "xcffib.Protobj" statements
 processXDecl _ (XEvent name number membs hasSequence) = return Nothing
 processXDecl _ (XRequest name number membs reply) = return Nothing
 processXDecl ext (XUnion name membs) = do
