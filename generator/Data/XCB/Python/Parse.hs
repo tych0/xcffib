@@ -50,7 +50,8 @@ xform headers =
       let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
           version = mkVersion header
           key = maybeToList $ mkKey header
-      defs <- fmap catMaybes $ mapM processXDecl $ xheader_decls header
+          name = xheader_header header
+      defs <- fmap catMaybes $ mapM (processXDecl name) $ xheader_decls header
       return $ concat [imports, version, key, defs]
     -- Rearrange the headers in dependency order for processing (i.e. put
     -- modules which import others after the modules they import, so typedefs
@@ -178,20 +179,30 @@ structElemToPyUnpack m (SField n typ _ _) =
 structElemToPyUnpack _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
-processXDecl :: XDecl
+-- | Given a (qualified) type name and a target type, generate a TypeInfoMap
+-- updater.
+mkModify :: String -> String -> TypeInfo -> TypeInfoMap -> TypeInfoMap
+mkModify ext name ti m =
+  let m' = M.fromList [ (UnQualType name, ti)
+                      , (QualType ext name, ti)
+                      ]
+  in M.union m m'
+
+processXDecl :: String
+             -> XDecl
              -> State TypeInfoMap (Maybe (Statement ()))
-processXDecl (XTypeDef name typ) =
-  do modify $ \m -> M.insert (UnQualType name) (m M.! typ) m
+processXDecl ext (XTypeDef name typ) =
+  do modify $ \m -> mkModify ext name (m M.! typ) m
      return Nothing
-processXDecl (XidType name) =
+processXDecl ext (XidType name) =
   -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
-  do modify $ M.insert (UnQualType name) (BaseType "I" 4)
+  do modify $ mkModify ext name (BaseType "I" 4)
      return Nothing
-processXDecl (XImport n) =
+processXDecl _ (XImport n) =
   return $ return $ mkImport n
-processXDecl (XEnum name membs) =
+processXDecl _ (XEnum name membs) =
   return $ return $ mkEnum name $ xEnumElemsToPyEnum membs
-processXDecl (XStruct n membs) = do
+processXDecl ext (XStruct n membs) = do
   m <- get
   let (toUnpack, lists) = partitionEithers $ map (structElemToPyUnpack m) membs
       -- XXX: Here we assume that all the lists come after all the unpacked
@@ -203,11 +214,11 @@ processXDecl (XStruct n membs) = do
       incr = mkIncr "offset" $ mkInt unpackLength
       lists' = concat $ map (\(l, sz) -> [l, mkIncr "offset" sz]) lists
       structLen = if length lists > 0 then Nothing else Just unpackLength
-  modify $ M.insert (UnQualType n) (CompositeType n structLen)
+  modify $ mkModify ext n (CompositeType n structLen)
   return $ return $ mkClass n "xcffib.Protobj" $ [assign, incr] ++ lists'
-processXDecl (XEvent name number membs hasSequence) = return Nothing
-processXDecl (XRequest name number membs reply) = return Nothing
-processXDecl (XUnion name membs) = do
+processXDecl _ (XEvent name number membs hasSequence) = return Nothing
+processXDecl _ (XRequest name number membs reply) = return Nothing
+processXDecl ext (XUnion name membs) = do
   m <- get
   let (fields, lists) = partitionEithers $ map (structElemToPyUnpack m) membs
       (toUnpack, sizes) = unzip $ map mkUnionUnpack fields
@@ -220,7 +231,7 @@ processXDecl (XUnion name membs) = do
   unless ((length $ lengths') <= 1) err
   -- List in list, so we don't know a length here. -1 is the sentinel value
   -- xpyb uses for this.
-  modify $ M.insert (UnQualType name) (CompositeType name unionLen)
+  modify $ mkModify ext name (CompositeType name unionLen)
   return $ Just $ mkClass name "xcffib.Union" $ (fst $ unzip lists) ++ toUnpack
   where
     mkUnionUnpack :: (Maybe String, String, Maybe Int)
@@ -228,11 +239,11 @@ processXDecl (XUnion name membs) = do
     mkUnionUnpack (name, typ, size) =
       (mkUnpackFrom (maybeToList name) [typ], size)
 
-processXDecl (XidUnion name _) =
+processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.
-  do modify $ M.insert (UnQualType name) (BaseType "I" 4)
+  do modify $ mkModify ext name (BaseType "I" 4)
      return Nothing
-processXDecl (XError name number membs) = return Nothing
+processXDecl _ (XError name number membs) = return Nothing
 
 mkVersion :: XHeader -> Suite ()
 mkVersion header =
