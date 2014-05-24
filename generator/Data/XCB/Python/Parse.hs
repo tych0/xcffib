@@ -115,8 +115,7 @@ xExpressionToPyExpr (Value i) = mkInt i
 xExpressionToPyExpr (Bit i) = mkInt $ shiftL 1 i
 xExpressionToPyExpr (FieldRef n) = mkAttr n
 xExpressionToPyExpr (EnumRef _ n) = mkVar n
-xExpressionToPyExpr (PopCount (Value i)) =
-  mkInt $ length $ filter id $ BW.toListLE i
+xExpressionToPyExpr (PopCount e) = mkCall "popcount" [xExpressionToPyExpr e]
 xExpressionToPyExpr (PopCount _) = error "Bad X spec?"
 -- TODO: What do we do for SumOf, besides cause a NameError?
 xExpressionToPyExpr (SumOf _) = mkVar "xcffib_incomplete"

@@ -4,6 +4,9 @@ from struct import unpack_from
 
 from ffi import *
 
+def popcount(n):
+    return bin(n).count('1')
+
 # For xpyb compatibility
 NONE = XCB_NONE
 CopyFromParent = XCB_COPY_FROM_PARENT
