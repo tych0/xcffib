@@ -156,11 +156,11 @@ structElemToPyUnpack m (X.List n typ (Just expr) _) =
                  BaseType c i -> (mkStr c, Just i)
                  CompositeType c i -> (mkName c, i)
       size = map mkInt $ maybeToList i
-      list = mkCall "xcb.List" ([ (mkName "parent")
-                                , (mkName "offset")
-                                , len
-                                , c
-                                ] ++ size)
+      list = mkCall "xcffib.List" ([ (mkName "parent")
+                                   , (mkName "offset")
+                                   , len
+                                   , c
+                                   ] ++ size)
       assign = mkAssign (mkAttr n) list
       totalBytes = mkAttr (n ++ ".bufsize")
   in Right (assign, totalBytes)
