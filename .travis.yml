@@ -11,7 +11,7 @@ install:
   - cd xcb-types
   - cabal install
   - cd ..
-  - cabal install --only-dependencies
-  - cabal configure
+  - cabal install --only-dependencies --enable-tests
+  - cabal configure --enable-tests
 
 script: "make check"
