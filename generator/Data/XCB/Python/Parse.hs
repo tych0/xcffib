@@ -38,7 +38,8 @@ xform headers =
   let headers' = dependencyOrder headers
   in evalState (mapM processXHeader headers') M.empty
   where
-    processXHeader :: XHeader -> State (M.Map String (String, Int)) (Suite ())
+    processXHeader :: XHeader
+                   -> State (M.Map String (String, Maybe Int)) (Suite ())
     processXHeader header = do
       let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
           version = mkVersion header
@@ -135,24 +136,26 @@ xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
       in conv els acc' is'
     conv [] acc _ = acc
 
-structElemToPyUnpack :: M.Map String (String, Int)
+structElemToPyUnpack :: M.Map String (String, Maybe Int)
                      -> GenStructElem Type
-                     -> Either (Maybe String, String, Int) (Statement (), Expr ())
-structElemToPyUnpack _ (Pad i) = Left (Nothing, (show i) ++ "x", i)
+                     -> Either (Maybe String, String, Maybe Int)
+                               (Statement (), Expr ())
+structElemToPyUnpack _ (Pad i) = Left (Nothing, (show i) ++ "x", Just i)
 
 -- The enum field is mostly for user information, so we ignore it.
 structElemToPyUnpack m (X.List n typ (Just expr) _) =
   let len = xExpressionToPyExpr expr
       name = getName typ
-      (c, i) = M.findWithDefault (baseTypeInfo M.! typ) name m
-      list = mkCall "xcb.List" [ (mkName "parent")
-                               , (mkName "offset")
-                               , len
-                               , mkStr c
-                               , mkInt i
-                               ]
+      (baseC, baseI) = baseTypeInfo M.! typ
+      (c, i) = M.findWithDefault (baseC, Just baseI) name m
+      size = map mkInt $ maybeToList i
+      list = mkCall "xcb.List" ([ (mkName "parent")
+                                , (mkName "offset")
+                                , len
+                                , mkStr c
+                                ] ++ size)
       assign = mkAssign (mkAttr n) list
-      totalBytes = BinaryOp (Multiply ()) (mkCall "len" [mkAttr n]) (mkInt i) ()
+      totalBytes = mkAttr (name ++ ".bufsize")
   in Right (assign, totalBytes)
 
 structElemToPyUnpack _ (X.List n typ Nothing _) =
@@ -160,20 +163,23 @@ structElemToPyUnpack _ (X.List n typ Nothing _) =
 
 -- The mask and enum fields are for user information, we can ignore them here.
 structElemToPyUnpack m (SField n typ _ _) =
-  let (c, i) = M.findWithDefault (baseTypeInfo M.! typ) (getName typ) m
+  let (baseC, baseI) = baseTypeInfo M.! typ
+      (c, i) = M.findWithDefault (baseC, Just baseI) (getName typ) m
   in Left (Just n, c, i)
 structElemToPyUnpack _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
 processXDecl :: XDecl
-             -> State (M.Map String (String, Int)) (Maybe (Statement ()))
+             -> State (M.Map String (String, Maybe Int)) (Maybe (Statement ()))
 processXDecl (XTypeDef name typ) =
   do m <- get
-     put $ M.insert name (baseTypeInfo M.! typ) m
+     let (baseC, baseI) = baseTypeInfo M.! typ
+     put $ M.insert name (baseC, Just baseI) m
      return Nothing
 processXDecl (XidType name) =
   do m <- get
-     put $ M.insert name (baseTypeInfo M.! (UnQualType "CARD32")) m
+     -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
+     put $ M.insert name ("I", Just 4) m
      return Nothing
 processXDecl (XImport n) =
   return $ return $ mkImport n
@@ -187,14 +193,11 @@ processXDecl (XStruct n membs) = do
       -- true and we should probably fix this.
       (names, packs, lengths) = unzip3 toUnpack
       assign = mkUnpackFrom (catMaybes names) packs
-      length = sum lengths
-      incr = mkIncr "offset" $ mkInt length
+      unpackLength = sum $ catMaybes lengths
+      incr = mkIncr "offset" $ mkInt unpackLength
       lists' = concat $ map (\(l, sz) -> [l, mkIncr "offset" sz]) lists
-  -- Here, we assume the length of a structure is the length of its "basic"
-  -- unpacks, not including lists. Obviously, this won't work if you nest
-  -- lists. However, as far as I'm aware XCB doesn't do this and it's not
-  -- entirely obvious what the semantics would be anyway.
-  put $ M.insert n (n, length) m
+      structLen = if length lists > 0 then Nothing else Just unpackLength
+  put $ M.insert n (n, structLen) m
   return $ return $ mkClass n "xcffib.Protobj" $ [assign, incr] ++ lists'
 processXDecl (XEvent name number membs hasSequence) = return Nothing
 processXDecl (XRequest name number membs reply) = return Nothing
@@ -207,12 +210,12 @@ processXDecl (XUnion name membs) = do
       (lists', lengths) = unzip lists
   -- List in list, so we don't know a length here. -1 is the sentinel value
   -- xpyb uses for this.
-  put $ M.insert name (name, -1) m
+  put $ M.insert name (name, Nothing) m
   return $ Just $ mkClass name "xcffib.Union" $ fst $ unzip lists
 processXDecl (XidUnion name _) =
-  -- I think these are always CARD32s since they are only XIDs.
+  -- These are always only unions of XIDs.
   do m <- get
-     put $ M.insert name (baseTypeInfo M.! (UnQualType "CARD32")) m
+     put $ M.insert name ("I", Just 4) m
      return Nothing
 processXDecl (XError name number membs) = return Nothing
 
