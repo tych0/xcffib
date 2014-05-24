@@ -51,7 +51,7 @@ xform headers =
     processXHeader :: XHeader
                    -> State TypeInfoMap (String, Suite ())
     processXHeader header = do
-      let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
+      let imports = [mkImport "xcffib", mkImport "struct"]
           version = mkVersion header
           key = maybeToList $ mkKey header
           name = xheader_header header

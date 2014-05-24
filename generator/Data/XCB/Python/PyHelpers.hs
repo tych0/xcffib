@@ -116,5 +116,8 @@ mkUnpackFrom :: [String] -> [String] -> Statement ()
 mkUnpackFrom names packs =
   let lhs = mkTuple $ map mkAttr names
       unpackStr = mkStr $ intercalate "" packs
-      rhs = mkCall "unpack_from" [unpackStr, mkName "parent", mkName "offset"]
+      rhs = mkCall "struct.unpack_from" [ unpackStr
+                                        , mkName "parent"
+                                        , mkName "offset"
+                                        ]
   in mkAssign lhs rhs

@@ -63,10 +63,10 @@ class Extension(object):
     # TODO: implement
     pass
 
-class ProtoObj(object):
+class Protobj(object):
 
-    """ Note: Unlike xcb.ProtoObj, this does NOT implement the sequence
-    protocol. I found this behavior confusing: ProtoObj would implement the
+    """ Note: Unlike xcb.Protobj, this does NOT implement the sequence
+    protocol. I found this behavior confusing: Protobj would implement the
     sequence protocol on self.buf, and then List would go and implement it on
     List. Additionally, as near as I can tell internally we only need the size
     of the buffer for cases when the size of things is unspecified. Thus,
@@ -92,7 +92,7 @@ class ProtoObj(object):
             size = len(parent)
         self.bufsize = size - offset
 
-class List(ProtoObj):
+class List(Protobj):
     def __init__(self, parent, offset, length, typ, size=-1):
 
         if size > 0:
@@ -118,13 +118,13 @@ class List(ProtoObj):
     # TODO: implement the rest of the sequence protocol
 
 # These three are all empty.
-class Struct(ProtoObj):
+class Struct(Protobj):
     pass
 
-class Union(ProtoObj):
+class Union(Protobj):
     pass
 
-class VoidCookie(ProtoObj):
+class VoidCookie(Protobj):
     pass
 
 class Connection(object):
