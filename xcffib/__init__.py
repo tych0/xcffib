@@ -161,7 +161,7 @@ class Connection(object):
 
         if fd > 0:
             self._conn = C.xcb_connect_to_fd(fd, c_auth)
-        else if c_auth != C.NULL:
+        elif c_auth != C.NULL:
             self._conn = C.xcb_connect_to_display_with_auth(display, c_auth, i)
         else:
             self._conn = C.xcb_connect(display, i)
@@ -174,7 +174,7 @@ class Connection(object):
         if self._conn is None:
             raise XcffibException("Invalid connection.")
         err = C.xcb_connection_has_error(self._conn)
-        if err > 0
+        if err > 0:
             raise ConnectionException(err)
 
     @staticmethod
