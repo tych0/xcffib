@@ -34,7 +34,7 @@ ident :: String -> Ident ()
 ident s | s `elem` _reserved = Ident ("_" ++ s) ()
 ident s | isInt s = Ident ("_" ++ s) ()
   where
-    isInt s = isJust $ ((maybeRead s) :: Maybe Int)
+    isInt str = isJust $ ((maybeRead str) :: Maybe Int)
     maybeRead = fmap fst . listToMaybe . reads
 ident s = Ident s ()
 
