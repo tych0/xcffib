@@ -49,8 +49,8 @@ mkVar name = Var (ident name) ()
 -- | Make an Expr out of a string like "foo.bar" describing the name.
 mkName :: String -> Expr ()
 mkName s =
-  let strings = map mkVar $ reverse  $ splitOn "." s
-  in foldr mkDot (head strings) (tail strings)
+  let strings = map mkVar $ reverse $ splitOn "." s
+  in foldr mkDot (head strings) (reverse $ tail strings)
   where
     mkDot :: Expr () -> Expr () -> Expr ()
     mkDot e1 e2 = BinaryOp (Dot ()) e1 e2 ()

@@ -19,31 +19,40 @@ source-repository head
 library
   build-depends: base ==4.*,
                  xcb-types >= 0.7.1,
-                 language-python,
+                 language-python >= 0.4.0,
                  filepath,
                  Glob >= 0.7,
-                 bitwise >= 0.1.0.1,
                  split,
                  containers,
                  mtl >= 2.1
   hs-source-dirs: generator
-  exposed-modules: Data.XCB.Python.Parse
+  exposed-modules: Data.XCB.Python.Parse,
+                   Data.XCB.Python.PyHelpers
   ghc-options: -Wall
 
 executable xcffibgen
   main-is: xcffibgen.hs
   hs-source-dirs: generator
   build-depends: base ==4.*,
-                 optparse-applicative >= 0.5,
-                 language-python >= 0.4.0,
                  xcffib >= 0.1.0.0,
+                 language-python >= 0.4.0,
                  Glob >= 0.7,
-                 filepath,
-                 xcb-types >= 0.7.1,
-                 language-python,
-                 bitwise >= 0.1.0.1,
                  split,
+                 xcb-types >= 0.7.1,
+                 optparse-applicative >= 0.5,
+                 filepath,
+                 directory >= 1.2,
                  containers,
-                 mtl >= 2.1,
-                 directory >= 1.2
+                 mtl >= 2.1
   ghc-options: -Wall
+
+test-suite PyHelpersTests
+  hs-source-dirs: tests
+  main-is: PyHelpersTests.hs
+  type: exitcode-stdio-1.0
+  build-depends: base ==4.*,
+                 xcffib >= 0.1.0.0,
+                 language-python >= 0.4.0,
+                 HUnit,
+                 test-framework,
+                 test-framework-hunit
