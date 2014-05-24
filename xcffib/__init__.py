@@ -102,11 +102,11 @@ class List(ProtoObj):
             count = length / size
             self.list = list(unpack_from(typ * count, parent, offset))
         elif size > 0:
-            for _ in range(length):
+            while cur < size:
                 self.list.append(typ(parent, cur, size))
                 cur += size
         else:
-            for _ in range(length):
+            while cur < size:
                 item = typ(parent, cur)
                 cur += item.bufsize
 
