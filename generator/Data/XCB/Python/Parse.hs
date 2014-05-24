@@ -167,13 +167,14 @@ structElemToPyUnpack _ (X.List n typ Nothing _) =
 
 -- The mask and enum fields are for user information, we can ignore them here.
 structElemToPyUnpack m (SField n typ _ _) =
-  -- TODO: There is a bug here where we unpack Structs with unpack_from, which
-  -- obviously won't work :-). Something similar to mkUnionUnpack needs to
-  -- happen. I don't think anything uses this right now, though, so we should
-  -- be ok.
   case m M.! typ of
     BaseType c i -> Left (Just n, c, Just i)
-    CompositeType c i -> error "unsupported: can't nest bare structs"
+    CompositeType c i ->
+      let size = map mkInt $ maybeToList i
+          assign = mkAssign (mkAttr n) (mkCall c ([ mkName "parent"
+                                                  , mkName "offset"
+                                                  ] ++ size))
+      in Right (assign, mkAttr (n ++ ".buflen"))
 structElemToPyUnpack _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
@@ -206,11 +207,10 @@ processXDecl (XStruct n membs) = do
   return $ return $ mkClass n "xcffib.Protobj" $ [assign, incr] ++ lists'
 processXDecl (XEvent name number membs hasSequence) = return Nothing
 processXDecl (XRequest name number membs reply) = return Nothing
-{-
 processXDecl (XUnion name membs) = do
   m <- get
   let (fields, lists) = partitionEithers $ map (structElemToPyUnpack m) membs
-      (toUnpack, sizes) = unzip $ map (mkUnionUnpack m) fields
+      (toUnpack, sizes) = unzip $ map mkUnionUnpack fields
       (lists', lengths) = unzip lists
       err = error ("bad XCB: union " ++
                    name ++ " has fields of different length")
@@ -220,25 +220,16 @@ processXDecl (XUnion name membs) = do
   unless ((length $ lengths') <= 1) err
   -- List in list, so we don't know a length here. -1 is the sentinel value
   -- xpyb uses for this.
-  put $ M.insert name (name, unionLen) m
+  modify $ M.insert (UnQualType name) (CompositeType name unionLen)
   return $ Just $ mkClass name "xcffib.Union" $ (fst $ unzip lists) ++ toUnpack
   where
-    mkUnionUnpack :: M.Map String (String, Maybe Int)
-                  -> (Maybe String, String, Maybe Int)
+    mkUnionUnpack :: (Maybe String, String, Maybe Int)
                   -> (Statement (), Maybe Int)
-    mkUnionUnpack m (name, typ, size) =
-      let custom = fmap mkCustomUnpack $ M.lookup m
-          base = mkUnpackFrom (maybeToList name)
-      where
-        mkCustomUnpack (name, i) =
-          let size = map mkInt $ maybeToList i
-          in mkCall name ([ mkName "parent",
-                          , mkName "offset"
-                          ] ++ size)
--}
+    mkUnionUnpack (name, typ, size) =
+      (mkUnpackFrom (maybeToList name) [typ], size)
 
 processXDecl (XidUnion name _) =
-  -- These are always only unions of XIDs.
+  -- These are always unions of only XIDs.
   do modify $ M.insert (UnQualType name) (BaseType "I" 4)
      return Nothing
 processXDecl (XError name number membs) = return Nothing
