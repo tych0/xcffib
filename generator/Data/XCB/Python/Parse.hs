@@ -25,6 +25,12 @@ import System.FilePath.Glob
 
 import Debug.Trace
 
+data TypeInfo = BaseType String Int
+              | CompositeType String (Maybe Int)
+              deriving (Eq, Ord, Show)
+
+type TypeInfoMap = M.Map X.Type TypeInfo
+
 parse :: FilePath -> IO [XHeader]
 parse fp = do
   files <- globDir1 (compile "*") fp
@@ -36,10 +42,10 @@ renderPy = (intercalate "\n") . map prettyText
 xform :: [XHeader] -> [Suite ()]
 xform headers =
   let headers' = dependencyOrder headers
-  in evalState (mapM processXHeader headers') M.empty
+  in evalState (mapM processXHeader headers') baseTypeInfo
   where
     processXHeader :: XHeader
-                   -> State (M.Map String (String, Maybe Int)) (Suite ())
+                   -> State TypeInfoMap (Suite ())
     processXHeader header = do
       let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
           version = mkVersion header
@@ -67,28 +73,27 @@ xform headers =
         postOrder (Node e cs) = (concat $ map postOrder cs) ++ [e]
 
 -- | Information on basic X types.
-baseTypeInfo :: M.Map X.Type (String, Int)
+baseTypeInfo :: TypeInfoMap
 baseTypeInfo = M.fromList $
-  [ (UnQualType "CARD8",    ("B", 1))
-  , (UnQualType "uint8_t",  ("B", 1))
-  , (UnQualType "CARD16",   ("H", 2))
-  , (UnQualType "uint16_t", ("H", 2))
-  , (UnQualType "CARD32",   ("I", 4))
-  , (UnQualType "uint32_t", ("I", 4))
-  , (UnQualType "INT8",     ("b", 1))
-  , (UnQualType "int8_t",   ("b", 1))
-  , (UnQualType "INT16",    ("h", 2))
-  , (UnQualType "int16_t",  ("h", 2))
-  , (UnQualType "INT32",    ("i", 4))
-  , (UnQualType "int32_t",  ("i", 4))
-  , (UnQualType "BYTE",     ("B", 1))
-  , (UnQualType "BOOL",     ("B", 1))
-  , (UnQualType "char",     ("b", 1))
-  , (UnQualType "void",     ("B", 1))
-  , (UnQualType "float",    ("f", 4))
-  , (UnQualType "double",   ("d", 8))
+  [ (UnQualType "CARD8",    BaseType "B" 1)
+  , (UnQualType "uint8_t",  BaseType "B" 1)
+  , (UnQualType "CARD16",   BaseType "H" 2)
+  , (UnQualType "uint16_t", BaseType "H" 2)
+  , (UnQualType "CARD32",   BaseType "I" 4)
+  , (UnQualType "uint32_t", BaseType "I" 4)
+  , (UnQualType "INT8",     BaseType "b" 1)
+  , (UnQualType "int8_t",   BaseType "b" 1)
+  , (UnQualType "INT16",    BaseType "h" 2)
+  , (UnQualType "int16_t",  BaseType "h" 2)
+  , (UnQualType "INT32",    BaseType "i" 4)
+  , (UnQualType "int32_t",  BaseType "i" 4)
+  , (UnQualType "BYTE",     BaseType "B" 1)
+  , (UnQualType "BOOL",     BaseType "B" 1)
+  , (UnQualType "char",     BaseType "b" 1)
+  , (UnQualType "void",     BaseType "B" 1)
+  , (UnQualType "float",    BaseType "f" 4)
+  , (UnQualType "double",   BaseType "d" 8)
   ]
-
 
 getName :: X.Type -> String
 getName (UnQualType n) = n
@@ -136,7 +141,7 @@ xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
       in conv els acc' is'
     conv [] acc _ = acc
 
-structElemToPyUnpack :: M.Map String (String, Maybe Int)
+structElemToPyUnpack :: TypeInfoMap
                      -> GenStructElem Type
                      -> Either (Maybe String, String, Maybe Int)
                                (Statement (), Expr ())
@@ -145,17 +150,17 @@ structElemToPyUnpack _ (Pad i) = Left (Nothing, (show i) ++ "x", Just i)
 -- The enum field is mostly for user information, so we ignore it.
 structElemToPyUnpack m (X.List n typ (Just expr) _) =
   let len = xExpressionToPyExpr expr
-      name = getName typ
-      (baseC, baseI) = baseTypeInfo M.! typ
-      (c, i) = M.findWithDefault (baseC, Just baseI) name m
+      (c, i) = case m M.! typ of
+                 BaseType c i -> (mkStr c, Just i)
+                 CompositeType c i -> (mkName c, i)
       size = map mkInt $ maybeToList i
       list = mkCall "xcb.List" ([ (mkName "parent")
                                 , (mkName "offset")
                                 , len
-                                , mkStr c
+                                , c
                                 ] ++ size)
       assign = mkAssign (mkAttr n) list
-      totalBytes = mkAttr (name ++ ".bufsize")
+      totalBytes = mkAttr (n ++ ".bufsize")
   in Right (assign, totalBytes)
 
 structElemToPyUnpack _ (X.List n typ Nothing _) =
@@ -163,23 +168,24 @@ structElemToPyUnpack _ (X.List n typ Nothing _) =
 
 -- The mask and enum fields are for user information, we can ignore them here.
 structElemToPyUnpack m (SField n typ _ _) =
-  let (baseC, baseI) = baseTypeInfo M.! typ
-      (c, i) = M.findWithDefault (baseC, Just baseI) (getName typ) m
-  in Left (Just n, c, i)
+  -- TODO: There is a bug here where we unpack Structs with unpack_from, which
+  -- obviously won't work :-). Something similar to mkUnionUnpack needs to
+  -- happen. I don't think anything uses this right now, though, so we should
+  -- be ok.
+  case m M.! typ of
+    BaseType c i -> Left (Just n, c, Just i)
+    CompositeType c i -> error "unsupported: can't nest bare structs"
 structElemToPyUnpack _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
 processXDecl :: XDecl
-             -> State (M.Map String (String, Maybe Int)) (Maybe (Statement ()))
+             -> State TypeInfoMap (Maybe (Statement ()))
 processXDecl (XTypeDef name typ) =
-  do m <- get
-     let (baseC, baseI) = baseTypeInfo M.! typ
-     put $ M.insert name (baseC, Just baseI) m
+  do modify $ \m -> M.insert (UnQualType name) (m M.! typ) m
      return Nothing
 processXDecl (XidType name) =
-  do m <- get
-     -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
-     put $ M.insert name ("I", Just 4) m
+  -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
+  do modify $ M.insert (UnQualType name) (BaseType "I" 4)
      return Nothing
 processXDecl (XImport n) =
   return $ return $ mkImport n
@@ -197,25 +203,44 @@ processXDecl (XStruct n membs) = do
       incr = mkIncr "offset" $ mkInt unpackLength
       lists' = concat $ map (\(l, sz) -> [l, mkIncr "offset" sz]) lists
       structLen = if length lists > 0 then Nothing else Just unpackLength
-  put $ M.insert n (n, structLen) m
+  modify $ M.insert (UnQualType n) (CompositeType n structLen)
   return $ return $ mkClass n "xcffib.Protobj" $ [assign, incr] ++ lists'
 processXDecl (XEvent name number membs hasSequence) = return Nothing
 processXDecl (XRequest name number membs reply) = return Nothing
+{-
 processXDecl (XUnion name membs) = do
   m <- get
-  -- XXX: As far as I can tell all the (one) unions in XCB are lists. It's not
-  -- clear to me what the semantics of multiple members would be, so we fail
-  -- hard here.
-  let ([], lists) = partitionEithers $ map (structElemToPyUnpack m) membs
+  let (fields, lists) = partitionEithers $ map (structElemToPyUnpack m) membs
+      (toUnpack, sizes) = unzip $ map (mkUnionUnpack m) fields
       (lists', lengths) = unzip lists
+      err = error ("bad XCB: union " ++
+                   name ++ " has fields of different length")
+      lengths' = catMaybes $ nub sizes
+      unionLen = if length lists' > 0 then Nothing else listToMaybe lengths'
+  -- There should be at most one size of object in the struct.
+  unless ((length $ lengths') <= 1) err
   -- List in list, so we don't know a length here. -1 is the sentinel value
   -- xpyb uses for this.
-  put $ M.insert name (name, Nothing) m
-  return $ Just $ mkClass name "xcffib.Union" $ fst $ unzip lists
+  put $ M.insert name (name, unionLen) m
+  return $ Just $ mkClass name "xcffib.Union" $ (fst $ unzip lists) ++ toUnpack
+  where
+    mkUnionUnpack :: M.Map String (String, Maybe Int)
+                  -> (Maybe String, String, Maybe Int)
+                  -> (Statement (), Maybe Int)
+    mkUnionUnpack m (name, typ, size) =
+      let custom = fmap mkCustomUnpack $ M.lookup m
+          base = mkUnpackFrom (maybeToList name)
+      where
+        mkCustomUnpack (name, i) =
+          let size = map mkInt $ maybeToList i
+          in mkCall name ([ mkName "parent",
+                          , mkName "offset"
+                          ] ++ size)
+-}
+
 processXDecl (XidUnion name _) =
   -- These are always only unions of XIDs.
-  do m <- get
-     put $ M.insert name ("I", Just 4) m
+  do modify $ M.insert (UnQualType name) (BaseType "I" 4)
      return Nothing
 processXDecl (XError name number membs) = return Nothing
 
