@@ -38,6 +38,7 @@ class ConnectionException(XcffibException):
         XCB_CONN_CLOSED_FDPASSING_FAILED: (
             'Connection closed because some FD passing operation failed'),
     }
+
     def __init__(self, err):
         XcffibException.__init__(
             elf, self.REASONS.get(err, "Unknown connection error."))
@@ -54,8 +55,10 @@ class ExtensionKey(object):
 
     def __hash__(self):
         return hash(self.name)
+
     def __eq__(self, o):
         return self.name == o.name
+
     def __ne__(self, o):
         return self.name != o.name
 
@@ -142,20 +145,13 @@ class Connection(object):
         "disconnect",
     ]
 
-    @classmethod
-    def _mk_basic_xcb_call(cls, name):
-        """ Make a call for a "basic" XCB function, i.e. one which takes only a
-        connection and returns a basic C type. """
-
-
     def __init__(self, display=None, fd=-1, auth=None):
-        if auth != None:
+        if auth is not None:
             c_auth = C.new("xcb_auth_info_t *")
             if C.xpyb_parse_auth(auth, len(auth), auth_out) < 0:
                 raise XcffibException("invalid xauth")
         else:
             c_auth = C.NULL
-
 
         i = C.new("int *")
 

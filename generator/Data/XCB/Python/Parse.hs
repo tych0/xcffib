@@ -35,7 +35,7 @@ parse fp = do
   fromFiles files
 
 renderPy :: Suite () -> String
-renderPy = (intercalate "\n") . map prettyText
+renderPy s = ((intercalate "\n") $ map prettyText s) ++ "\n"
 
 -- | Generate the code for a set of X headers. Note that the code is generated
 -- in dependency order, NOT in the order you pass them in. Thus, you get a
@@ -118,7 +118,8 @@ xExpressionToPyExpr (Value i) = mkInt i
 xExpressionToPyExpr (Bit i) = mkInt $ shiftL 1 i
 xExpressionToPyExpr (FieldRef n) = mkAttr n
 xExpressionToPyExpr (EnumRef _ n) = mkVar n
-xExpressionToPyExpr (PopCount e) = mkCall "popcount" [xExpressionToPyExpr e]
+xExpressionToPyExpr (PopCount e) =
+  mkCall "xcffib.popcount" [xExpressionToPyExpr e]
 xExpressionToPyExpr (PopCount _) = error "Bad X spec?"
 -- TODO: What do we do for SumOf, besides cause a NameError?
 xExpressionToPyExpr (SumOf _) = mkVar "xcffib_incomplete"
