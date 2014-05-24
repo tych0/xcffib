@@ -1,15 +1,16 @@
-# XCFFIB
+# xcffib [![Build Status](https://travis-ci.org/tych0/xcffib.svg)](https://travis-ci.org/tych0/xcffib)
 
 `xcffib` is intended to be a (mostly) drop-in replacement for `xpyb`. `xpyb`
 has an inactive upstream, several memory leaks, is python2 only and doesn't
 have pypy support. `xcffib` is a binding which uses
-[cffi][https://cffi.readthedocs.org/], which mitigates some of the issues
-described above.
+[cffi](https://cffi.readthedocs.org/), which mitigates some of the issues
+described above. `xcffib` also builds bindings for all 29 X extensions in 1.10,
+whereas `xpyb` (and several other bindings) don't.
 
 ## Dependencies
 
 Currently `xcb-types` doesn't run against `xcb-proto` 1.10; there is a hacked
-branch available at [tych0/xcb-types][http://github.com/tych0/xcb-types] that
+branch available at [tych0/xcb-types](http://github.com/tych0/xcb-types) that
 allows you to parse xcb-proto 1.10 mostly correctly. Other than that, you
 should be able to install all the deps from hackage or pip.
 

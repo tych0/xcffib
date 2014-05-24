@@ -1,14 +1,17 @@
+# This entire song and dance instead of `langauge: haskell` is just because we
+# depend on a hacked version of xcb-types. Maybe I should upstream that
+
 before_install:
   - sudo apt-get update
 
 install:
-  - sudo apt-get install ghc cabal-install git xcb-proto
+  - sudo apt-get install ghc cabal-install git xcb-proto happy alex
   - cabal update
   - git clone https://github.com/tych0/xcb-types.git
   - cd xcb-types
   - cabal install
   - cd ..
+  - cabal install --only-dependencies
   - cabal configure
-  - cabal install
 
 script: "make check"
