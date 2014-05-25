@@ -163,7 +163,7 @@ structElemToPyUnpack :: String
 structElemToPyUnpack _ _ (Pad i) = Left (Nothing, (show i) ++ "x", Just i)
 
 -- XXX: This is a cheap hack for noop, we should really do better.
-structElemToPyUnpack _ _ (Doc) = Left (Nothing, "", Nothing)
+structElemToPyUnpack _ _ (Doc _ _ _) = Left (Nothing, "", Nothing)
 -- XXX: What does fd mean? we should implement it correctly
 structElemToPyUnpack _ _ (Fd _) = Left (Nothing, "", Nothing)
 
