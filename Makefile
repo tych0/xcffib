@@ -1,6 +1,7 @@
 GEN=./dist/build/xcffibgen/xcffibgen
 
-$(GEN): generator
+.PHONY: $(GEN)
+$(GEN):
 	cabal build
 
 .PHONY: clean
@@ -13,3 +14,4 @@ check: $(GEN)
 	cabal test
 	$(GEN) --input /usr/share/xcb --output ./dist/gen/
 	cp ./xcffib/__init__.py ./dist/gen/
+	flake8 ./dist/gen/

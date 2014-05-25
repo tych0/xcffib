@@ -23,9 +23,15 @@ import System.FilePath.Glob
 
 import Debug.Trace
 
-data TypeInfo = BaseType String Int
-              | CompositeType String (Maybe Int)
-              deriving (Eq, Ord, Show)
+data TypeInfo =
+  -- | A "base" X type, i.e. one described in baseTypeInfo; first arg is the
+  -- struct.unpack string, second is the size.
+  BaseType String Int |
+  -- | A composite type, i.e. a Struct or Union created by XCB. First arg is
+  -- the extension that defined it, second is the name of they type, third arg
+  -- is the size if it is known.
+  CompositeType String String (Maybe Int)
+  deriving (Eq, Ord, Show)
 
 type TypeInfoMap = M.Map X.Type TypeInfo
 
@@ -144,18 +150,21 @@ xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
       in conv els acc' is'
     conv [] acc _ = acc
 
-structElemToPyUnpack :: TypeInfoMap
+structElemToPyUnpack :: String
+                     -> TypeInfoMap
                      -> GenStructElem Type
                      -> Either (Maybe String, String, Maybe Int)
                                (Statement (), Expr ())
-structElemToPyUnpack _ (Pad i) = Left (Nothing, (show i) ++ "x", Just i)
+structElemToPyUnpack _ _ (Pad i) = Left (Nothing, (show i) ++ "x", Just i)
 
 -- The enum field is mostly for user information, so we ignore it.
-structElemToPyUnpack m (X.List n typ (Just expr) _) =
+structElemToPyUnpack ext m (X.List n typ (Just expr) _) =
   let len = xExpressionToPyExpr expr
       (c, i) = case m M.! typ of
                  BaseType c i -> (mkStr c, Just i)
-                 CompositeType c i -> (mkName c, i)
+                 CompositeType tExt c i | ext /= tExt ->
+                   (mkName $ tExt ++ "." ++ c, i)
+                 CompositeType _ c i -> (mkName c, i)
       size = map mkInt $ maybeToList i
       list = mkCall "xcffib.List" ([ (mkName "parent")
                                    , (mkName "offset")
@@ -166,21 +175,22 @@ structElemToPyUnpack m (X.List n typ (Just expr) _) =
       totalBytes = mkAttr (n ++ ".bufsize")
   in Right (assign, totalBytes)
 
-structElemToPyUnpack _ (X.List n typ Nothing _) =
+structElemToPyUnpack _ _ (X.List n typ Nothing _) =
   error ("Invalid XCB XML; list " ++ n ++ " requires a length")
 
 -- The mask and enum fields are for user information, we can ignore them here.
-structElemToPyUnpack m (SField n typ _ _) =
+structElemToPyUnpack ext m (SField n typ _ _) =
   case m M.! typ of
     BaseType c i -> Left (Just n, c, Just i)
-    CompositeType c i ->
-      let size = map mkInt $ maybeToList i
-          assign = mkAssign (mkAttr n) (mkCall c ([ mkName "parent"
-                                                  , mkName "offset"
-                                                  ] ++ size))
+    CompositeType tExt c i ->
+      let c' = if tExt == ext then c else tExt ++ "." ++ c
+          size = map mkInt $ maybeToList i
+          assign = mkAssign (mkAttr n) (mkCall c' ([ mkName "parent"
+                                                   , mkName "offset"
+                                                   ] ++ size))
       in Right (assign, mkAttr (n ++ ".buflen"))
-structElemToPyUnpack _ (ExprField _ _ _) = error "Only valid for requests"
-structElemToPyUnpack _ (ValueParam _ _ _ _) = error "Only valid for requests"
+structElemToPyUnpack _ _ (ExprField _ _ _) = error "Only valid for requests"
+structElemToPyUnpack _ _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
 -- | Given a (qualified) type name and a target type, generate a TypeInfoMap
 -- updater.
@@ -207,7 +217,8 @@ processXDecl _ (XEnum name membs) =
   return $ return $ mkEnum name $ xEnumElemsToPyEnum membs
 processXDecl ext (XStruct n membs) = do
   m <- get
-  let (toUnpack, lists) = partitionEithers $ map (structElemToPyUnpack m) membs
+  let unpackF = structElemToPyUnpack ext m
+      (toUnpack, lists) = partitionEithers $ map unpackF membs
       -- XXX: Here we assume that all the lists come after all the unpacked
       -- members. While (I think) this is true today, it may not always be
       -- true and we should probably fix this.
@@ -223,13 +234,14 @@ processXDecl ext (XStruct n membs) = do
 
       statements = baseTUnpack ++ baseTIncr ++ lists'
       structLen = if length lists > 0 then Nothing else Just unpackLength
-  modify $ mkModify ext n (CompositeType n structLen)
+  modify $ mkModify ext n (CompositeType ext n structLen)
   return $ return $ mkClass n "xcffib.Protobj" statements
 processXDecl _ (XEvent name number membs hasSequence) = return Nothing
 processXDecl _ (XRequest name number membs reply) = return Nothing
 processXDecl ext (XUnion name membs) = do
   m <- get
-  let (fields, lists) = partitionEithers $ map (structElemToPyUnpack m) membs
+  let unpackF = structElemToPyUnpack ext m
+      (fields, lists) = partitionEithers $ map unpackF membs
       (toUnpack, sizes) = unzip $ map mkUnionUnpack fields
       (lists', lengths) = unzip lists
       err = error ("bad XCB: union " ++
@@ -240,7 +252,7 @@ processXDecl ext (XUnion name membs) = do
   unless ((length $ lengths') <= 1) err
   -- List in list, so we don't know a length here. -1 is the sentinel value
   -- xpyb uses for this.
-  modify $ mkModify ext name (CompositeType name unionLen)
+  modify $ mkModify ext name (CompositeType ext name unionLen)
   return $ Just $ mkClass name "xcffib.Union" $ (fst $ unzip lists) ++ toUnpack
   where
     mkUnionUnpack :: (Maybe String, String, Maybe Int)
