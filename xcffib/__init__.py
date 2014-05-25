@@ -107,10 +107,6 @@ class List(Protobj):
         if isinstance(typ, str):
             count = length / size
             self.list = list(unpack_from(typ * count, parent, offset))
-        elif size > 0:
-            while cur < size:
-                self.list.append(typ(parent, cur, size))
-                cur += size
         else:
             while cur < size:
                 item = typ(parent, cur)
