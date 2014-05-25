@@ -168,8 +168,10 @@ structElemToPyUnpack _ _ (Doc) = Left (Nothing, "", Nothing)
 structElemToPyUnpack _ _ (Fd _) = Left (Nothing, "", Nothing)
 
 -- The enum field is mostly for user information, so we ignore it.
-structElemToPyUnpack ext m (X.List n typ (Just expr) _) =
-  let len = xExpressionToPyExpr expr
+structElemToPyUnpack ext m (X.List n typ len _) =
+  -- -1 is the "I don't know" List sentinel, by XCB convention. We should
+  -- probably switch this to None.
+  let len' = fromMaybe (mkInt (-1)) $ fmap xExpressionToPyExpr len
       (c, i) = case m M.! typ of
                  BaseType c i -> (mkStr c, Just i)
                  CompositeType tExt c i | ext /= tExt ->
@@ -178,15 +180,12 @@ structElemToPyUnpack ext m (X.List n typ (Just expr) _) =
       size = map mkInt $ maybeToList i
       list = mkCall "xcffib.List" ([ (mkName "parent")
                                    , (mkName "offset")
-                                   , len
+                                   , len'
                                    , c
                                    ] ++ size)
       assign = mkAssign (mkAttr n) list
       totalBytes = mkAttr (n ++ ".bufsize")
   in Right (assign, totalBytes)
-
-structElemToPyUnpack _ _ (X.List n typ Nothing _) =
-  error ("Invalid XCB XML; list " ++ n ++ " requires a length")
 
 -- The mask and enum fields are for user information, we can ignore them here.
 structElemToPyUnpack ext m (SField n typ _ _) =
