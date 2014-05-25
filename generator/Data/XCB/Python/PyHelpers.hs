@@ -11,7 +11,9 @@ module Data.XCB.Python.PyHelpers (
   mkIncr,
   mkClass,
   mkStr,
-  mkUnpackFrom
+  mkUnpackFrom,
+  mkDict,
+  mkDictUpdate
   ) where
 
 import Data.List
@@ -121,3 +123,10 @@ mkUnpackFrom names packs =
                                         , mkName "offset"
                                         ]
   in mkAssign lhs rhs
+
+mkDict :: String -> Statement ()
+mkDict name = mkAssign name (Dictionary [] ())
+
+mkDictUpdate :: String -> Int -> String -> Statement ()
+mkDictUpdate dict key value =
+  mkAssign (Subscript (mkName dict) (mkInt key) ()) (mkName value)

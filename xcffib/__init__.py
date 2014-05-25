@@ -211,6 +211,20 @@ for name in Connection.BASIC_FUNCTIONS:
         return getattr(C, "xcb_" + name)(self._conn)
     setattr(Connection, name, f)
 
+class Event(ProtoObj):
+    # TODO: implement
+    pass
+
+class Response(ProtoObj):
+    # TODO: implement
+    pass
+
+class Error(Response, XcffibException):
+    def __init__(self, parent, offset):
+        Response.__init__(self, parent, offest)
+        XcffibException.__init__(self)
+        self.code = unpack_from('B', parent)
+
 core = None
 core_events = None
 core_errors = None

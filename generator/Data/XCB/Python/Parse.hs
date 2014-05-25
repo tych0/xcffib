@@ -58,9 +58,10 @@ xform headers =
       let imports = [mkImport "xcffib", mkImport "struct"]
           version = mkVersion header
           key = maybeToList $ mkKey header
+          globals = [mkDict "_events", mkDict "_errors"]
           name = xheader_header header
-      defs <- fmap catMaybes $ mapM (processXDecl name) $ xheader_decls header
-      return $ (name, concat [imports, version, key, defs])
+      defs <- fmap concat $ mapM (processXDecl name) $ xheader_decls header
+      return $ (name, concat [imports, version, key, globals, defs])
     -- Rearrange the headers in dependency order for processing (i.e. put
     -- modules which import others after the modules they import, so typedefs
     -- are propogated appropriately).
@@ -192,31 +193,12 @@ structElemToPyUnpack ext m (SField n typ _ _) =
 structElemToPyUnpack _ _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
--- | Given a (qualified) type name and a target type, generate a TypeInfoMap
--- updater.
-mkModify :: String -> String -> TypeInfo -> TypeInfoMap -> TypeInfoMap
-mkModify ext name ti m =
-  let m' = M.fromList [ (UnQualType name, ti)
-                      , (QualType ext name, ti)
-                      ]
-  in M.union m m'
-
-processXDecl :: String
-             -> XDecl
-             -> State TypeInfoMap (Maybe (Statement ()))
-processXDecl ext (XTypeDef name typ) =
-  do modify $ \m -> mkModify ext name (m M.! typ) m
-     return Nothing
-processXDecl ext (XidType name) =
-  -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
-  do modify $ mkModify ext name (BaseType "I" 4)
-     return Nothing
-processXDecl _ (XImport n) =
-  return $ return $ mkImport n
-processXDecl _ (XEnum name membs) =
-  return $ return $ mkEnum name $ xEnumElemsToPyEnum membs
-processXDecl ext (XStruct n membs) = do
-  m <- get
+-- | Make a struct style (i.e. not union style) unpack.
+mkStructStyleUnpack :: String
+                    -> TypeInfoMap
+                    -> [GenStructElem Type]
+                    -> (Suite (), Maybe Int)
+mkStructStyleUnpack ext m membs =
   let unpackF = structElemToPyUnpack ext m
       (toUnpack, lists) = partitionEithers $ map unpackF membs
       -- XXX: Here we assume that all the lists come after all the unpacked
@@ -234,10 +216,50 @@ processXDecl ext (XStruct n membs) = do
 
       statements = baseTUnpack ++ baseTIncr ++ lists'
       structLen = if length lists > 0 then Nothing else Just unpackLength
+  in (statements, structLen)
+
+-- | Given a (qualified) type name and a target type, generate a TypeInfoMap
+-- updater.
+mkModify :: String -> String -> TypeInfo -> TypeInfoMap -> TypeInfoMap
+mkModify ext name ti m =
+  let m' = M.fromList [ (UnQualType name, ti)
+                      , (QualType ext name, ti)
+                      ]
+  in M.union m m'
+
+processXDecl :: String
+             -> XDecl
+             -> State TypeInfoMap (Suite ())
+processXDecl ext (XTypeDef name typ) =
+  do modify $ \m -> mkModify ext name (m M.! typ) m
+     return []
+processXDecl ext (XidType name) =
+  -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
+  do modify $ mkModify ext name (BaseType "I" 4)
+     return []
+processXDecl _ (XImport n) =
+  return [mkImport n]
+processXDecl _ (XEnum name membs) =
+  return [mkEnum name $ xEnumElemsToPyEnum membs]
+processXDecl ext (XStruct n membs) = do
+  m <- get
+  let (statements, structLen) = mkStructStyleUnpack ext m membs
   modify $ mkModify ext n (CompositeType ext n structLen)
-  return $ return $ mkClass n "xcffib.Protobj" statements
-processXDecl _ (XEvent name number membs hasSequence) = return Nothing
-processXDecl _ (XRequest name number membs reply) = return Nothing
+  return [mkClass n "xcffib.Protobj" statements]
+processXDecl ext (XEvent name number membs hasSequence) = do
+  -- TODO: if not hasSequence then we increment by 1 byte? see KeymapNotify
+  m <- get
+  let cname = name ++ "Event"
+      (statements, structLen) = mkStructStyleUnpack ext m membs
+      eventsUpd = mkDictUpdate "_events" number cname
+  return [mkClass cname "xcffib.Event" statements, eventsUpd]
+processXDecl ext (XError name number membs) = do
+  m <- get
+  let cname = name ++ "Error"
+      (statements, structLen) = mkStructStyleUnpack ext m membs
+      errorsUpd = mkDictUpdate "_events" number cname
+  return [mkClass cname "xcffib.Error" statements, errorsUpd]
+processXDecl _ (XRequest name number membs reply) = return []
 processXDecl ext (XUnion name membs) = do
   m <- get
   let unpackF = structElemToPyUnpack ext m
@@ -253,7 +275,7 @@ processXDecl ext (XUnion name membs) = do
   -- List in list, so we don't know a length here. -1 is the sentinel value
   -- xpyb uses for this.
   modify $ mkModify ext name (CompositeType ext name unionLen)
-  return $ Just $ mkClass name "xcffib.Union" $ (fst $ unzip lists) ++ toUnpack
+  return [mkClass name "xcffib.Union" $ (fst $ unzip lists) ++ toUnpack]
   where
     mkUnionUnpack :: (Maybe String, String, Maybe Int)
                   -> (Statement (), Maybe Int)
@@ -263,8 +285,7 @@ processXDecl ext (XUnion name membs) = do
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.
   do modify $ mkModify ext name (BaseType "I" 4)
-     return Nothing
-processXDecl _ (XError name number membs) = return Nothing
+     return []
 
 mkVersion :: XHeader -> Suite ()
 mkVersion header =
