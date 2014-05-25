@@ -111,6 +111,7 @@ class List(Protobj):
             while cur < size:
                 item = typ(parent, cur)
                 cur += item.bufsize
+                self.list.append(item)
 
     def __len__(self):
         return len(self.list)
