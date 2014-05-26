@@ -18,7 +18,6 @@ import Data.XCB.Python.PyHelpers
 
 import Language.Python.Common as P
 
-import System.FilePath
 import System.FilePath.Glob
 
 import Debug.Trace
@@ -49,8 +48,7 @@ renderPy s = ((intercalate "\n") $ map prettyText s) ++ "\n"
 -- back.
 xform :: [XHeader] -> [(String, Suite ())]
 xform headers =
-  let headers' = dependencyOrder headers
-  in evalState (mapM processXHeader headers') baseTypeInfo
+  evalState (mapM processXHeader dependencyOrder) baseTypeInfo
   where
     processXHeader :: XHeader
                    -> State TypeInfoMap (String, Suite ())
@@ -65,9 +63,8 @@ xform headers =
     -- Rearrange the headers in dependency order for processing (i.e. put
     -- modules which import others after the modules they import, so typedefs
     -- are propogated appropriately).
-    draw = drawForest . map (fmap xheader_header)
-    dependencyOrder :: [XHeader] -> [XHeader]
-    dependencyOrder headers =
+    dependencyOrder :: [XHeader]
+    dependencyOrder =
       let forest = unfoldForest unfold $ map xheader_header headers
       in nubBy headerCmp $ concat $ map postOrder forest
       where
@@ -109,10 +106,6 @@ baseTypeInfo = M.fromList $
   , (UnQualType "double",   BaseType "d" 8)
   ]
 
-getName :: X.Type -> String
-getName (UnQualType n) = n
-getName (QualType n1 n2) = n1 ++ "." ++ n2
-
 xBinopToPyOp :: X.Binop -> P.Op ()
 xBinopToPyOp X.Add = P.Plus ()
 xBinopToPyOp X.Sub = P.Minus ()
@@ -131,7 +124,6 @@ xExpressionToPyExpr (FieldRef n) = mkAttr n
 xExpressionToPyExpr (EnumRef _ n) = mkVar n
 xExpressionToPyExpr (PopCount e) =
   mkCall "xcffib.popcount" [xExpressionToPyExpr e]
-xExpressionToPyExpr (PopCount _) = error "Bad X spec?"
 -- TODO: What do we do for SumOf, besides cause a NameError?
 xExpressionToPyExpr (SumOf _) = mkVar "xcffib_incomplete"
 xExpressionToPyExpr (Op o e1 e2) =
@@ -164,24 +156,25 @@ structElemToPyUnpack _ _ (Pad i) = Left (Nothing, (show i) ++ "x", Just i)
 
 -- XXX: This is a cheap hack for noop, we should really do better.
 structElemToPyUnpack _ _ (Doc _ _ _) = Left (Nothing, "", Nothing)
--- XXX: What does fd mean? we should implement it correctly
+-- XXX: What does fd/switch mean? we should implement it correctly
 structElemToPyUnpack _ _ (Fd _) = Left (Nothing, "", Nothing)
+structElemToPyUnpack _ _ (Switch _ _ _) = Left (Nothing, "", Nothing)
 
 -- The enum field is mostly for user information, so we ignore it.
 structElemToPyUnpack ext m (X.List n typ len _) =
   -- -1 is the "I don't know" List sentinel, by XCB convention. We should
   -- probably switch this to None.
   let len' = fromMaybe (mkInt (-1)) $ fmap xExpressionToPyExpr len
-      (c, i) = case m M.! typ of
-                 BaseType c i -> (mkStr c, Just i)
-                 CompositeType tExt c i | ext /= tExt ->
-                   (mkName $ tExt ++ "." ++ c, i)
-                 CompositeType _ c i -> (mkName c, i)
-      size = map mkInt $ maybeToList i
+      (cons, sz) = case m M.! typ of
+                     BaseType c i -> (mkStr c, Just i)
+                     CompositeType tExt c i | ext /= tExt ->
+                       (mkName $ tExt ++ "." ++ c, i)
+                     CompositeType _ c i -> (mkName c, i)
+      size = map mkInt $ maybeToList sz
       list = mkCall "xcffib.List" ([ (mkName "parent")
                                    , (mkName "offset")
                                    , len'
-                                   , c
+                                   , cons
                                    ] ++ size)
       assign = mkAssign (mkAttr n) list
       totalBytes = mkAttr (n ++ ".bufsize")
@@ -258,13 +251,13 @@ processXDecl ext (XEvent name number membs hasSequence) = do
   -- TODO: if not hasSequence then we increment by 1 byte? see KeymapNotify
   m <- get
   let cname = name ++ "Event"
-      (statements, structLen) = mkStructStyleUnpack ext m membs
+      (statements, _) = mkStructStyleUnpack ext m membs
       eventsUpd = mkDictUpdate "_events" number cname
   return [mkClass cname "xcffib.Event" statements, eventsUpd]
 processXDecl ext (XError name number membs) = do
   m <- get
   let cname = name ++ "Error"
-      (statements, structLen) = mkStructStyleUnpack ext m membs
+      (statements, _) = mkStructStyleUnpack ext m membs
       errorsUpd = mkDictUpdate "_events" number cname
   return [mkClass cname "xcffib.Error" statements, errorsUpd]
 processXDecl _ (XRequest name number membs reply) = return []
