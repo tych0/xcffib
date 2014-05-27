@@ -1,5 +1,6 @@
 module Main where
 
+import Data.XCB.Types
 import Data.XCB.Python.Parse
 
 import Options.Applicative
@@ -22,11 +23,18 @@ options = Xcffibgen
        <> metavar "DIR"
        <> help "Output directory for generated python.")
 
+-- Headers we can't emit right now. Obviously we want to get rid of this :-)
+badHeaders :: [String]
+badHeaders = [ "xkb"
+             , "xprint"
+             ]
+
 run :: Xcffibgen -> IO ()
 run (Xcffibgen inp out) = do
   headers <- parse inp
+  let headers' = filter (flip notElem badHeaders . xheader_header) headers
   createDirectoryIfMissing True out
-  sequence_ $ map processFile $ xform headers
+  sequence_ $ map processFile $ xform headers'
   where
     processFile (fname, suite) = do
       putStrLn fname

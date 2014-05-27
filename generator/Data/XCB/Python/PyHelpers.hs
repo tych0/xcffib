@@ -7,13 +7,18 @@ module Data.XCB.Python.PyHelpers (
   mkCall,
   mkEnum,
   mkName,
+  mkDot,
   mkAttr,
   mkIncr,
   mkClass,
+  mkEmptyClass,
+  mkXClass,
   mkStr,
   mkUnpackFrom,
   mkDict,
-  mkDictUpdate
+  mkDictUpdate,
+  mkMethod,
+  mkReturn
   ) where
 
 import Data.List
@@ -53,9 +58,9 @@ mkName :: String -> Expr ()
 mkName s =
   let strings = map mkVar $ reverse $ splitOn "." s
   in foldr mkDot (head strings) (reverse $ tail strings)
-  where
-    mkDot :: Expr () -> Expr () -> Expr ()
-    mkDot e1 e2 = BinaryOp (Dot ()) e1 e2 ()
+
+mkDot :: Expr () -> Expr () -> Expr ()
+mkDot e1 e2 = BinaryOp (Dot ()) e1 e2 ()
 
 -- | Make an attribute access, i.e. self.<string>.
 mkAttr :: String -> Expr ()
@@ -67,22 +72,22 @@ mkImport name = Import [ImportItem (mkDottedName name) Nothing ()] ()
 mkInt :: Int -> Expr ()
 mkInt i = Int (toInteger i) (show i) ()
 
-class Assignable a where
-  assignExpr :: a -> Expr ()
+class PseudoExpr a where
+  getExpr :: a -> Expr ()
 
-instance Assignable String where
-  assignExpr s = mkName s
-instance Assignable (Expr ()) where
-  assignExpr = id
+instance PseudoExpr String where
+  getExpr s = mkName s
+instance PseudoExpr (Expr ()) where
+  getExpr = id
 
-mkAssign :: Assignable a => a -> Expr () -> Statement ()
-mkAssign name expr = Assign [assignExpr name] expr ()
+mkAssign :: PseudoExpr a => a -> Expr () -> Statement ()
+mkAssign name expr = Assign [getExpr name] expr ()
 
 mkIncr :: String -> Expr () -> Statement ()
 mkIncr name expr = AugmentedAssign (mkName name) (PlusAssign ()) expr ()
 
-mkCall :: String -> [Expr ()] -> Expr ()
-mkCall name args = Call (mkName name) (map (\e -> ArgExpr e ()) args) ()
+mkCall :: PseudoExpr a => a -> [Expr ()] -> Expr ()
+mkCall name args = Call (getExpr name) (map (\e -> ArgExpr e ()) args) ()
 
 mkEnum :: String -> [(String, Expr ())] -> Statement ()
 mkEnum cname values =
@@ -95,8 +100,9 @@ mkParams = map (\x -> Param (ident x) Nothing Nothing ())
 mkArg :: String -> Argument ()
 mkArg n = ArgExpr (mkName n) ()
 
-mkClass :: String -> String -> Suite () -> Statement ()
-mkClass clazz superclazz constructor =
+mkXClass :: String -> String -> Suite () -> Statement ()
+mkXClass clazz superclazz [] = mkEmptyClass clazz superclazz
+mkXClass clazz superclazz constructor =
   -- TODO: Can we move size to a dynamically calculated property?
   let super = mkCall (superclazz ++ ".__init__") [ mkName "self"
                                                  , mkName "parent"
@@ -106,7 +112,13 @@ mkClass clazz superclazz constructor =
       body = [(StmtExpr super ())] ++ constructor
       initParams = mkParams ["self", "parent", "offset", "size"]
       initMethod = Fun (ident "__init__") initParams Nothing body ()
-  in Class (ident clazz) [mkArg superclazz] [initMethod] ()
+  in mkClass clazz superclazz [initMethod]
+
+mkEmptyClass :: String -> String -> Statement ()
+mkEmptyClass clazz superclazz = mkClass clazz superclazz [Pass ()]
+
+mkClass :: String -> String -> Suite () -> Statement ()
+mkClass clazz superclazz body = Class (ident clazz) [mkArg superclazz] body ()
 
 mkStr :: String -> Expr ()
 mkStr s = Strings ["\"", s, "\""] ()
@@ -130,3 +142,9 @@ mkDict name = mkAssign name (Dictionary [] ())
 mkDictUpdate :: String -> Int -> String -> Statement ()
 mkDictUpdate dict key value =
   mkAssign (Subscript (mkName dict) (mkInt key) ()) (mkName value)
+
+mkMethod :: String -> [String] -> Suite () -> Statement ()
+mkMethod name args body = Fun (ident name) (mkParams args) Nothing body ()
+
+mkReturn :: Expr () -> Statement ()
+mkReturn = flip Return () . Just

@@ -1,6 +1,6 @@
 import functools
-
-from struct import unpack_from
+import six
+import struct
 
 from ffi import ffi, CONSTANTS, C
 
@@ -124,7 +124,7 @@ class List(Protobj):
 
         if isinstance(typ, str):
             count = length / size
-            self.list = list(unpack_from(typ * count, parent, offset))
+            self.list = list(struct.unpack_from(typ * count, parent, offset))
         else:
             while cur < size:
                 item = typ(parent, cur)
@@ -238,7 +238,28 @@ class Error(Response, XcffibException):
     def __init__(self, parent, offset):
         Response.__init__(self, parent, offset)
         XcffibException.__init__(self)
-        self.code = unpack_from('B', parent)
+        self.code = struct.unpack_from('B', parent)
+
+
+def pack_list(from_, pack_type, size=None):
+    """ Return the wire packed version of `from_`. `pack_type` should be some
+    subclass of `xcffib.Struct`, or a string that can be passed to
+    `struct.pack`. You must pass `size` if `pack_type` is a struct.pack string.
+    """
+
+    # If from_ is a string, we need to make it to something we know how to
+    # pack. Otherwise, we assume it is something we know how to pack.
+    if (isinstance(from_, six.string_types) or
+            isinstance(from_, six.binary_type)):
+        if isinstance(pack_type, six.string_types):
+            if size is None:
+                raise TypeError(
+                    "must pass size if `pack_type` is a string: " + pack_type)
+            from_ = List(from_, 0, len(from_), size)
+        else:
+            from_ = List(from_, 0, -1, pack_type)
+
+    return sum(map(lambda t: t.pack(), from_))
 
 core = None
 core_events = None

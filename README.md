@@ -4,8 +4,8 @@
 has an inactive upstream, several memory leaks, is python2 only and doesn't
 have pypy support. `xcffib` is a binding which uses
 [cffi](https://cffi.readthedocs.org/), which mitigates some of the issues
-described above. `xcffib` also builds bindings for all 29 X extensions in 1.10,
-whereas `xpyb` (and several other bindings) don't.
+described above. `xcffib` also builds bindings for 27 of the 29 (xprint and xkb
+are missing) X extensions in 1.10.
 
 ## Dependencies
 
@@ -28,6 +28,18 @@ because `xcffib` isn't done yet :-)
   to actually catch if you wanted to handle an error. Instead, only `FooError`
   remains, which implements both the X error object description and python
   Exception (via inheriting from `xcffib.XcffibException`).
+* `xcb.Iterator` is gone; similar functionality is implemented by
+  `xcffib.pack_list`.
+
+## Enhancements
+
+* `xcffib.Struct` implements an `unpack` method, which will unpack the struct
+  back to its `xcb` wire format. (used below...)
+* When sending requests with nested structs you no longer have to pack the
+  contents yourself. For example, when calling `xproto.FillPoly`, you used to
+  have to convert the `POINT`s you were passing in to some sort of buffer which
+  had them `struct.pack`'d. Now, you can just pass an iterable (or
+  `xcffib.List`) of `POINT`s and it will be automatically unpacked for you.
 
 ## Why haskell?
 
