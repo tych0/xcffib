@@ -1,4 +1,4 @@
-# xcffib [![Build Status](https://travis-ci.org/tych0/xcffib.svg)](https://travis-ci.org/tych0/xcffib)
+# xcffib [![Build Status](https://travis-ci.org/tych0/xcffib.svg?branch=master)](https://travis-ci.org/tych0/xcffib)
 
 `xcffib` is intended to be a (mostly) drop-in replacement for `xpyb`. `xpyb`
 has an inactive upstream, several memory leaks, is python2 only and doesn't
