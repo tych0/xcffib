@@ -5,7 +5,7 @@ from cffi import FFI
 
 ffi = FFI()
 
-constants = [
+CONSTANTS = [
     "X_PROTOCOL",
     "X_PROTOCOL_REVISION",
     "X_TCP_PORT",
@@ -26,7 +26,7 @@ constants = [
 
 
 # constants
-ffi.cdef('\n'.join("#define %s ..." % c for c in constants))
+ffi.cdef('\n'.join("#define %s ..." % c for c in CONSTANTS))
 
 # types
 ffi.cdef("""
@@ -111,6 +111,3 @@ C = ffi.verify("""
     #include <xcb/xcb.h>
     #include <xcb/xcbext.h>
 """, libraries=['xcb'])
-
-for c in constants:
-    globals()[c] = getattr(C, c)

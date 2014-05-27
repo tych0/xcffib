@@ -2,16 +2,34 @@ import functools
 
 from struct import unpack_from
 
-from ffi import *
+from ffi import ffi, CONSTANTS, C
 
-def popcount(n):
-    return bin(n).count('1')
+# re-export these constants for convenience and without hackery so pyflakes can
+# work.
+X_PROTOCOL = C.X_PROTOCOL
+X_PROTOCOL_REVISION = C.X_PROTOCOL_REVISION
+
+XCB_NONE = C.XCB_NONE
+XCB_COPY_FROM_PARENT = C.XCB_COPY_FROM_PARENT
+XCB_CURRENT_TIME = C.XCB_CURRENT_TIME
+XCB_NO_SYMBOL = C.XCB_NO_SYMBOL
 
 # For xpyb compatibility
 NONE = XCB_NONE
 CopyFromParent = XCB_COPY_FROM_PARENT
 CurrentTime = XCB_CURRENT_TIME
 NoSymbol = XCB_NO_SYMBOL
+
+XCB_CONN_ERROR = C.XCB_CONN_ERROR
+XCB_CONN_CLOSED_EXT_NOTSUPPORTED = C.XCB_CONN_CLOSED_EXT_NOTSUPPORTED
+XCB_CONN_CLOSED_MEM_INSUFFICIENT = C.XCB_CONN_CLOSED_MEM_INSUFFICIENT
+XCB_CONN_CLOSED_REQ_LEN_EXCEED = C.XCB_CONN_CLOSED_REQ_LEN_EXCEED
+XCB_CONN_CLOSED_PARSE_ERR = C.XCB_CONN_CLOSED_PARSE_ERR
+XCB_CONN_CLOSED_INVALID_SCREEN = C.XCB_CONN_CLOSED_INVALID_SCREEN
+XCB_CONN_CLOSED_FDPASSING_FAILED = C.XCB_CONN_CLOSED_FDPASSING_FAILED
+
+def popcount(n):
+    return bin(n).count('1')
 
 class XcffibException(Exception):
     """ Generic XcbException; replaces xcb.Exception. """
@@ -22,7 +40,7 @@ class ConnectionException(XcffibException):
         XCB_CONN_ERROR: (
             'xcb connection errors because of socket, '
             'pipe and other stream errors.'),
-        XCB_CONN_CLOSED_EXT_NOT_SUPPORTED: (
+        XCB_CONN_CLOSED_EXT_NOTSUPPORTED: (
             'xcb connection shutdown because extension not supported'),
         XCB_CONN_CLOSED_MEM_INSUFFICIENT: (
             'malloc(), calloc() and realloc() error upon failure, '
@@ -41,7 +59,7 @@ class ConnectionException(XcffibException):
 
     def __init__(self, err):
         XcffibException.__init__(
-            elf, self.REASONS.get(err, "Unknown connection error."))
+            self, self.REASONS.get(err, "Unknown connection error."))
 
 class ProtocolException(XcffibException):
     pass
@@ -145,7 +163,7 @@ class Connection(object):
     def __init__(self, display=None, fd=-1, auth=None):
         if auth is not None:
             c_auth = C.new("xcb_auth_info_t *")
-            if C.xpyb_parse_auth(auth, len(auth), auth_out) < 0:
+            if C.xpyb_parse_auth(auth, len(auth), c_auth) < 0:
                 raise XcffibException("invalid xauth")
         else:
             c_auth = C.NULL
@@ -208,17 +226,17 @@ for name in Connection.BASIC_FUNCTIONS:
         return getattr(C, "xcb_" + name)(self._conn)
     setattr(Connection, name, f)
 
-class Event(ProtoObj):
+class Event(Protobj):
     # TODO: implement
     pass
 
-class Response(ProtoObj):
+class Response(Protobj):
     # TODO: implement
     pass
 
 class Error(Response, XcffibException):
     def __init__(self, parent, offset):
-        Response.__init__(self, parent, offest)
+        Response.__init__(self, parent, offset)
         XcffibException.__init__(self)
         self.code = unpack_from('B', parent)
 
