@@ -124,8 +124,8 @@ xExpressionToPyExpr (FieldRef n) = mkAttr n
 xExpressionToPyExpr (EnumRef _ n) = mkVar n
 xExpressionToPyExpr (PopCount e) =
   mkCall "xcffib.popcount" [xExpressionToPyExpr e]
--- TODO: What do we do for SumOf, besides cause a NameError?
-xExpressionToPyExpr (SumOf _) = mkVar "xcffib_incomplete"
+-- http://cgit.freedesktop.org/xcb/proto/tree/doc/xml-xcb.txt#n290
+xExpressionToPyExpr (SumOf n) = mkCall "sum" [mkAttr n]
 xExpressionToPyExpr (Op o e1 e2) =
   let o' = xBinopToPyOp o
       e1' = xExpressionToPyExpr e1
