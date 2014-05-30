@@ -6,7 +6,6 @@ module Data.XCB.Python.Parse (
 
 import Control.Monad.State.Strict
 
-import Data.Bits
 import Data.Either
 import Data.List
 import qualified Data.Map as M
@@ -139,7 +138,7 @@ xUnopToPyOp X.Complement = P.Invert ()
 
 xExpressionToPyExpr :: XExpression -> Expr ()
 xExpressionToPyExpr (Value i) = mkInt i
-xExpressionToPyExpr (Bit i) = mkInt $ shiftL 1 i
+xExpressionToPyExpr (Bit i) = BinaryOp (ShiftLeft ()) (mkInt 1) (mkInt i) ()
 xExpressionToPyExpr (FieldRef n) = mkAttr n
 xExpressionToPyExpr (EnumRef _ n) = mkVar n
 xExpressionToPyExpr (PopCount e) =

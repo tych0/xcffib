@@ -1,0 +1,11 @@
+<!-- stolen from xv -->
+<xcb header="error" extension-xname="ERROR" extension-name="Error"
+    major-version="2" minor-version="2">
+
+  <error name="Request" number="1">
+    <field type="CARD32" name="bad_value" />
+    <field type="CARD16" name="minor_opcode" />
+    <field type="CARD8" name="major_opcode" />
+    <pad bytes="1" />
+  </error>
+</xcb>

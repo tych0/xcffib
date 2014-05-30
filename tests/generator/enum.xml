@@ -1,0 +1,41 @@
+<!-- based on xproto -->
+<xcb header="enum">
+
+    <enum name="DeviceUse">
+        <item name="IsXPointer">           <value>0</value> </item>
+        <item name="IsXKeyboard">          <value>1</value> </item>
+        <item name="IsXExtensionDevice">   <value>2</value> </item>
+        <item name="IsXExtensionKeyboard"> <value>3</value> </item>
+        <item name="IsXExtensionPointer">  <value>4</value> </item>
+    </enum>
+
+  <enum name="EventMask">
+    <item name="NoEvent">           <value>0</value></item>
+    <item name="KeyPress">            <bit>0</bit></item>
+    <item name="KeyRelease">          <bit>1</bit></item>
+    <item name="ButtonPress">         <bit>2</bit></item>
+    <item name="ButtonRelease">       <bit>3</bit></item>
+    <item name="EnterWindow">         <bit>4</bit></item>
+    <item name="LeaveWindow">         <bit>5</bit></item>
+    <item name="PointerMotion">       <bit>6</bit></item>
+    <item name="PointerMotionHint">   <bit>7</bit></item>
+    <item name="Button1Motion">       <bit>8</bit></item>
+    <item name="Button2Motion">       <bit>9</bit></item>
+    <item name="Button3Motion">       <bit>10</bit></item>
+    <item name="Button4Motion">       <bit>11</bit></item>
+    <item name="Button5Motion">       <bit>12</bit></item>
+    <item name="ButtonMotion">        <bit>13</bit></item>
+    <item name="KeymapState">         <bit>14</bit></item>
+    <item name="Exposure">            <bit>15</bit></item>
+    <item name="VisibilityChange">    <bit>16</bit></item>
+    <item name="StructureNotify">     <bit>17</bit></item>
+    <item name="ResizeRedirect">      <bit>18</bit></item>
+    <item name="SubstructureNotify">  <bit>19</bit></item>
+    <item name="SubstructureRedirect"><bit>20</bit></item>
+    <item name="FocusChange">         <bit>21</bit></item>
+    <item name="PropertyChange">      <bit>22</bit></item>
+    <item name="ColorMapChange">      <bit>23</bit></item>
+    <item name="OwnerGrabButton">     <bit>24</bit></item>
+  </enum>
+
+</xcb>

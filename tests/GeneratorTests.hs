@@ -13,14 +13,14 @@ import Test.HUnit hiding ( Test )
 import System.FilePath
 
 tests :: [String]
-tests = [ "event"]
-{-
+tests = [ "event"
         , "error"
         , "request"
         , "union"
         , "struct"
+        , "enum"
+        , "request_reply"
         ]
--}
 
 mkFname :: String -> FilePath
 mkFname = (</>) $ "tests" </> "generator"

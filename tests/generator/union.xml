@@ -1,0 +1,12 @@
+<!-- based on xproto -->
+<xcb header="union">
+
+  <union name="ClientMessageData">
+    <!-- The format member of the ClientMessage event determines which array
+         to use. -->
+    <list type="CARD8"  name="data8" ><value>20</value></list> <!--  8 -->
+    <list type="CARD16" name="data16"><value>10</value></list> <!-- 16 -->
+    <list type="CARD32" name="data32"><value>5</value></list>  <!-- 32 -->
+  </union>
+
+</xcb>

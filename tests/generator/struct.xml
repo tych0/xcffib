@@ -1,0 +1,21 @@
+<!-- based on xproto -->
+<xcb header="struct">
+
+    <struct name="AxisInfo">
+        <field type="CARD32" name="resolution" />
+        <field type="INT32"  name="minimum" />
+        <field type="INT32"  name="maximum" />
+    </struct>
+
+    <struct name="ValuatorInfo">
+        <field type="CARD8"   name="class_id" enum="InputClass" />
+        <field type="CARD8"   name="len" />
+        <field type="CARD8"   name="axes_len" />
+        <field type="CARD8"   name="mode" enum="ValuatorMode" />
+        <field type="CARD32"  name="motion_size" />
+        <list type="AxisInfo" name="axes">
+            <fieldref>axes_len</fieldref>
+        </list>
+    </struct>
+
+</xcb>

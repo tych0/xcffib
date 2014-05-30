@@ -1,0 +1,90 @@
+<!-- based on xproto -->
+<xcb header="request">
+
+  <xidtype name="WINDOW" />
+  <typedef oldname="CARD32" newname="TIMESTAMP" />
+  <typedef oldname="CARD32" newname="VISUALID" />
+
+  <request name="CreateWindow" opcode="1">
+    <field type="CARD8" name="depth" />
+    <field type="WINDOW" name="wid" />
+    <field type="WINDOW" name="parent" />
+    <field type="INT16" name="x" />
+    <field type="INT16" name="y" />
+    <field type="CARD16" name="width" />
+    <field type="CARD16" name="height" />
+    <field type="CARD16" name="border_width" />
+    <field type="CARD16" name="class" enum="WindowClass" />
+    <field type="VISUALID" name="visual" />
+    <valueparam value-mask-type="CARD32"
+                value-mask-name="value_mask"
+                value-list-name="value_list" />
+    <doc>
+      <brief>Creates a window</brief>
+      <description><![CDATA[
+Creates an unmapped window as child of the specified `parent` window. A
+CreateNotify event will be generated. The new window is placed on top in the
+stacking order with respect to siblings.
+
+The coordinate system has the X axis horizontal and the Y axis vertical with
+the origin [0, 0] at the upper-left corner. Coordinates are integral, in terms
+of pixels, and coincide with pixel centers. Each window and pixmap has its own
+coordinate system. For a window, the origin is inside the border at the inside,
+upper-left corner.
+
+The created window is not yet displayed (mapped), call `xcb_map_window` to
+display it.
+
+The created window will initially use the same cursor as its parent.
+      ]]></description>
+      <field name="wid"><![CDATA[
+The ID with which you will refer to the new window, created by
+`xcb_generate_id`.
+      ]]></field>
+      <field name="depth"><![CDATA[
+Specifies the new window's depth.
+
+The special value `XCB_COPY_FROM_PARENT` means the depth is taken from the
+`parent` window.
+      ]]></field>
+      <field name="visual"><![CDATA[
+Specifies the id for the new window's visual.
+
+The special value `XCB_COPY_FROM_PARENT` means the visual is taken from the
+`parent` window.
+      ]]></field>
+      <field name="class"></field>
+      <field name="parent"><![CDATA[
+The parent window of the new window.
+      ]]></field>
+      <field name="border_width"><![CDATA[
+
+Must be zero if the `class` is `InputOnly` or a `xcb_match_error_t` occurs.
+      ]]></field>
+      <field name="x"><![CDATA[The X coordinate of the new window.]]></field>
+      <field name="y"><![CDATA[The Y coordinate of the new window.]]></field>
+      <field name="width"><![CDATA[The width of the new window.]]></field>
+      <field name="height"><![CDATA[The height of the new window.]]></field>
+      <error type="Colormap"><![CDATA[
+      ]]></error>
+      <error type="Match"><![CDATA[
+      ]]></error>
+      <error type="Cursor"><![CDATA[
+      ]]></error>
+      <error type="Pixmap"><![CDATA[
+      ]]></error>
+      <error type="Value"><![CDATA[
+      ]]></error>
+      <error type="Window"><![CDATA[
+      ]]></error>
+      <error type="Alloc"><![CDATA[
+The X server could not allocate the requested resources (no memory?).
+      ]]></error>
+      <see type="function" name="xcb_generate_id" />
+      <see type="request" name="MapWindow" />
+      <see type="event" name="CreateNotify" />
+    </doc>
+
+  </request>
+
+</xcb>
