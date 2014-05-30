@@ -1,0 +1,21 @@
+<!-- stolen from randr -->
+<xcb header="event" extension-xname="EVENT" extension-name="Event"
+    major-version="1" minor-version="4">
+
+  <xidtype name="WINDOW" />
+  <typedef oldname="CARD32" newname="TIMESTAMP" />
+
+  <event name="ScreenChangeNotify" number="0">
+    <field type="CARD8" name="rotation" mask="Rotation" />
+    <field type="TIMESTAMP" name="timestamp" />
+    <field type="TIMESTAMP" name="config_timestamp" />
+    <field type="WINDOW" name="root" />
+    <field type="WINDOW" name="request_window" />
+    <field type="CARD16" name="sizeID" />
+    <field type="CARD16" name="subpixel_order" enum="SubPixel" />
+    <field type="CARD16" name="width" />
+    <field type="CARD16" name="height" />
+    <field type="CARD16" name="mwidth" />
+    <field type="CARD16" name="mheight" />
+  </event>
+</xcb>

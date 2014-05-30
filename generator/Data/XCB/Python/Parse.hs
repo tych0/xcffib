@@ -78,7 +78,9 @@ xform = map buildPython . dependencyOrder
           name = xheader_header header
       parts <- mapM (processXDecl name) $ xheader_decls header
       let (requests, decls) = collectBindings parts
-          ext = [mkClass (name ++ "Extension") "xcffib.Extension" requests]
+          ext = if length requests > 0
+                then [mkClass (name ++ "Extension") "xcffib.Extension" requests]
+                else []
       return $ (name, concat [imports, version, key, globals, decls, ext])
     -- Rearrange the headers in dependency order for processing (i.e. put
     -- modules which import others after the modules they import, so typedefs

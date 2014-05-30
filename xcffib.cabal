@@ -56,3 +56,16 @@ test-suite PyHelpersTests
                  HUnit,
                  test-framework,
                  test-framework-hunit
+
+test-suite GeneratorTests.hs
+  hs-source-dirs: tests
+  main-is: GeneratorTests.hs
+  type: exitcode-stdio-1.0
+  build-depends: base ==4.*,
+                 xcffib >= 0.1.0.0,
+                 xcb-types >= 0.7.1,
+                 language-python >= 0.4.0,
+                 HUnit,
+                 test-framework,
+                 test-framework-hunit,
+                 filepath
