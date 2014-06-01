@@ -9,7 +9,7 @@ before_install:
   - sudo apt-get update
 
 install:
-  - sudo apt-get install ghc cabal-install git xcb-proto happy alex python-pip xvfb python-nose
+  - sudo apt-get install ghc cabal-install git xcb-proto happy alex python-pip xvfb python-nose python-six
   - sudo pip install flake8
   - cabal update
   - git clone https://github.com/tych0/xcb-types.git
