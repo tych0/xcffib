@@ -3,3 +3,4 @@ dist
 *.swo
 *.pyc
 *__pycache__*
+xcffib

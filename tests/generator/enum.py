@@ -36,3 +36,4 @@ class EventMask:
     PropertyChange = 1 << 22
     ColorMapChange = 1 << 23
     OwnerGrabButton = 1 << 24
+xcffib._add_ext(xcffib.ExtensionKey("enum"), enumExtension, _events, _errors)

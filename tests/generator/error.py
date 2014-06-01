@@ -12,3 +12,4 @@ class RequestError(xcffib.Error):
         self.bad_value, self.minor_opcode, self.major_opcode = struct.unpack_from("IHB1x", parent, offset)
         offset += 8
 _events[1] = RequestError
+xcffib._add_ext(xcffib.ExtensionKey("error"), errorExtension, _events, _errors)

@@ -9,3 +9,4 @@ class ClientMessageData(xcffib.Union):
         self.data8 = xcffib.List(parent, offset, 20, "B", 1)
         self.data16 = xcffib.List(parent, offset, 10, "H", 2)
         self.data32 = xcffib.List(parent, offset, 5, "I", 4)
+xcffib._add_ext(xcffib.ExtensionKey("union"), unionExtension, _events, _errors)

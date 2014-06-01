@@ -64,6 +64,36 @@ class ConnectionException(XcffibException):
 class ProtocolException(XcffibException):
     pass
 
+core = None
+core_events = None
+core_errors = None
+setup = None
+
+extensions = {}
+
+# This seems a bit over engineered to me; it seems unlikely there will ever be
+# a core besides xproto, so why not just hardcode that?
+def _add_core(value, _setup, events, errors):
+    if not issubclass(value, Extension):
+        raise XcffibException("Extension type not derived from xcffib.Extension")
+    if not issubclass(_setup, Struct):
+        raise XcffibException("Setup type not derived from xcffib.Struct")
+
+    global core
+    global core_events
+    global core_errors
+    global setup
+
+    core = value
+    core_events = events
+    core_errors = errors
+    setup = _setup
+
+def _add_ext(key, value, events, errors):
+    if not issubclass(value, Extension):
+        raise XcffibException("Extension type not derived from xcffib.Extension")
+    extensions[key] = (value, events, errors)
+
 class ExtensionKey(object):
     """ This definitely isn't needed, but we keep it around for compatibilty
     with xpyb.
@@ -82,7 +112,11 @@ class ExtensionKey(object):
 
 class Extension(object):
     # TODO: implement
-    pass
+    def __init__(self, conn):
+        self.conn = conn
+
+    def send_request(self, *args):
+        pass
 
 class Protobj(object):
 
@@ -147,36 +181,23 @@ class VoidCookie(Protobj):
 
 class Connection(object):
 
-    # "Basic" functions in xcb, i.e. those which only take a connection and
-    # return a primitive C type. These are added to connection just below the
-    # class definition.
-    BASIC_FUNCTIONS = [
-        "has_error",
-        "get_file_descriptor",
-        "get_maximum_request_length",
-        "prefetch_maximum_request_length",
-        "flush",
-        "generate_id",
-        "disconnect",
-    ]
-
     def __init__(self, display=None, fd=-1, auth=None):
         if auth is not None:
-            c_auth = C.new("xcb_auth_info_t *")
+            c_auth = ffi.new("xcb_auth_info_t *")
             if C.xpyb_parse_auth(auth, len(auth), c_auth) < 0:
                 raise XcffibException("invalid xauth")
         else:
-            c_auth = C.NULL
+            c_auth = ffi.NULL
 
-        i = C.new("int *")
+        i = ffi.new("int *")
 
         if fd > 0:
             self._conn = C.xcb_connect_to_fd(fd, c_auth)
-        elif c_auth != C.NULL:
+        elif c_auth != ffi.NULL:
             self._conn = C.xcb_connect_to_display_with_auth(display, c_auth, i)
         else:
             self._conn = C.xcb_connect(display, i)
-        self.pref_screen = ffi.int(i)
+        self.pref_screen = i[0]
 
         self.core = core(self)
         # TODO: xpybConn_setup
@@ -188,7 +209,6 @@ class Connection(object):
         if err > 0:
             raise ConnectionException(err)
 
-    @staticmethod
     def ensure_connected(f):
         """
         Check that the connection is valid both before and
@@ -198,8 +218,10 @@ class Connection(object):
         def wrapper(*args, **kwargs):
             self = args[0]
             self.invalid()
-            return f(*args, **kwargs)
-            self.invalid()
+            try:
+                return f(*args, **kwargs)
+            finally:
+                self.invalid()
         return wrapper
 
     @ensure_connected
@@ -220,11 +242,34 @@ class Connection(object):
         # TODO: implement
         pass
 
-for name in Connection.BASIC_FUNCTIONS:
-    @Connection.ensure_connected
-    def f(self):
-        return getattr(C, "xcb_" + name)(self._conn)
-    setattr(Connection, name, f)
+    @ensure_connected
+    def has_error(self):
+        return C.xcb_connection_has_error(self._conn)
+
+    @ensure_connected
+    def get_file_descriptor(self):
+        return C.xcb_get_file_descriptor(self._conn)
+
+    @ensure_connected
+    def get_maximum_request_length(self):
+        return C.xcb_get_maximum_request_length(self._conn)
+
+    @ensure_connected
+    def prefetch_maximum_request_length(self):
+        return C.xcb_prefetch_maximum_request_length(self._conn)
+
+    @ensure_connected
+    def flush(self):
+        return C.xcb_flush(self._conn)
+
+    @ensure_connected
+    def generate_id(self):
+        return C.xcb_generate_id(self._conn)
+
+    def disconnect(self):
+        self.invalid()
+        return C.xcb_disconnect(self._conn)
+
 
 class Event(Protobj):
     # TODO: implement
@@ -232,6 +277,13 @@ class Event(Protobj):
 
 class Response(Protobj):
     # TODO: implement
+    pass
+
+class Reply(Response):
+    # TODO: implement
+    pass
+
+class Cookie(Protobj):
     pass
 
 class Error(Response, XcffibException):
@@ -260,26 +312,3 @@ def pack_list(from_, pack_type, size=None):
             from_ = List(from_, 0, -1, pack_type)
 
     return sum(map(lambda t: t.pack(), from_))
-
-core = None
-core_events = None
-core_errors = None
-setup = None
-
-# This seems a bit over engineered to me; it seems unlikely there will ever be
-# a core besides xproto, so why not just hardcode that?
-def _add_core(value, setup, events, errors):
-    if not isinstance(value, Extension):
-        raise XcffibException("Extension type not derived from xcffib.Extension")
-    if not isinstance(setup, Struct):
-        raise XcffibException("Setup type not derived from xcffib.Struct")
-
-    global core
-    global core_events
-    global core_errors
-    global setup
-
-    core = value
-    core_events = events
-    core_errors = errors
-    setup = setup

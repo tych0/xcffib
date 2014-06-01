@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 module Data.XCB.Python.Parse (
   parse,
   xform,
@@ -75,12 +76,13 @@ xform = map buildPython . dependencyOrder
           key = maybeToList $ mkKey header
           globals = [mkDict "_events", mkDict "_errors"]
           name = xheader_header header
+          add = [mkAddExt header]
       parts <- mapM (processXDecl name) $ xheader_decls header
       let (requests, decls) = collectBindings parts
           ext = if length requests > 0
                 then [mkClass (name ++ "Extension") "xcffib.Extension" requests]
                 else []
-      return $ (name, concat [imports, version, key, globals, decls, ext])
+      return $ (name, concat [imports, version, key, globals, decls, ext, add])
     -- Rearrange the headers in dependency order for processing (i.e. put
     -- modules which import others after the modules they import, so typedefs
     -- are propogated appropriately).
@@ -97,6 +99,23 @@ xform = map buildPython . dependencyOrder
         headerCmp h1 h2 = (xheader_header h1) == (xheader_header h2)
     postOrder :: Tree a -> [a]
     postOrder (Node e cs) = (concat $ map postOrder cs) ++ [e]
+
+
+mkAddExt :: XHeader -> Statement ()
+mkAddExt (xheader_header -> "xproto") =
+  flip StmtExpr () $ mkCall "xcffib._add_core" [ mkName "xprotoExtension"
+                                               , mkName "Setup"
+                                               , mkName "_events"
+                                               , mkName "_errors"
+                                               ]
+mkAddExt header =
+  let name = xheader_header header
+      ext = mkCall "xcffib.ExtensionKey" [ mkStr name ]
+  in flip StmtExpr () $ mkCall "xcffib._add_ext" [ ext
+                                                 , mkName (name ++ "Extension")
+                                                 , mkName "_events"
+                                                 , mkName "_errors"
+                                                 ]
 
 -- | Information on basic X types.
 baseTypeInfo :: TypeInfoMap
@@ -316,7 +335,7 @@ processXDecl ext (XStruct n membs) = do
   m <- get
   let (statements, structLen) = mkStructStyleUnpack ext m membs
   modify $ mkModify ext n (CompositeType ext n structLen)
-  return $ Declaration [mkXClass n "xcffib.Protobj" statements]
+  return $ Declaration [mkXClass n "xcffib.Struct" statements]
 processXDecl ext (XEvent name number membs hasSequence) = do
   -- TODO: if not hasSequence then we increment by 1 byte? see KeymapNotify
   m <- get
