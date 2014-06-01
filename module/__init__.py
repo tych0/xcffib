@@ -2,7 +2,7 @@ import functools
 import six
 import struct
 
-from ffi import ffi, CONSTANTS, C
+from .ffi import ffi, C
 
 # re-export these constants for convenience and without hackery so pyflakes can
 # work.

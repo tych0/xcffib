@@ -71,7 +71,7 @@ xform = map buildPython . dependencyOrder
     processXHeader :: XHeader
                    -> State TypeInfoMap (String, Suite ())
     processXHeader header = do
-      let imports = [mkImport "xcffib", mkImport "struct", mkImport "cStringIO"]
+      let imports = [mkImport "xcffib", mkImport "struct", mkImport "six"]
           version = mkVersion header
           key = maybeToList $ mkKey header
           globals = [mkDict "_events", mkDict "_errors"]
@@ -366,7 +366,7 @@ processXDecl ext (XRequest name number membs reply) = do
              -- uniform, we remove it here.
              ("xproto", "ConfigureWindow") -> nub $ theArgs
              _ -> theArgs
-      buf = mkAssign "buf" (mkCall "cStringIO.StringIO" [])
+      buf = mkAssign "buf" (mkCall "six.BytesIO" [])
       -- TODO: prefix with =xx2x as in xpyb?
       packStr = mkStr $ intercalate "" keys
       write = mkCall "buf.write" [mkCall "struct.pack"

@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import cStringIO
+import six
 _events = {}
 _errors = {}
 class STR(xcffib.Struct):
@@ -21,6 +21,6 @@ class ListExtensionsCookie(xcffib.Cookie):
     pass
 class request_replyExtension(xcffib.Extension):
     def ListExtensions(self):
-        buf = cStringIO.StringIO()
+        buf = six.BytesIO()
         return self.send_request(99, buf)
 xcffib._add_ext(xcffib.ExtensionKey("request_reply"), request_replyExtension, _events, _errors)

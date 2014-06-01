@@ -5,7 +5,7 @@ import xcffib.xproto
 class TestConnection(object):
 
     def setUp(self):
-        self.conn = xcffib.Connection(os.environ['DISPLAY'])
+        self.conn = xcffib.Connection(os.environ['DISPLAY'].encode('utf-8'))
 
     def tearDown(self):
         self.conn.disconnect()

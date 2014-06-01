@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import cStringIO
+import six
 _events = {}
 _errors = {}
 class ClientMessageData(xcffib.Union):

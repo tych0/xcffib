@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import cStringIO
+import six
 MAJOR_VERSION = 1
 MINOR_VERSION = 4
 key = xcffib.ExtensionKey("EVENT")

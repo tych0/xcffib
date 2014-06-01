@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import cStringIO
+import six
 MAJOR_VERSION = 2
 MINOR_VERSION = 2
 key = xcffib.ExtensionKey("ERROR")
