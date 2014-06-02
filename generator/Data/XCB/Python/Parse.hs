@@ -159,7 +159,7 @@ xExpressionToPyExpr :: XExpression -> Expr ()
 xExpressionToPyExpr (Value i) = mkInt i
 xExpressionToPyExpr (Bit i) = BinaryOp (ShiftLeft ()) (mkInt 1) (mkInt i) ()
 xExpressionToPyExpr (FieldRef n) = mkAttr n
-xExpressionToPyExpr (EnumRef _ n) = mkVar n
+xExpressionToPyExpr (EnumRef _ n) = mkName n
 xExpressionToPyExpr (PopCount e) =
   mkCall "xcffib.popcount" [xExpressionToPyExpr e]
 -- http://cgit.freedesktop.org/xcb/proto/tree/doc/xml-xcb.txt#n290

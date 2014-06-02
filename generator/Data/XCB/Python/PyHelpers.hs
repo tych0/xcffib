@@ -1,7 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Data.XCB.Python.PyHelpers (
   mkImport,
-  mkVar,
   mkInt,
   mkAssign,
   mkCall,
@@ -49,7 +48,6 @@ ident s = Ident s ()
 mkDottedName :: String -> DottedName ()
 mkDottedName = map ident . splitOn "."
 
--- TODO: everything should really use mkName.
 mkVar :: String -> Expr ()
 mkVar name = Var (ident name) ()
 
