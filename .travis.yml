@@ -1,11 +1,10 @@
 language: python
 
-# TODO: http://docs.travis-ci.com/user/languages/python/#PyPy-Support once
-# native libraries can be installed.
 python:
   - "2.7"
   - "3.3"
   - "3.4"
+  - "pypy"
 
 before_install:
   - sudo apt-get update
