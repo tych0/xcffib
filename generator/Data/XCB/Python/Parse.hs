@@ -96,7 +96,6 @@ xform = map buildPython . dependencyOrder
         matchImport :: XDecl -> Maybe String
         matchImport (XImport n) = Just n
         matchImport _ = Nothing
-        headerCmp h1 h2 = (xheader_header h1) == (xheader_header h2)
     postOrder :: Tree a -> [a]
     postOrder (Node e cs) = (concat $ map postOrder cs) ++ [e]
 
@@ -269,7 +268,7 @@ structElemToPyPack _ m (ExprField name typ expr) =
                                                              ])
        CompositeType _ _ _ -> Right $ ([name],
                                        mkCall (mkDot e (mkName "pack")) [])
-structElemToPyPack ext m (ValueParam typ mask padding list) =
+structElemToPyPack _ m (ValueParam typ mask padding list) =
   case m M.! typ of
     BaseType c i ->
       let mask' = mkCall "struct.pack" [mkStr c, mkName mask]
@@ -336,7 +335,7 @@ processXDecl ext (XStruct n membs) = do
   let (statements, structLen) = mkStructStyleUnpack ext m membs
   modify $ mkModify ext n (CompositeType ext n structLen)
   return $ Declaration [mkXClass n "xcffib.Struct" statements]
-processXDecl ext (XEvent name number membs hasSequence) = do
+processXDecl ext (XEvent name number membs _) = do
   -- TODO: if not hasSequence then we increment by 1 byte? see KeymapNotify
   m <- get
   let cname = name ++ "Event"
@@ -390,7 +389,7 @@ processXDecl ext (XUnion name membs) = do
   let unpackF = structElemToPyUnpack ext m
       (fields, lists) = partitionEithers $ map unpackF membs
       (toUnpack, sizes) = unzip $ map mkUnionUnpack fields
-      (lists', lengths) = unzip lists
+      (lists', _) = unzip lists
       err = error ("bad XCB: union " ++
                    name ++ " has fields of different length")
       lengths' = catMaybes $ nub sizes
