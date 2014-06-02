@@ -30,6 +30,7 @@ because `xcffib` isn't done yet :-)
   Exception (via inheriting from `xcffib.XcffibException`).
 * `xcb.Iterator` is gone; similar functionality is implemented by
   `xcffib.pack_list`.
+* `xcb.Request` is gone. It was an entirely internal and unnecessary interface.
 
 ## Enhancements
 

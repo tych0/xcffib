@@ -286,7 +286,6 @@ mkStructStyleUnpack :: String
                     -> TypeInfoMap
                     -> [GenStructElem Type]
                     -> (Suite (), Maybe Int)
--- TODO: Generate pack() method.
 mkStructStyleUnpack ext m membs =
   let unpackF = structElemToPyUnpack ext m
       (toUnpack, lists) = partitionEithers $ map unpackF membs
@@ -366,23 +365,30 @@ processXDecl ext (XRequest name number membs reply) = do
              ("xproto", "ConfigureWindow") -> nub $ theArgs
              _ -> theArgs
       buf = mkAssign "buf" (mkCall "six.BytesIO" [])
-      -- TODO: prefix with =xx2x as in xpyb?
-      packStr = mkStr $ intercalate "" keys
+      -- TODO: WTF is this =xx2x and where does it come from? Sometimes it is
+      -- actual unpack metacharaters. How do we tell when to use those vs. this
+      -- hardcoded string?
+      packStr = "=xx2x" ++ intercalate "" keys
       write = mkCall "buf.write" [mkCall "struct.pack"
-                                         ([packStr] ++ (map mkName args'))]
-      writeStmt = if length args > 0 then [StmtExpr write ()] else []
-      ret = mkReturn $ mkCall "self.send_request" [mkInt number, mkName "buf"]
-      -- TODO: checked vs. unchecked?
-      requestBody = [buf] ++ writeStmt ++ lists' ++ [ret]
-      request = mkMethod name ("self" : args') requestBody
-
+                                         (mkStr packStr : (map mkName args'))]
+      writeStmt = if length packStr > 0 then [StmtExpr write ()] else []
+      cookieName = (name ++ "Cookie")
       replyDecl = concat $ maybeToList $ do
         reply' <- reply
         let (replyStatements, _) = mkStructStyleUnpack ext m reply'
             replyName = name ++ "Reply"
             theReply = mkXClass replyName "xcffib.Reply" replyStatements
-            cookie = mkEmptyClass (name ++ "Cookie") "xcffib.Cookie"
+            replyType = mkAssign "reply_type" $ mkName replyName
+            cookie = mkClass cookieName "xcffib.Cookie" [replyType]
         return [theReply, cookie]
+
+      hasReply = if length replyDecl > 0 then [mkName cookieName] else []
+      ret = mkReturn $ mkCall "self.send_request" ([ mkInt number
+                                                   , mkName "buf"
+                                                   ] ++ hasReply)
+      requestBody = [buf] ++ writeStmt ++ lists' ++ [ret]
+      -- TODO: checked vs. unchecked?
+      request = mkMethod name ("self" : args') requestBody
   return $ Request request replyDecl
 processXDecl ext (XUnion name membs) = do
   m <- get

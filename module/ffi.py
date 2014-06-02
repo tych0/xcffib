@@ -1,4 +1,5 @@
 from cffi import FFI
+from six.moves import range as srange
 
 # TODO: don't require a c compiler at runtime :-)
 # http://cffi.readthedocs.org/en/release-0.8/index.html?highlight=ffilibrary#distributing-modules-using-cffi
@@ -22,6 +23,8 @@ CONSTANTS = [
     "XCB_CONN_CLOSED_PARSE_ERR",
 #    "XCB_CONN_CLOSED_INVALID_SCREEN",
 #    "XCB_CONN_CLOSED_FDPASSING_FAILED",
+
+    "XCB_REQUEST_CHECKED",
 ]
 
 
@@ -85,6 +88,26 @@ ffi.cdef("""
     } xcb_query_extension_reply_t;
 
     typedef ... xcb_setup_t;
+
+    // xcbext.h
+    struct xcb_extension_t {
+        const char *name;
+        int global_id;
+    };
+
+    typedef struct {
+        size_t count;
+        xcb_extension_t *ext;
+        uint8_t opcode;
+        uint8_t isvoid;
+    } xcb_protocol_request_t;
+
+    // sys/uio.h
+    struct iovec
+    {
+      void *iov_base; /* BSD uses caddr_t (1003.1g requires void *) */
+      size_t iov_len; /* Must be size_t (1003.1g) */
+    };
 """)
 
 # connection manipulation, mostly generated with:
@@ -107,7 +130,20 @@ ffi.cdef("""
     uint32_t xcb_generate_id(xcb_connection_t *c);
 """)
 
+ffi.cdef("""
+    unsigned int xcb_send_request(xcb_connection_t *c, int flags, struct iovec *vector, const xcb_protocol_request_t *request);
+    void *xcb_wait_for_reply(xcb_connection_t *c, unsigned int request, xcb_generic_error_t **e);
+    int xcb_poll_for_reply(xcb_connection_t *c, unsigned int request, void **reply, xcb_generic_error_t **error);
+""")
+
 C = ffi.verify("""
     #include <xcb/xcb.h>
     #include <xcb/xcbext.h>
 """, libraries=['xcb'])
+
+def bytes_to_cdata(bs):
+    buf = ffi.new('char[]', len(bs))
+    # I'm sure there's a better way to do this.
+    for i in srange(len(bs)):
+        buf[i] = bs[i]
+    return buf

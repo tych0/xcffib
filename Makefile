@@ -9,6 +9,7 @@ clean:
 	cabal clean
 	rm -rf xcffib
 	rm -rf module/*pyc module/__pycache__
+	rm -rf tests/*pyc tests/__pycache__
 
 xcffib: $(GEN)
 	$(GEN) --input /usr/share/xcb --output ./xcffib

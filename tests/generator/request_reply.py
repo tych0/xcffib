@@ -18,9 +18,10 @@ class ListExtensionsReply(xcffib.Reply):
         self.names = xcffib.List(parent, offset, self.names_len, STR)
         offset += self.names.bufsize
 class ListExtensionsCookie(xcffib.Cookie):
-    pass
+    reply_type = ListExtensionsReply
 class request_replyExtension(xcffib.Extension):
     def ListExtensions(self):
         buf = six.BytesIO()
-        return self.send_request(99, buf)
+        buf.write(struct.pack("=xx2x"))
+        return self.send_request(99, buf, ListExtensionsCookie)
 xcffib._add_ext(xcffib.ExtensionKey("request_reply"), request_replyExtension, _events, _errors)

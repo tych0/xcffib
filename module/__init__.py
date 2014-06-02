@@ -2,7 +2,7 @@ import functools
 import six
 import struct
 
-from .ffi import ffi, C
+from .ffi import ffi, C, bytes_to_cdata
 
 # re-export these constants for convenience and without hackery so pyflakes can
 # work.
@@ -110,13 +110,6 @@ class ExtensionKey(object):
     def __ne__(self, o):
         return self.name != o.name
 
-class Extension(object):
-    # TODO: implement
-    def __init__(self, conn):
-        self.conn = conn
-
-    def send_request(self, *args):
-        pass
 
 class Protobj(object):
 
@@ -140,15 +133,81 @@ class Protobj(object):
         it so we keep it around.
         """
 
-        assert len(parent) < offset
+        assert len(parent) > offset
         if size is not None:
-            assert len(parent) > size + offset
+            assert len(parent) >= size + offset
         else:
             size = len(parent)
         self.bufsize = size - offset
 
+
+class Struct(Protobj):
+    pass
+
+class Union(Protobj):
+    pass
+
+class Cookie(object):
+    reply_type = None
+    def __init__(self, conn, sequence):
+        self.conn = conn
+        self.sequence = sequence
+
+    def reply(self):
+        data = self.conn.wait_for_reply(self.sequence)
+        return self.reply_type(data, 0, len(data))
+
+class VoidCookie(Cookie):
+    def reply(self):
+        raise XcffibException("No reply for this message type")
+
+class Extension(object):
+    # TODO: implement
+    def __init__(self, conn):
+        self.conn = conn
+        name = self.__class__.__name__[:-len('Extension')]
+        if name == 'xproto':
+            self.ext_name = None
+        else:
+            self.ext_name = name
+
+    def send_request(self, opcode, data, cookie=VoidCookie, reply=None):
+        data = data.getvalue()
+
+        assert len(data) > 3, "xcb_send_request data must be ast least 4 bytes"
+
+        self.conn.invalid()
+
+        xcb_req = ffi.new("xcb_protocol_request_t *")
+        xcb_req.count = 2
+
+        if self.ext_name is not None:
+            key = ffi.new("xcb_extension_t *")
+            key.name = self.ext_name
+            # xpyb doesn't ever set global_id, which seems wrong, but whatever.
+            key.global_id = 0
+            xcb_req.ext = key
+        else:
+            xcb_req.ext = ffi.NULL
+
+        xcb_req.opcode = opcode
+        xcb_req.isvoid = issubclass(cookie, VoidCookie)
+
+        xcb_parts = ffi.new("struct iovec[2]")
+        xcb_parts[0].iov_base = bytes_to_cdata(data)
+        xcb_parts[0].iov_len = len(data)
+        xcb_parts[1].iov_base = ffi.NULL
+        xcb_parts[1].iov_len = -len(data) & 3  # is this really necessary?
+
+        # TODO: support checked requests
+        flags = 0
+        seq = C.xcb_send_request(self.conn._conn, flags, xcb_parts, xcb_req)
+
+        return cookie(self.conn, seq)
+
 class List(Protobj):
     def __init__(self, parent, offset, length, typ, size=-1):
+        Protobj.__init__(self, parent, offset, length)
 
         if size > 0:
             assert len(parent) > length * size + offset
@@ -167,17 +226,11 @@ class List(Protobj):
 
     def __len__(self):
         return len(self.list)
+
+    def __iter__(self):
+        return iter(self.list)
+
     # TODO: implement the rest of the sequence protocol
-
-# These three are all empty.
-class Struct(Protobj):
-    pass
-
-class Union(Protobj):
-    pass
-
-class VoidCookie(Protobj):
-    pass
 
 class Connection(object):
 
@@ -270,6 +323,20 @@ class Connection(object):
         self.invalid()
         return C.xcb_disconnect(self._conn)
 
+    def _process_error(self, error_p):
+        if error_p[0] != ffi.NULL:
+            opcode = error_p[0][0].error_code
+            # TODO: resolve the actual error class; also, should we free
+            # error_p? It is actually allocated by xcb_wait_for_reply.
+            raise XcffibException(opcode)
+
+    @ensure_connected
+    def wait_for_reply(self, sequence):
+        error_p = ffi.new("xcb_generic_error_t *[1]")
+        data = C.xcb_wait_for_reply(self._conn, sequence, error_p)
+        reply = ffi.cast("xcb_generic_reply_t *", data)
+        self._process_error(error_p)
+        return bytes(ffi.buffer(data, reply.length))
 
 class Event(Protobj):
     # TODO: implement
@@ -281,9 +348,6 @@ class Response(Protobj):
 
 class Reply(Response):
     # TODO: implement
-    pass
-
-class Cookie(Protobj):
     pass
 
 class Error(Response, XcffibException):
