@@ -28,6 +28,12 @@ class TestConnection(object):
         self.conn = xcffib.Connection('notvalid')
         self.conn.invalid()
 
+    def test_get_setup(self):
+        setup = self.conn.get_setup()
+        # When X upgrades, we can probably manage to change this test :-)
+        assert setup.protocol_major_version == 11
+        assert setup.protocol_minor_version == 0
+
     """
     # TODO: This probably needs xpybConn_setup implemented to work correctly.
     @raises(xcffib.ConnectionException)

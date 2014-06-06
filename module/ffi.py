@@ -87,7 +87,29 @@ ffi.cdef("""
         uint8_t  first_error;
     } xcb_query_extension_reply_t;
 
-    typedef ... xcb_setup_t;
+    typedef struct xcb_setup_t {
+        uint8_t       status; /**<  */
+        uint8_t       pad0; /**<  */
+        uint16_t      protocol_major_version; /**<  */
+        uint16_t      protocol_minor_version; /**<  */
+        uint16_t      length; /**<  */
+        uint32_t      release_number; /**<  */
+        uint32_t      resource_id_base; /**<  */
+        uint32_t      resource_id_mask; /**<  */
+        uint32_t      motion_buffer_size; /**<  */
+        uint16_t      vendor_len; /**<  */
+        uint16_t      maximum_request_length; /**<  */
+        uint8_t       roots_len; /**<  */
+        uint8_t       pixmap_formats_len; /**<  */
+        uint8_t       image_byte_order; /**<  */
+        uint8_t       bitmap_format_bit_order; /**<  */
+        uint8_t       bitmap_format_scanline_unit; /**<  */
+        uint8_t       bitmap_format_scanline_pad; /**<  */
+        uint8_t       min_keycode; /**<  */
+        uint8_t       max_keycode; /**<  */
+        uint8_t       pad1[4]; /**<  */
+    } xcb_setup_t;
+
 
     // xcbext.h
     struct xcb_extension_t {

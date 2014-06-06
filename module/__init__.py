@@ -130,9 +130,8 @@ class Protobj(object):
           len(parent))
         """
 
-        assert len(parent) > offset
         if size is not None:
-            assert len(parent) >= size + offset
+            assert size == 0 or len(parent) >= offset
         else:
             size = len(parent)
         self.bufsize = size - offset
@@ -206,9 +205,6 @@ class List(Protobj):
     def __init__(self, parent, offset, length, typ, size=-1):
         Protobj.__init__(self, parent, offset, length)
 
-        if size > 0:
-            assert len(parent) > length * size + offset
-
         self.list = []
         cur = offset
 
@@ -250,6 +246,7 @@ class Connection(object):
         self.pref_screen = i[0]
 
         self.core = core(self)
+        self.setup = self.get_setup()
         # TODO: xpybConn_setup
 
     def invalid(self):
@@ -277,10 +274,10 @@ class Connection(object):
     @ensure_connected
     def get_setup(self):
         s = C.xcb_get_setup(self._conn)
-        buf = ffi.buffer(s)
+        buf = ffi.buffer(s, s.length)
 
         global setup
-        return setup(buf, 0)
+        return setup(buf, 0, len(buf))
 
     @ensure_connected
     def wait_for_event(self):
