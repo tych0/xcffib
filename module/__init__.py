@@ -128,9 +128,6 @@ class Protobj(object):
         - offset: the start of this offest in the bytes()
         - size: the size of this object (if none, then it is assumed to be
           len(parent))
-
-        I don't actually think we need the size parameter here at all, but xpyb has
-        it so we keep it around.
         """
 
         assert len(parent) > offset

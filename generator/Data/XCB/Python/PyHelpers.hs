@@ -101,7 +101,6 @@ mkArg n = ArgExpr (mkName n) ()
 mkXClass :: String -> String -> Suite () -> Statement ()
 mkXClass clazz superclazz [] = mkEmptyClass clazz superclazz
 mkXClass clazz superclazz constructor =
-  -- TODO: Can we move size to a dynamically calculated property?
   let super = mkCall (superclazz ++ ".__init__") [ mkName "self"
                                                  , mkName "parent"
                                                  , mkName "offset"
