@@ -1,3 +1,5 @@
+from __future__ import division
+
 import functools
 import six
 import struct
@@ -209,7 +211,7 @@ class List(Protobj):
         cur = offset
 
         if isinstance(typ, str):
-            count = length / size
+            count = length // size
             self.list = list(struct.unpack_from(typ * count, parent, offset))
         else:
             while cur < size:
@@ -234,6 +236,7 @@ class Connection(object):
                 raise XcffibException("invalid xauth")
         else:
             c_auth = ffi.NULL
+        display = display.encode('latin1')
 
         i = ffi.new("int *")
 

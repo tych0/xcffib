@@ -164,8 +164,5 @@ C = ffi.verify("""
 """, libraries=['xcb'])
 
 def bytes_to_cdata(bs):
-    buf = ffi.new('char[]', len(bs))
-    # I'm sure there's a better way to do this.
-    for i in srange(len(bs)):
-        buf[i] = bs[i]
+    buf = ffi.new('char[]', bs)
     return buf
