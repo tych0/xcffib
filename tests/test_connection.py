@@ -11,6 +11,7 @@ class TestConnection(object):
 
     def setUp(self):
         self.conn = xcffib.Connection(os.environ['DISPLAY'])
+        self.xproto = xcffib.xproto.xprotoExtension(self.conn)
 
     def tearDown(self):
         try:
@@ -34,18 +35,16 @@ class TestConnection(object):
         assert setup.protocol_major_version == 11
         assert setup.protocol_minor_version == 0
 
-    """
-    # TODO: This probably needs xpybConn_setup implemented to work correctly.
+    def test_seq_increases(self):
+        assert self.xproto.GetInputFocus().sequence == 1
+        assert self.xproto.GetInputFocus().sequence == 2
+
     @raises(xcffib.ConnectionException)
     def test_invalid(self):
-        ext = xcffib.xproto.xprotoExtension(self.conn)
-        req = six.BytesIO()
-        req.write('meshuggah!!1')
-        ext.send_request(0, req)
-        self.conn.flush()
-        print(self.conn.get_maximum_request_length())
-        self.conn.invalid()
+        conn = xcffib.Connection('notadisplay')
+        conn.invalid()
 
+    """
     def test_list_extensions(self):
         reply = self.conn.core.ListExtensions().reply()
         exts = [''.join(ext.name) for ext in reply.names]
