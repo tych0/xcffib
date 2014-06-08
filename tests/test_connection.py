@@ -44,9 +44,9 @@ class TestConnection(object):
         conn = xcffib.Connection('notadisplay')
         conn.invalid()
 
-    """
     def test_list_extensions(self):
         reply = self.conn.core.ListExtensions().reply()
-        exts = [''.join(ext.name) for ext in reply.names]
-        assert "randr" in exts
-    """
+        print(reply.names_len)
+        print(reply.names)
+        exts = [''.join(map(chr, ext.name)) for ext in reply.names]
+        assert "XVideo" in exts

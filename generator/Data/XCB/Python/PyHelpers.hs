@@ -20,7 +20,6 @@ module Data.XCB.Python.PyHelpers (
   mkReturn
   ) where
 
-import Data.List
 import Data.List.Split
 import Data.Maybe
 
@@ -123,11 +122,10 @@ mkStr s = Strings ["\"", s, "\""] ()
 mkTuple :: [Expr ()] -> Expr ()
 mkTuple = flip Tuple ()
 
-mkUnpackFrom :: [String] -> [String] -> Statement ()
+mkUnpackFrom :: [String] -> String -> Statement ()
 mkUnpackFrom names packs =
   let lhs = mkTuple $ map mkAttr names
-      unpackStr = mkStr $ intercalate "" packs
-      rhs = mkCall "struct.unpack_from" [ unpackStr
+      rhs = mkCall "struct.unpack_from" [ mkStr packs
                                         , mkName "parent"
                                         , mkName "offset"
                                         ]

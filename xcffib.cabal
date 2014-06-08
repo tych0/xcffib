@@ -24,7 +24,8 @@ library
                  Glob >= 0.7,
                  split,
                  containers,
-                 mtl >= 2.1
+                 mtl >= 2.1,
+                 text-format-simple
   hs-source-dirs: generator
   exposed-modules: Data.XCB.Python.Parse,
                    Data.XCB.Python.PyHelpers
@@ -43,7 +44,8 @@ executable xcffibgen
                  filepath,
                  directory >= 1.2,
                  containers,
-                 mtl >= 2.1
+                 mtl >= 2.1,
+                 text-format-simple
   ghc-options: -Wall
 
 test-suite PyHelpersTests

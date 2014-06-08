@@ -20,6 +20,8 @@ import Language.Python.Common as P
 
 import System.FilePath.Glob
 
+import Text.Format
+
 import Debug.Trace
 
 data TypeInfo =
@@ -184,6 +186,24 @@ xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
       in conv els acc' is'
     conv [] acc _ = acc
 
+
+-- Add the xcb_generic_{request,reply}_t structure data to the beginning of a
+-- pack string. This is a little weird because both structs contain a one byte
+-- pad which isn't at the end. If the first element of the request or reply is
+-- a byte long, it takes that spot instead, and there is one less offset
+addStructData :: (String, Int) -> String -> (String, Int -> Int)
+addStructData (prefix, plen) (c : cs) | c `elem` "Bb" =
+  let formatted = format prefix [[c]]
+   -- If we actually did format something, then we want to offset by one
+   -- less, becuase we aren't taking up a byte the rest of the struct. If we
+   -- didn't, then include the original character since it didn't get inserted.
+  in if prefix == formatted
+     then (formatted ++ (c : cs), (+) plen)
+     else (formatted ++ cs, (+) $ plen - 1)
+addStructData (prefix, plen) s =
+  let formatted = format prefix ["x"]
+  in (formatted ++ s, (+) plen)
+
 structElemToPyUnpack :: String
                      -> TypeInfoMap
                      -> GenStructElem Type
@@ -282,27 +302,36 @@ structElemToPyPack _ m (ValueParam typ mask padding list) =
       "ValueParams other than CARD{16,32} not allowed.")
 
 -- | Make a struct style (i.e. not union style) unpack.
-mkStructStyleUnpack :: String
+mkStructStyleUnpack :: (String, Int)
+                    -> String
                     -> TypeInfoMap
                     -> [GenStructElem Type]
                     -> (Suite (), Maybe Int)
-mkStructStyleUnpack ext m membs =
+mkStructStyleUnpack prefix ext m membs =
   let unpackF = structElemToPyUnpack ext m
       (toUnpack, lists) = partitionEithers $ map unpackF membs
       -- XXX: Here we assume that all the lists come after all the unpacked
       -- members. While (I think) this is true today, it may not always be
       -- true and we should probably fix this.
       (names, packs, lengths) = unzip3 toUnpack
+      (packs', lengthMod) = case prefix of
+                              ("", 0) -> (concat packs, id)
+                              _ -> addStructData prefix $ concat packs
       names' = catMaybes names
-      assign = mkUnpackFrom names' packs
-      unpackLength = sum $ catMaybes lengths
+      base = [mkAssign "base" $ mkName "offset"]
+      assign = mkUnpackFrom names' packs'
+      unpackLength = lengthMod $ sum $ catMaybes lengths
       incr = mkIncr "offset" $ mkInt unpackLength
       baseTUnpack = if length names' > 0 then [assign] else []
       baseTIncr = if unpackLength > 0 then [incr] else []
 
       lists' = concat $ map (\(l, sz) -> [l, mkIncr "offset" sz]) lists
 
-      statements = baseTUnpack ++ baseTIncr ++ lists'
+      bufsize =
+        let rhs = BinaryOp (Minus ()) (mkName "offset") (mkName "base") ()
+        in [mkAssign (mkAttr "bufsize") rhs]
+
+      statements = base ++ baseTUnpack ++ baseTIncr ++ lists' ++ bufsize
       structLen = if length lists > 0 then Nothing else Just unpackLength
   in (statements, structLen)
 
@@ -331,25 +360,24 @@ processXDecl _ (XEnum name membs) =
   return $ Declaration [mkEnum name $ xEnumElemsToPyEnum membs]
 processXDecl ext (XStruct n membs) = do
   m <- get
-  let (statements, structLen) = mkStructStyleUnpack ext m membs
+  let (statements, structLen) = mkStructStyleUnpack ("", 0) ext m membs
   modify $ mkModify ext n (CompositeType ext n structLen)
   return $ Declaration [mkXClass n "xcffib.Struct" statements]
 processXDecl ext (XEvent name number membs _) = do
   -- TODO: if not hasSequence then we increment by 1 byte? see KeymapNotify
   m <- get
   let cname = name ++ "Event"
-      (statements, _) = mkStructStyleUnpack ext m membs
+      (statements, _) = mkStructStyleUnpack ("x{0}2x", 4) ext m membs
       eventsUpd = mkDictUpdate "_events" number cname
   return $ Declaration [mkXClass cname "xcffib.Event" statements, eventsUpd]
 processXDecl ext (XError name number membs) = do
   m <- get
   let cname = name ++ "Error"
-      (statements, _) = mkStructStyleUnpack ext m membs
+      (statements, _) = mkStructStyleUnpack ("xx2x", 4) ext m membs
       errorsUpd = mkDictUpdate "_events" number cname
   return $ Declaration [mkXClass cname "xcffib.Error" statements, errorsUpd]
 processXDecl ext (XRequest name number membs reply) = do
   m <- get
-  -- Requests with lists not supported yet
   let packF = structElemToPyPack ext m
       (toPack, stmts) = partitionEithers $ map packF membs
       (listNames, lists) = let (lns, ls) = unzip stmts in (concat lns, ls)
@@ -365,19 +393,16 @@ processXDecl ext (XRequest name number membs reply) = do
              ("xproto", "ConfigureWindow") -> nub $ theArgs
              _ -> theArgs
       buf = mkAssign "buf" (mkCall "six.BytesIO" [])
-      -- TODO: WTF is this =xx2x and where does it come from? Sometimes it is
-      -- actual unpack metacharaters. How do we tell when to use those vs. this
-      -- hardcoded string?
-      packStr = "=xx2x" ++ intercalate "" keys
+      (packStr, _) = addStructData ("x{0}2x", 4) $ intercalate "" keys
       write = mkCall "buf.write" [mkCall "struct.pack"
                                          (mkStr packStr : (map mkName args'))]
       writeStmt = if length packStr > 0 then [StmtExpr write ()] else []
       cookieName = (name ++ "Cookie")
       replyDecl = concat $ maybeToList $ do
         reply' <- reply
-        let (replyStatements, _) = mkStructStyleUnpack ext m reply'
+        let (replyStmts, _) = mkStructStyleUnpack ("x{0}2x4x", 8) ext m reply'
             replyName = name ++ "Reply"
-            theReply = mkXClass replyName "xcffib.Reply" replyStatements
+            theReply = mkXClass replyName "xcffib.Reply" replyStmts
             replyType = mkAssign "reply_type" $ mkName replyName
             cookie = mkClass cookieName "xcffib.Cookie" [replyType]
         return [theReply, cookie]
@@ -411,7 +436,7 @@ processXDecl ext (XUnion name membs) = do
     mkUnionUnpack :: (Maybe String, String, Maybe Int)
                   -> (Statement (), Maybe Int)
     mkUnionUnpack (name, typ, size) =
-      (mkUnpackFrom (maybeToList name) [typ], size)
+      (mkUnpackFrom (maybeToList name) typ, size)
 
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.

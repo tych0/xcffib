@@ -136,7 +136,7 @@ class Protobj(object):
             assert size == 0 or len(parent) >= offset
         else:
             size = len(parent)
-        self.bufsize = size - offset
+        self.bufsize = size
 
 
 class Struct(Protobj):
@@ -208,16 +208,21 @@ class List(Protobj):
         Protobj.__init__(self, parent, offset, length)
 
         self.list = []
-        cur = offset
 
         if isinstance(typ, str):
             count = length // size
             self.list = list(struct.unpack_from(typ * count, parent, offset))
+            self.bufsize = length
         else:
-            while cur < size:
-                item = typ(parent, cur)
+            cur = offset
+            for _ in range(length):
+                item = typ(parent, cur, size)
                 cur += item.bufsize
                 self.list.append(item)
+            self.bufsize = cur - offset
+
+    def __str__(self):
+        return str(self.list)
 
     def __len__(self):
         return len(self.list)
@@ -249,7 +254,8 @@ class Connection(object):
         self.pref_screen = i[0]
 
         self.core = core(self)
-        self.setup = self.get_setup()
+        # TODO: re-enable this
+        # self.setup = self.get_setup()
         # TODO: xpybConn_setup
 
     def invalid(self):
@@ -333,7 +339,8 @@ class Connection(object):
         data = C.xcb_wait_for_reply(self._conn, sequence, error_p)
         reply = ffi.cast("xcb_generic_reply_t *", data)
         self._process_error(error_p)
-        return bytes(ffi.buffer(data, reply.length))
+        # why is this 32 and not sizeof(xcb_generic_reply_t) == 8?
+        return bytes(ffi.buffer(data, 32 + reply.length * 4))
 
 class Event(Protobj):
     # TODO: implement
