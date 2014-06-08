@@ -254,8 +254,7 @@ class Connection(object):
         self.pref_screen = i[0]
 
         self.core = core(self)
-        # TODO: re-enable this
-        # self.setup = self.get_setup()
+        self.setup = self.get_setup()
         # TODO: xpybConn_setup
 
     def invalid(self):
@@ -283,7 +282,8 @@ class Connection(object):
     @ensure_connected
     def get_setup(self):
         s = C.xcb_get_setup(self._conn)
-        buf = ffi.buffer(s, s.length)
+        # No idea where this 8 comes from either :-)
+        buf = ffi.buffer(s, 8 + s.length * 4)
 
         global setup
         return setup(buf, 0, len(buf))
