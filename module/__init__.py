@@ -5,30 +5,7 @@ import six
 import struct
 
 from .ffi import ffi, C, bytes_to_cdata
-
-# re-export these constants for convenience and without hackery so pyflakes can
-# work.
-X_PROTOCOL = C.X_PROTOCOL
-X_PROTOCOL_REVISION = C.X_PROTOCOL_REVISION
-
-XCB_NONE = C.XCB_NONE
-XCB_COPY_FROM_PARENT = C.XCB_COPY_FROM_PARENT
-XCB_CURRENT_TIME = C.XCB_CURRENT_TIME
-XCB_NO_SYMBOL = C.XCB_NO_SYMBOL
-
-# For xpyb compatibility
-NONE = XCB_NONE
-CopyFromParent = XCB_COPY_FROM_PARENT
-CurrentTime = XCB_CURRENT_TIME
-NoSymbol = XCB_NO_SYMBOL
-
-XCB_CONN_ERROR = C.XCB_CONN_ERROR
-XCB_CONN_CLOSED_EXT_NOTSUPPORTED = C.XCB_CONN_CLOSED_EXT_NOTSUPPORTED
-XCB_CONN_CLOSED_MEM_INSUFFICIENT = C.XCB_CONN_CLOSED_MEM_INSUFFICIENT
-XCB_CONN_CLOSED_REQ_LEN_EXCEED = C.XCB_CONN_CLOSED_REQ_LEN_EXCEED
-XCB_CONN_CLOSED_PARSE_ERR = C.XCB_CONN_CLOSED_PARSE_ERR
-# XCB_CONN_CLOSED_INVALID_SCREEN = C.XCB_CONN_CLOSED_INVALID_SCREEN
-# XCB_CONN_CLOSED_FDPASSING_FAILED = C.XCB_CONN_CLOSED_FDPASSING_FAILED
+from . import xcb
 
 def popcount(n):
     return bin(n).count('1')
@@ -39,23 +16,23 @@ class XcffibException(Exception):
 
 class ConnectionException(XcffibException):
     REASONS = {
-        XCB_CONN_ERROR: (
+        xcb.XCB_CONN_ERROR: (
             'xcb connection errors because of socket, '
             'pipe and other stream errors.'),
-        XCB_CONN_CLOSED_EXT_NOTSUPPORTED: (
+        xcb.XCB_CONN_CLOSED_EXT_NOTSUPPORTED: (
             'xcb connection shutdown because extension not supported'),
-        XCB_CONN_CLOSED_MEM_INSUFFICIENT: (
+        xcb.XCB_CONN_CLOSED_MEM_INSUFFICIENT: (
             'malloc(), calloc() and realloc() error upon failure, '
             'for eg ENOMEM'),
-        XCB_CONN_CLOSED_REQ_LEN_EXCEED: (
+        xcb.XCB_CONN_CLOSED_REQ_LEN_EXCEED: (
             'Connection closed, exceeding request length that server '
             'accepts.'),
-        XCB_CONN_CLOSED_PARSE_ERR: (
+        xcb.XCB_CONN_CLOSED_PARSE_ERR: (
             'Connection closed, error during parsing display string.'),
-#        XCB_CONN_CLOSED_INVALID_SCREEN: (
+#        xcb.XCB_CONN_CLOSED_INVALID_SCREEN: (
 #            'Connection closed because the server does not have a screen '
 #            'matching the display.'),
-#        XCB_CONN_CLOSED_FDPASSING_FAILED: (
+#        xcb.XCB_CONN_CLOSED_FDPASSING_FAILED: (
 #            'Connection closed because some FD passing operation failed'),
     }
 
