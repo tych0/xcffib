@@ -383,8 +383,9 @@ processXDecl ext (XRequest name number membs reply) = do
       (listNames, lists) = let (lns, ls) = unzip stmts in (concat lns, ls)
       lists' = map (flip StmtExpr ()) lists
       (args, keys) = unzip toPack
-      args' =
-        let theArgs = (catMaybes args) ++ listNames
+      args' = catMaybes args
+      methodArgs =
+        let theArgs = args' ++ listNames
         in case (ext, name) of
              -- XXX: The 1.10 ConfigureWindow definiton has value_mask
              -- explicitly listed in the protocol definition, but everywhere
@@ -413,7 +414,7 @@ processXDecl ext (XRequest name number membs reply) = do
                                                    ] ++ hasReply)
       requestBody = [buf] ++ writeStmt ++ lists' ++ [ret]
       -- TODO: checked vs. unchecked?
-      request = mkMethod name ("self" : args') requestBody
+      request = mkMethod name ("self" : methodArgs) requestBody
   return $ Request request replyDecl
 processXDecl ext (XUnion name membs) = do
   m <- get

@@ -46,7 +46,28 @@ class TestConnection(object):
 
     def test_list_extensions(self):
         reply = self.conn.core.ListExtensions().reply()
-        print(reply.names_len)
-        print(reply.names)
         exts = [''.join(map(chr, ext.name)) for ext in reply.names]
         assert "XVideo" in exts
+
+    def test_create_window(self):
+        wid = self.conn.generate_id()
+        default_screen = self.conn.setup.roots[self.conn.pref_screen]
+        cookie = self.xproto.CreateWindow(
+            default_screen.root_depth,
+            wid,
+            default_screen.root,
+            0, 0, 1, 1, # xywh
+            0,
+            xcffib.xproto.WindowClass.InputOutput,
+            default_screen.root_visual,
+            xcffib.xproto.CW.BackPixel | xcffib.xproto.CW.EventMask,
+            [
+                default_screen.black_pixel,
+                xcffib.xproto.EventMask.StructureNotify
+            ]
+        )
+
+        assert cookie.sequence == 1
+
+        self.conn.flush()
+        self.conn.invalid()

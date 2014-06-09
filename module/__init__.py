@@ -207,7 +207,15 @@ class List(Protobj):
     def __iter__(self):
         return iter(self.list)
 
-    # TODO: implement the rest of the sequence protocol
+    def __getitem__(self, key):
+        return self.list[key]
+
+    def __setitem__(self, key, value):
+        self.list[key] = value
+
+    def __delitem__(self, key):
+        del self.list[key]
+
 
 class Connection(object):
 
@@ -338,22 +346,14 @@ class Error(Response, XcffibException):
         self.code = struct.unpack_from('B', parent)
 
 
-def pack_list(from_, pack_type, size=None):
+def pack_list(from_, pack_type, count=None):
     """ Return the wire packed version of `from_`. `pack_type` should be some
     subclass of `xcffib.Struct`, or a string that can be passed to
     `struct.pack`. You must pass `size` if `pack_type` is a struct.pack string.
     """
 
-    # If from_ is a string, we need to make it to something we know how to
-    # pack. Otherwise, we assume it is something we know how to pack.
-    if (isinstance(from_, six.string_types) or
-            isinstance(from_, six.binary_type)):
-        if isinstance(pack_type, six.string_types):
-            if size is None:
-                raise TypeError(
-                    "must pass size if `pack_type` is a string: " + pack_type)
-            from_ = List(from_, 0, len(from_), size)
-        else:
-            from_ = List(from_, 0, -1, pack_type)
-
-    return sum(map(lambda t: t.pack(), from_))
+    if isinstance(pack_type, six.string_types):
+        return struct.pack(pack_type * len(from_), *tuple(from_))
+    else:
+        # from_ = List(from_, 0, -1, pack_type)
+        raise NotImplementedError("implement this correctly, fool")
