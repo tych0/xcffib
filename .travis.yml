@@ -4,7 +4,8 @@ python:
   - "2.7"
   - "3.3"
   - "3.4"
-  - "pypy"
+# TODO: re-enable pypy when I have some time to set up a debug environment.
+#  - "pypy"
 
 before_install:
   - sudo apt-get update
