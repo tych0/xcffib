@@ -312,18 +312,24 @@ class Connection(object):
         return C.xcb_disconnect(self._conn)
 
     def _process_error(self, error_p):
+        self.invalid()
         if error_p[0] != ffi.NULL:
-            opcode = error_p[0][0].error_code
+            opcode = error_p[0].error_code
             # TODO: resolve the actual error class; also, should we free
             # error_p? It is actually allocated by xcb_wait_for_reply.
             raise XcffibException(opcode)
 
     @ensure_connected
     def wait_for_reply(self, sequence):
-        error_p = ffi.new("xcb_generic_error_t *[1]")
+        error_p = ffi.new("xcb_generic_error_t **")
         data = C.xcb_wait_for_reply(self._conn, sequence, error_p)
-        reply = ffi.cast("xcb_generic_reply_t *", data)
+
         self._process_error(error_p)
+        if data == ffi.NULL:
+            # No data and no error => bad sequence number
+            raise XcffibException("Bad sequence number %d" % sequence)
+
+        reply = ffi.cast("xcb_generic_reply_t *", data)
         # why is this 32 and not sizeof(xcb_generic_reply_t) == 8?
         return bytes(ffi.buffer(data, 32 + reply.length * 4))
 

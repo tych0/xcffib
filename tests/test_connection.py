@@ -69,5 +69,10 @@ class TestConnection(object):
 
         assert cookie.sequence == 1
 
-        self.conn.flush()
-        self.conn.invalid()
+        cookie = self.xproto.GetGeometry(wid)
+
+        assert cookie.sequence == 2
+
+    @raises(xcffib.XcffibException)
+    def test_wait_for_nonexistent_request(self):
+        self.conn.wait_for_reply(10)
