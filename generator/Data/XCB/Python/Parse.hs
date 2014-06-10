@@ -22,8 +22,6 @@ import System.FilePath.Glob
 
 import Text.Format
 
-import Debug.Trace
-
 data TypeInfo =
   -- | A "base" X type, i.e. one described in baseTypeInfo; first arg is the
   -- struct.unpack string, second is the size.
@@ -269,17 +267,19 @@ structElemToPyPack _ m (SField n typ _ _) =
     CompositeType _ _ _ -> Right $ ([n], mkCall (n ++ ".pack") [])
 -- TODO: assert values are in enum?
 structElemToPyPack ext m (X.List n typ len _) =
-  case m M.! typ of
-    BaseType c i -> Right $ ([n], mkCall "xcffib.pack_list" [ mkName n
-                                                            , mkStr c
-                                                            , mkInt i
-                                                            ])
-    CompositeType tExt c i ->
-      let c' = if tExt == ext then c else (tExt ++ "." ++ c)
-          size = maybeToList $ fmap mkInt i
-      in Right $ ([n], mkCall "xcffib.pack_list" ([ mkName n
-                                                  , mkName c'
-                                                  ] ++ size))
+  let listLen = mkCall "len" [mkName n]
+      len' = fromMaybe listLen $ fmap xExpressionToPyExpr len
+  in case m M.! typ of
+        BaseType c _ -> Right $ ([n], mkCall "xcffib.pack_list" [ mkName n
+                                                                , mkStr c
+                                                                , len'
+                                                                ])
+        CompositeType tExt c _ ->
+          let c' = if tExt == ext then c else (tExt ++ "." ++ c)
+          in Right $ ([n], mkCall "xcffib.pack_list" ([ mkName n
+                                                      , mkName c'
+                                                      , len'
+                                                      ]))
 structElemToPyPack _ m (ExprField name typ expr) =
   let e = xExpressionToPyExpr expr
   in case m M.! typ of
