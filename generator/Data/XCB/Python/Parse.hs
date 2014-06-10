@@ -288,7 +288,9 @@ structElemToPyPack _ m (ExprField name typ expr) =
                                                              ])
        CompositeType _ _ _ -> Right $ ([name],
                                        mkCall (mkDot e (mkName "pack")) [])
-structElemToPyPack _ m (ValueParam typ mask padding list) =
+
+-- As near as I can tell here the padding param is unused.
+structElemToPyPack _ m (ValueParam typ mask _ list) =
   case m M.! typ of
     BaseType c i ->
       let mask' = mkCall "struct.pack" [mkStr c, mkName mask]
@@ -436,8 +438,8 @@ processXDecl ext (XUnion name membs) = do
   where
     mkUnionUnpack :: (Maybe String, String, Maybe Int)
                   -> (Statement (), Maybe Int)
-    mkUnionUnpack (name, typ, size) =
-      (mkUnpackFrom (maybeToList name) typ, size)
+    mkUnionUnpack (n, typ, size) =
+      (mkUnpackFrom (maybeToList n) typ, size)
 
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.
