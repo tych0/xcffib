@@ -9,10 +9,13 @@ are missing) X extensions in 1.10.
 
 ## Dependencies
 
-Currently `xcb-types` doesn't run against `xcb-proto` 1.10; there is a hacked
-branch available at [tych0/xcb-types](http://github.com/tych0/xcb-types) that
-allows you to parse xcb-proto 1.10 mostly correctly. Other than that, you
-should be able to install all the deps from hackage or pip.
+Currently `xcb-types` (any tagged version, not just the old one on Hackage)
+doesn't run against `xcb-proto` 1.10; there is a hacked branch available at
+[tych0/xcb-types](http://github.com/tych0/xcb-types) that allows you to parse
+xcb-proto 1.10 mostly correctly. Other than that, you should be able to install
+all the deps from hackage or pip. The
+[.travis.yaml](https://github.com/tych0/xcffib/blob/master/.travis.yml) has an
+example of how to install the dependencies on Ubuntu flavors.
 
 ## Differences
 
@@ -34,13 +37,14 @@ because `xcffib` isn't done yet :-)
 
 ## Enhancements
 
-* `xcffib.Struct` implements an `unpack` method, which will unpack the struct
-  back to its `xcb` wire format. (used below...)
 * When sending requests with nested structs you no longer have to pack the
   contents yourself. For example, when calling `xproto.FillPoly`, you used to
   have to convert the `POINT`s you were passing in to some sort of buffer which
   had them `struct.pack`'d. Now, you can just pass an iterable (or
-  `xcffib.List`) of `POINT`s and it will be automatically unpacked for you.
+  `xcffib.List`) of `POINT`s and it will be automatically packed for you.
+* Most of the lower level XCB connection primitives that were previously not
+  exposed are now available via `xcffib.ffi.{ffi,C}`, assuming you want to go
+  out of band of the binding.
 
 ## Why haskell?
 
@@ -49,3 +53,6 @@ Why is the binding generator written in haskell? Because haskell is awesome.
 ## TODO
 
 * XGE support? (xpyb doesn't implement this either)
+* xprint and xkb support. These will require some non-trivial work in
+  xcb-types, since it won't parse them correctly.
+* Run each test in its own X server to avoid test cross pollution.
