@@ -10,7 +10,7 @@ class RequestError(xcffib.Error):
     def __init__(self, parent, offset, size):
         xcffib.Error.__init__(self, parent, offset, size)
         base = offset
-        self.bad_value, self.minor_opcode, self.major_opcode = struct.unpack_from("xx2xIHB1x", parent, offset)
+        self.bad_value, self.minor_opcode, self.major_opcode = struct.unpack_from("xx2xIHBx", parent, offset)
         offset += 12
         self.bufsize = offset - base
 _events[1] = RequestError

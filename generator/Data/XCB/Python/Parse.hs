@@ -190,7 +190,7 @@ xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
 -- pad which isn't at the end. If the first element of the request or reply is
 -- a byte long, it takes that spot instead, and there is one less offset
 addStructData :: (String, Int) -> String -> (String, Int -> Int)
-addStructData (prefix, plen) (c : cs) | c `elem` "Bb" =
+addStructData (prefix, plen) (c : cs) | c `elem` "Bbx" =
   let formatted = format prefix [[c]]
    -- If we actually did format something, then we want to offset by one
    -- less, becuase we aren't taking up a byte the rest of the struct. If we
@@ -202,12 +202,19 @@ addStructData (prefix, plen) s =
   let formatted = format prefix ["x"]
   in (formatted ++ s, (+) plen)
 
+
+-- Don't prefix a single pad byte with a '1'. This is simpler to parse
+-- visually, and also simplifies addStructData above.
+mkPad :: Int -> String
+mkPad 1 = "x"
+mkPad i = (show i) ++ "x"
+
 structElemToPyUnpack :: String
                      -> TypeInfoMap
                      -> GenStructElem Type
                      -> Either (Maybe String, String, Maybe Int)
                                (Statement (), Expr ())
-structElemToPyUnpack _ _ (Pad i) = Left (Nothing, (show i) ++ "x", Just i)
+structElemToPyUnpack _ _ (Pad i) = Left (Nothing, mkPad i, Just i)
 
 -- XXX: This is a cheap hack for noop, we should really do better.
 structElemToPyUnpack _ _ (Doc _ _ _) = Left (Nothing, "", Nothing)
@@ -253,7 +260,7 @@ structElemToPyPack :: String
                    -> TypeInfoMap
                    -> GenStructElem Type
                    -> Either (Maybe String, String) ([String], Expr ())
-structElemToPyPack _ _ (Pad i) = Left (Nothing, (show i) ++ "x")
+structElemToPyPack _ _ (Pad i) = Left (Nothing, mkPad i)
 -- TODO: implement doc, switch, and fd?
 structElemToPyPack _ _ (Doc _ _ _) = Left (Nothing, "")
 structElemToPyPack _ _ (Switch _ _ _) = Left (Nothing, "")

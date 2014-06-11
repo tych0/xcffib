@@ -70,8 +70,13 @@ class TestConnection(object):
         assert cookie.sequence == 1
 
         cookie = self.xproto.GetGeometry(wid)
-
         assert cookie.sequence == 2
+
+        reply = cookie.reply()
+        assert reply.x == 0
+        assert reply.y == 0
+        assert reply.width == 1
+        assert reply.height == 1
 
     @raises(xcffib.XcffibException)
     def test_wait_for_nonexistent_request(self):

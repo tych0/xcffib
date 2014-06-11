@@ -25,6 +25,7 @@ xcffib: $(GEN)
 
 newtests: $(GEN)
 	$(GEN) --input ./tests/generator/ --output ./tests/generator/
+	git diff tests
 
 # you should have xcb-proto installed to run this
 check: xcffib
