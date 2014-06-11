@@ -2,6 +2,7 @@
 # backwards compatibility with xpyb.
 
 from .ffi import ffi, C, bytes_to_cdata
+from . import Connection
 
 # re-export these constants for convenience and without hackery so pyflakes can
 # work.
@@ -26,3 +27,6 @@ XCB_CONN_CLOSED_REQ_LEN_EXCEED = C.XCB_CONN_CLOSED_REQ_LEN_EXCEED
 XCB_CONN_CLOSED_PARSE_ERR = C.XCB_CONN_CLOSED_PARSE_ERR
 # XCB_CONN_CLOSED_INVALID_SCREEN = C.XCB_CONN_CLOSED_INVALID_SCREEN
 # XCB_CONN_CLOSED_FDPASSING_FAILED = C.XCB_CONN_CLOSED_FDPASSING_FAILED
+
+# More backwards compatibility
+connect = Connection

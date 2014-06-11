@@ -5,7 +5,6 @@ import six
 import struct
 
 from .ffi import ffi, C, bytes_to_cdata
-from . import xcb
 
 def popcount(n):
     return bin(n).count('1')
@@ -16,23 +15,23 @@ class XcffibException(Exception):
 
 class ConnectionException(XcffibException):
     REASONS = {
-        xcb.XCB_CONN_ERROR: (
+        C.XCB_CONN_ERROR: (
             'xcb connection errors because of socket, '
             'pipe and other stream errors.'),
-        xcb.XCB_CONN_CLOSED_EXT_NOTSUPPORTED: (
+        C.XCB_CONN_CLOSED_EXT_NOTSUPPORTED: (
             'xcb connection shutdown because extension not supported'),
-        xcb.XCB_CONN_CLOSED_MEM_INSUFFICIENT: (
+        C.XCB_CONN_CLOSED_MEM_INSUFFICIENT: (
             'malloc(), calloc() and realloc() error upon failure, '
             'for eg ENOMEM'),
-        xcb.XCB_CONN_CLOSED_REQ_LEN_EXCEED: (
+        C.XCB_CONN_CLOSED_REQ_LEN_EXCEED: (
             'Connection closed, exceeding request length that server '
             'accepts.'),
-        xcb.XCB_CONN_CLOSED_PARSE_ERR: (
+        C.XCB_CONN_CLOSED_PARSE_ERR: (
             'Connection closed, error during parsing display string.'),
-#        xcb.XCB_CONN_CLOSED_INVALID_SCREEN: (
+#        C.XCB_CONN_CLOSED_INVALID_SCREEN: (
 #            'Connection closed because the server does not have a screen '
 #            'matching the display.'),
-#        xcb.XCB_CONN_CLOSED_FDPASSING_FAILED: (
+#        C.XCB_CONN_CLOSED_FDPASSING_FAILED: (
 #            'Connection closed because some FD passing operation failed'),
     }
 
