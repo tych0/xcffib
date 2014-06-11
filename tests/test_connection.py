@@ -76,31 +76,3 @@ class TestConnection(object):
     @raises(xcffib.XcffibException)
     def test_wait_for_nonexistent_request(self):
         self.conn.wait_for_reply(10)
-
-    def test_create_window_wire(self):
-        expected = '\x00\x08\x00\x00\x00\x00 \x00J\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x01\x00!\x00\x00\x00\x02\x08\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00'
-
-        def fake_send(opcode, data, cookie=None, reply=None):
-            return data
-
-        self.xproto.send_request = fake_send
-
-        wid = self.conn.generate_id()
-        default_screen = self.conn.setup.roots[self.conn.pref_screen]
-        encoded = self.xproto.CreateWindow(
-            default_screen.root_depth,
-            wid,
-            default_screen.root,
-            0, 0, 1, 1, # xywh
-            0,
-            xcffib.xproto.WindowClass.InputOutput,
-            default_screen.root_visual,
-            xcffib.xproto.CW.BackPixel | xcffib.xproto.CW.EventMask,
-            [
-                default_screen.black_pixel,
-                xcffib.xproto.EventMask.StructureNotify
-            ]
-        )
-
-        actual = bytes(encoded.getvalue())
-        assert actual == expected
