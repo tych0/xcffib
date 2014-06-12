@@ -372,11 +372,11 @@ processXDecl ext (XStruct n membs) = do
   let (statements, structLen) = mkStructStyleUnpack ("", 0) ext m membs
   modify $ mkModify ext n (CompositeType ext n structLen)
   return $ Declaration [mkXClass n "xcffib.Struct" statements]
-processXDecl ext (XEvent name number membs _) = do
-  -- TODO: if not hasSequence then we increment by 1 byte? see KeymapNotify
+processXDecl ext (XEvent name number membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
-      (statements, _) = mkStructStyleUnpack ("x{0}2x", 4) ext m membs
+      prefix = if fromMaybe False noSequence then ("x", 1) else ("x{0}2x", 4)
+      (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" number cname
   return $ Declaration [mkXClass cname "xcffib.Event" statements, eventsUpd]
 processXDecl ext (XError name number membs) = do

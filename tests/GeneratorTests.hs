@@ -20,6 +20,7 @@ tests = [ "event"
         , "struct"
         , "enum"
         , "request_reply"
+        , "no_sequence"
         ]
 
 mkFname :: String -> FilePath
