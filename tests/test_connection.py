@@ -94,3 +94,10 @@ class TestConnection(XvfbTest):
         reply = self.xproto.QueryTree(self.default_screen.root).reply()
         assert reply.children_len == 0
         assert len(reply.children) == 0
+
+    def test_create_window_creates_window(self):
+        self.create_window()
+        reply = self.xproto.QueryTree(self.default_screen.root).reply()
+        assert reply.children_len == 1
+        assert len(reply.children) == 1
+

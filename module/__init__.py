@@ -180,22 +180,24 @@ class Extension(object):
         return cookie(self.conn, seq)
 
 class List(Protobj):
-    def __init__(self, parent, offset, length, typ, size=-1):
-        Protobj.__init__(self, parent, offset, length)
+    def __init__(self, parent, offset, count, typ, size=-1):
+        Protobj.__init__(self, parent, offset, count * size)
 
         self.list = []
 
         if isinstance(typ, str):
-            count = length // size
+            assert size > 0
             self.list = list(struct.unpack_from(typ * count, parent, offset))
-            self.bufsize = length
+            self.bufsize = count * size
         else:
             cur = offset
-            for _ in range(length):
+            for _ in range(count):
                 item = typ(parent, cur, size)
                 cur += item.bufsize
                 self.list.append(item)
             self.bufsize = cur - offset
+
+        assert count == len(self.list)
 
     def __str__(self):
         return str(self.list)
