@@ -31,4 +31,4 @@ newtests: $(GEN)
 check: xcffib
 	cabal test
 	flake8 ./xcffib
-	xvfb-run nosetests -d
+	nosetests -d

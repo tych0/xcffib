@@ -3,23 +3,43 @@ import six
 import xcffib
 from xcffib.ffi import ffi, C
 import xcffib.xproto
+from xcffib.testing import XvfbTest
 
 from nose.tools import raises
 
 
-class TestConnection(object):
+class TestConnection(XvfbTest):
 
     def setUp(self):
-        self.conn = xcffib.Connection(os.environ['DISPLAY'])
+        XvfbTest.setUp(self)
         self.xproto = xcffib.xproto.xprotoExtension(self.conn)
 
     def tearDown(self):
-        try:
-            self.conn.disconnect()
-        except xcffib.ConnectionException:
-            pass
-        finally:
-            self.conn = None
+        self.xproto = None
+        XvfbTest.tearDown(self)
+
+    @property
+    def default_screen(self):
+        return self.conn.setup.roots[self.conn.pref_screen]
+
+
+    def create_window(self, wid=None, x=0, y=0, w=1, h=1):
+        if wid is None:
+            wid = self.conn.generate_id()
+        return self.xproto.CreateWindow(
+            self.default_screen.root_depth,
+            wid,
+            self.default_screen.root,
+            x, y, w, h,
+            0,
+            xcffib.xproto.WindowClass.InputOutput,
+            self.default_screen.root_visual,
+            xcffib.xproto.CW.BackPixel | xcffib.xproto.CW.EventMask,
+            [
+                self.default_screen.black_pixel,
+                xcffib.xproto.EventMask.StructureNotify
+            ]
+        )
 
     def test_connect(self):
         assert self.conn.has_error() == 0
@@ -51,22 +71,7 @@ class TestConnection(object):
 
     def test_create_window(self):
         wid = self.conn.generate_id()
-        default_screen = self.conn.setup.roots[self.conn.pref_screen]
-        cookie = self.xproto.CreateWindow(
-            default_screen.root_depth,
-            wid,
-            default_screen.root,
-            0, 0, 1, 1, # xywh
-            0,
-            xcffib.xproto.WindowClass.InputOutput,
-            default_screen.root_visual,
-            xcffib.xproto.CW.BackPixel | xcffib.xproto.CW.EventMask,
-            [
-                default_screen.black_pixel,
-                xcffib.xproto.EventMask.StructureNotify
-            ]
-        )
-
+        cookie = self.create_window(wid=wid)
         assert cookie.sequence == 1
 
         cookie = self.xproto.GetGeometry(wid)
@@ -81,3 +86,11 @@ class TestConnection(object):
     @raises(xcffib.XcffibException)
     def test_wait_for_nonexistent_request(self):
         self.conn.wait_for_reply(10)
+
+    def test_no_windows(self):
+        # Make sure there aren't any windows in the root window. This mostly
+        # just exists to make sure people aren't somehow mistakenly running a
+        # test in their own X session, which could corrupt results.
+        reply = self.xproto.QueryTree(self.default_screen.root).reply()
+        assert reply.children_len == 0
+        assert len(reply.children) == 0
