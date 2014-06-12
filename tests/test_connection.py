@@ -3,9 +3,12 @@ import six
 import xcffib
 from xcffib.ffi import ffi, C
 import xcffib.xproto
+from xcffib.xproto import EventMask
 from xcffib.testing import XvfbTest
 
 from nose.tools import raises
+
+import subprocess
 
 
 class TestConnection(XvfbTest):
@@ -21,7 +24,6 @@ class TestConnection(XvfbTest):
     @property
     def default_screen(self):
         return self.conn.setup.roots[self.conn.pref_screen]
-
 
     def create_window(self, wid=None, x=0, y=0, w=1, h=1, is_checked=False):
         if wid is None:
@@ -41,6 +43,9 @@ class TestConnection(XvfbTest):
             ],
             is_checked=is_checked
         )
+
+    def xeyes(self):
+        self.spawn(['xeyes'])
 
     def test_connect(self):
         assert self.conn.has_error() == 0
@@ -119,3 +124,20 @@ class TestConnection(XvfbTest):
         wid = self.conn.generate_id()
         cookie = self.create_window(wid, is_checked=True)
         cookie.check()
+
+    def test_create_window_generates_event(self):
+        # Enable CreateNotify
+        self.xproto.ChangeWindowAttributes(
+            self.default_screen.root,
+            xcffib.xproto.CW.EventMask,
+            [ EventMask.SubstructureNotify |
+              EventMask.StructureNotify |
+              EventMask.SubstructureRedirect
+            ]
+        )
+
+        self.xeyes()
+        self.conn.flush()
+
+        e = self.conn.wait_for_event()
+        assert isinstance(e, xcffib.xproto.CreateNotifyEvent)

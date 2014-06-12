@@ -26,6 +26,6 @@ class ListExtensionsCookie(xcffib.Cookie):
 class request_replyExtension(xcffib.Extension):
     def ListExtensions(self, is_checked=True):
         buf = six.BytesIO()
-        buf.write(struct.pack("xx2x"))
+        buf.write(struct.pack("=xx2x"))
         return self.send_request(99, buf, ListExtensionsCookie, is_checked=is_checked)
 xcffib._add_ext(xcffib.ExtensionKey("request_reply"), request_replyExtension, _events, _errors)

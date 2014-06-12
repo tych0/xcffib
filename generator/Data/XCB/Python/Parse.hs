@@ -290,7 +290,7 @@ structElemToPyPack ext m (X.List n typ len _) =
 structElemToPyPack _ m (ExprField name typ expr) =
   let e = xExpressionToPyExpr expr
   in case m M.! typ of
-       BaseType c _ -> Right $ ([name], mkCall "struct.pack" [ mkStr c
+       BaseType c _ -> Right $ ([name], mkCall "struct.pack" [ mkStr ('=' : c)
                                                              , e
                                                              ])
        CompositeType _ _ _ -> Right $ ([name],
@@ -300,7 +300,7 @@ structElemToPyPack _ m (ExprField name typ expr) =
 structElemToPyPack _ m (ValueParam typ mask _ list) =
   case m M.! typ of
     BaseType c i ->
-      let mask' = mkCall "struct.pack" [mkStr c, mkName mask]
+      let mask' = mkCall "struct.pack" [mkStr ('=' : c), mkName mask]
           list' = mkCall "xcffib.pack_list" [ mkName list
                                             , mkStr "I"
                                             , mkInt i
@@ -371,21 +371,23 @@ processXDecl ext (XStruct n membs) = do
   m <- get
   let (statements, structLen) = mkStructStyleUnpack ("", 0) ext m membs
   modify $ mkModify ext n (CompositeType ext n structLen)
-  return $ Declaration [mkXClass n "xcffib.Struct" statements]
+  return $ Declaration [mkXClass n "xcffib.Struct" Nothing statements]
 processXDecl ext (XEvent name number membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       prefix = if fromMaybe False noSequence then ("x", 1) else ("x{0}2x", 4)
-      (statements, _) = mkStructStyleUnpack prefix ext m membs
+      (statements, structLen) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" number cname
-  return $ Declaration [mkXClass cname "xcffib.Event" statements, eventsUpd]
+  return $ Declaration [ mkXClass cname "xcffib.Event" structLen statements
+                       , eventsUpd
+                       ]
 processXDecl ext (XError name number membs) = do
   m <- get
   let cname = name ++ "Error"
       (statements, structLen) = mkStructStyleUnpack ("xx2x", 4) ext m membs
       errorsUpd = mkDictUpdate "_errors" number cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
-  return $ Declaration [ mkXClass cname "xcffib.Error" statements
+  return $ Declaration [ mkXClass cname "xcffib.Error" structLen statements
                        , alias
                        , errorsUpd
                        ]
@@ -411,14 +413,14 @@ processXDecl ext (XRequest name number membs reply) = do
       buf = mkAssign "buf" (mkCall "six.BytesIO" noArgs)
       (packStr, _) = addStructData ("x{0}2x", 4) $ intercalate "" keys
       write = mkCall "buf.write" [mkCall "struct.pack"
-                                         (mkStr packStr : (map mkName args'))]
+                                         (mkStr ('=' : packStr) : (map mkName args'))]
       writeStmt = if length packStr > 0 then [StmtExpr write ()] else []
       cookieName = (name ++ "Cookie")
       replyDecl = concat $ maybeToList $ do
         reply' <- reply
         let (replyStmts, _) = mkStructStyleUnpack ("x{0}2x4x", 8) ext m reply'
             replyName = name ++ "Reply"
-            theReply = mkXClass replyName "xcffib.Reply" replyStmts
+            theReply = mkXClass replyName "xcffib.Reply" Nothing replyStmts
             replyType = mkAssign "reply_type" $ mkName replyName
             cookie = mkClass cookieName "xcffib.Cookie" [replyType]
         return [theReply, cookie]
@@ -446,7 +448,7 @@ processXDecl ext (XUnion name membs) = do
                    name ++ " has fields of different length")
       lengths' = catMaybes $ nub sizes
       unionLen = if length lists' > 0 then Nothing else listToMaybe lengths'
-      decl = [mkXClass name "xcffib.Union" $ (fst $ unzip lists) ++ toUnpack]
+      decl = [mkXClass name "xcffib.Union" Nothing $ (fst $ unzip lists) ++ toUnpack]
   -- There should be at most one size of object in the struct.
   unless ((length $ lengths') <= 1) err
   -- List in list, so we don't know a length here. -1 is the sentinel value

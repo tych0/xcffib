@@ -19,6 +19,7 @@ pycheck: xcffib
 	-@sleep 1 # apparently xvfb doesn't clean up after itself right away
 	xvfb-run nosetests3 -d
 
+# you should have xcb-proto installed to run this
 xcffib: $(GEN)
 	$(GEN) --input /usr/share/xcb --output ./xcffib
 	cp ./module/*py ./xcffib/
@@ -27,7 +28,6 @@ newtests: $(GEN)
 	$(GEN) --input ./tests/generator/ --output ./tests/generator/
 	git diff tests
 
-# you should have xcb-proto installed to run this
 check: xcffib
 	cabal test
 	flake8 ./xcffib

@@ -112,18 +112,17 @@ mkParams = map (\x -> Param (ident x) Nothing Nothing ())
 mkArg :: String -> Argument ()
 mkArg n = ArgExpr (mkName n) ()
 
-mkXClass :: String -> String -> Suite () -> Statement ()
-mkXClass clazz superclazz [] = mkEmptyClass clazz superclazz
-mkXClass clazz superclazz constructor =
-  let super = mkCall (superclazz ++ ".__init__") [ mkName "self"
-                                                 , mkName "parent"
-                                                 , mkName "offset"
-                                                 , mkName "size"
-                                                 ]
+mkXClass :: String -> String -> Maybe Int -> Suite () -> Statement ()
+mkXClass clazz superclazz _ [] = mkEmptyClass clazz superclazz
+mkXClass clazz superclazz size constructor =
+  let sizeArg = if isJust size then [] else ["size"]
+      args = [ "self", "parent", "offset" ] ++ sizeArg
+      super = mkCall (superclazz ++ ".__init__") $ map mkName args
       body = [(StmtExpr super ())] ++ constructor
-      initParams = mkParams ["self", "parent", "offset", "size"]
+      initParams = mkParams args
       initMethod = Fun (ident "__init__") initParams Nothing body ()
-  in mkClass clazz superclazz [initMethod]
+      structLength = map (mkAssign "struct_length" . mkInt) $ maybeToList size
+  in mkClass clazz superclazz $ structLength ++ [initMethod]
 
 mkEmptyClass :: String -> String -> Statement ()
 mkEmptyClass clazz superclazz = mkClass clazz superclazz [Pass ()]

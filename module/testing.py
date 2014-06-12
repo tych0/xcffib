@@ -16,12 +16,15 @@ class XvfbTest(object):
     each test in its own fresh xvfb, leaving you with an xcffib connection to
     that X session as `self.conn` for use in testing. """
 
+    def spawn(self, cmd):
+        """ Spawn a command but swallow its output. """
+        discard = open(os.devnull)
+        return subprocess.Popen(cmd, stdout=discard, stderr=discard)
+
     def setUp(self):
         self._old_display = os.environ.get('DISPLAY')
         os.environ['DISPLAY'] = ':%d' % self._find_display()
-        discard = open(os.devnull)
-        self._xvfb = subprocess.Popen(
-            self._xvfb_command(), stdout=discard, stderr=discard)
+        self._xvfb = self.spawn(self._xvfb_command())
         self.conn = self._connect_to_xvfb()
 
     def tearDown(self):

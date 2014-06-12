@@ -306,13 +306,18 @@ class Connection(object):
 
     @ensure_connected
     def wait_for_event(self):
-        # TODO: implement
-        pass
+        e = C.xcb_wait_for_event(self._conn)
+        self.invalid()
+        return self.hoist_event(e)
 
     @ensure_connected
     def poll_for_event(self):
-        # TODO: implement
-        pass
+        e = C.xcb_poll_for_event(self._conn)
+        self.invalid()
+        if e != ffi.NULL:
+            return self.hoist_event(e)
+        else:
+            return None
 
     @ensure_connected
     def has_error(self):
@@ -372,9 +377,27 @@ class Connection(object):
         err = C.xcb_request_check(self._conn, cookie[0])
         self._process_error(err)
 
+    def hoist_event(self, e):
+        """ Hoist an xcb_generic_event_t to the right xcffib structure. """
+        if e.response_type == 0:
+            return self._process_error(ffi.cast("xcb_generic_error_t *", e))
+
+        if e.response_type > 128:
+            # avoid circular imports
+            from .xproto import ClientMessageEvent
+            event = ClientMessageEvent
+        else:
+            assert core_events, "You probably need to import xcffib.xproto"
+            event = core_events[e.response_type & 0x7f]
+
+        buf = ffi.buffer(e, event.struct_length)
+        return event(buf, 0)
+
 
 class Response(Protobj):
-    def __init__(self, parent, offset, size):
+    def __init__(self, parent, offset, size=None):
+        if size is None:
+            size = len(parent) - offset
         Protobj.__init__(self, parent, offset, size)
 
         # These (and the ones in Reply) aren't used internally and I suspect
@@ -399,7 +422,7 @@ class Event(Response):
 
 class Error(Response, XcffibException):
     def __init__(self, parent, offset):
-        Response.__init__(self, parent, offset)
+        Response.__init__(self, parent, offset, len(parent) - offset)
         XcffibException.__init__(self)
         self.code = struct.unpack_from('B', parent)
 
@@ -411,7 +434,7 @@ def pack_list(from_, pack_type, count=None):
     """
 
     if isinstance(pack_type, six.string_types):
-        return struct.pack(pack_type * len(from_), *tuple(from_))
+        return struct.pack("=" + pack_type * len(from_), *tuple(from_))
     else:
         # from_ = List(from_, 0, -1, pack_type)
         # TODO: implement packing of lists that aren't base types.
