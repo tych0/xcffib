@@ -136,7 +136,6 @@ class VoidCookie(Cookie):
         raise XcffibException("No reply for this message type")
 
 class Extension(object):
-    # TODO: implement
     def __init__(self, conn):
         self.conn = conn
         name = self.__class__.__name__[:-len('Extension')]
@@ -241,7 +240,6 @@ class Connection(object):
 
         self.core = core(self)
         self.setup = self.get_setup()
-        # TODO: xpybConn_setup
 
     def invalid(self):
         if self._conn is None:
@@ -334,17 +332,30 @@ class Connection(object):
         # why is this 32 and not sizeof(xcb_generic_reply_t) == 8?
         return bytes(ffi.buffer(data, 32 + reply.length * 4))
 
-class Event(Protobj):
-    # TODO: implement
-    pass
 
 class Response(Protobj):
-    # TODO: implement
-    pass
+    def __init__(self, parent, offset, size):
+        Protobj.__init__(self, parent, offset, size)
+
+        # These (and the ones in Reply) aren't used internally and I suspect
+        # they're not used by anyone else, but they're here for xpyb
+        # compatibility.
+        resp = ffi.cast("xcb_generic_event_t *", bytes_to_cdata(parent[offset:]))
+        self.response_type = resp.response_type
+        self.sequence = resp.sequence
+
 
 class Reply(Response):
-    # TODO: implement
+    def __init__(self, parent, offset, size):
+        Response.__init__(self, parent, offset, size)
+
+        resp = ffi.cast("xcb_generic_reply_t *", bytes_to_cdata(parent[offset:]))
+        self.length = resp.length
+
+
+class Event(Response):
     pass
+
 
 class Error(Response, XcffibException):
     def __init__(self, parent, offset):
@@ -363,4 +374,5 @@ def pack_list(from_, pack_type, count=None):
         return struct.pack(pack_type * len(from_), *tuple(from_))
     else:
         # from_ = List(from_, 0, -1, pack_type)
+        # TODO: implement packing of lists that aren't base types.
         raise NotImplementedError("implement this correctly, fool")
