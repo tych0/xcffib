@@ -17,7 +17,7 @@ class XvfbTest(object):
     that X session as `self.conn` for use in testing. """
 
     def setUp(self):
-        self._old_display = os.environ['DISPLAY']
+        self._old_display = os.environ.get('DISPLAY')
         os.environ['DISPLAY'] = ':%d' % self._find_display()
         discard = open(os.devnull)
         self._xvfb = subprocess.Popen(
@@ -49,7 +49,10 @@ class XvfbTest(object):
                 pass
             raise
 
-        os.environ['DISPLAY'] = self._old_display
+        if self._old_display is None:
+            del os.environ['DISPLAY']
+        else:
+            os.environ['DISPLAY'] = self._old_display
 
     def _xvfb_command(self):
         """ You can override this if you have some extra args for Xvfb or
