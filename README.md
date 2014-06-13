@@ -41,8 +41,8 @@ because `xcffib` isn't done yet :-)
   had them `struct.pack`'d. Now, you can just pass an iterable (or
   `xcffib.List`) of `POINT`s and it will be automatically packed for you.
 * Most of the lower level XCB connection primitives that were previously not
-  exposed are now available via `xcffib.ffi.{ffi,C}`, assuming you want to go
-  out of band of the binding.
+  exposed are now available via `xcffib.{ffi,C}`, assuming you want to go out
+  of band of the binding.
 * Checked vs. Unchecked requests are still supported (via Checked and Unchecked
   function calls). However, there is also an additional optional parameter
   `is_checked` to each request function, to allow you to set the checked status

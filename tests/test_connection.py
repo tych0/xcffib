@@ -141,3 +141,8 @@ class TestConnection(XvfbTest):
 
         e = self.conn.wait_for_event()
         assert isinstance(e, xcffib.xproto.CreateNotifyEvent)
+
+    @raises(xcffib.xproto.WindowError)
+    def test_query_invalid_wid_generates_error(self):
+        # query a bad WINDOW
+        self.xproto.QueryTree(0xf00).reply()

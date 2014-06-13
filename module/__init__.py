@@ -350,10 +350,8 @@ class Connection(object):
     def _process_error(self, error_p):
         self.invalid()
         if error_p[0] != ffi.NULL:
-            opcode = error_p[0].error_code
-            # TODO: resolve the actual error class; also, should we free
-            # error_p? It is actually allocated by xcb_wait_for_reply.
-            raise XcffibException(opcode)
+            error = core_errors[error_p[0].error_code]
+            raise error(ffi.buffer(error_p[0], error.struct_length), 0)
 
     @ensure_connected
     def wait_for_reply(self, sequence):
