@@ -29,5 +29,5 @@ newtests: $(GEN)
 
 check: xcffib
 	cabal test
-	flake8 ./xcffib
+	flake8 --config=./tests/flake8.cfg ./xcffib
 	nosetests -d
