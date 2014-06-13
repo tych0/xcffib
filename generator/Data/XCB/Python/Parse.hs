@@ -50,7 +50,7 @@ collectBindings = foldr collectR ([], [])
 
 parse :: FilePath -> IO [XHeader]
 parse fp = do
-  files <- globDir1 (compile "*") fp
+  files <- globDir1 (compile "*.xml") fp
   fromFiles files
 
 renderPy :: Suite () -> String
