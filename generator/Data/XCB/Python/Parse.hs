@@ -384,7 +384,11 @@ processXDecl ext (XError name number membs) = do
   let cname = name ++ "Error"
       (statements, _) = mkStructStyleUnpack ("xx2x", 4) ext m membs
       errorsUpd = mkDictUpdate "_events" number cname
-  return $ Declaration [mkXClass cname "xcffib.Error" statements, errorsUpd]
+      alias = mkAssign ("Bad" ++ name) (mkName cname)
+  return $ Declaration [ mkXClass cname "xcffib.Error" statements
+                       , alias
+                       , errorsUpd
+                       ]
 processXDecl ext (XRequest name number membs reply) = do
   m <- get
   let packF = structElemToPyPack ext m
