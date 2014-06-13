@@ -382,8 +382,8 @@ processXDecl ext (XEvent name number membs noSequence) = do
 processXDecl ext (XError name number membs) = do
   m <- get
   let cname = name ++ "Error"
-      (statements, _) = mkStructStyleUnpack ("xx2x", 4) ext m membs
-      errorsUpd = mkDictUpdate "_events" number cname
+      (statements, structLen) = mkStructStyleUnpack ("xx2x", 4) ext m membs
+      errorsUpd = mkDictUpdate "_errors" number cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
   return $ Declaration [ mkXClass cname "xcffib.Error" statements
                        , alias
