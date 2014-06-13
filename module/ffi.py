@@ -1,9 +1,6 @@
 from cffi import FFI
 from six.moves import range as srange
 
-# TODO: don't require a c compiler at runtime :-)
-# http://cffi.readthedocs.org/en/release-0.8/index.html?highlight=ffilibrary#distributing-modules-using-cffi
-
 ffi = FFI()
 
 CONSTANTS = [
@@ -110,6 +107,19 @@ ffi.cdef("""
         uint8_t       pad1[4]; /**<  */
     } xcb_setup_t;
 
+    typedef uint32_t xcb_visualid_t;
+
+    typedef struct xcb_visualtype_t {
+        xcb_visualid_t visual_id; /**<  */
+        uint8_t        _class; /**<  */
+        uint8_t        bits_per_rgb_value; /**<  */
+        uint16_t       colormap_entries; /**<  */
+        uint32_t       red_mask; /**<  */
+        uint32_t       green_mask; /**<  */
+        uint32_t       blue_mask; /**<  */
+        uint8_t        pad0[4]; /**<  */
+    } xcb_visualtype_t;
+
 
     // xcbext.h
     struct xcb_extension_t {
@@ -167,3 +177,17 @@ C = ffi.verify("""
 def bytes_to_cdata(bs):
     buf = ffi.new('char[]', bs)
     return buf
+
+# cfficairo needs an xcb_visualtype_t
+def visualtype_to_c_struct(vt):
+    s = ffi.new("xcb_visualtype_t *")
+
+    s.visual_id = vt.visual_id
+    s._class = vt._class
+    s.bits_per_rgb_value = vt.bits_per_rgb_value
+    s.colormap_entries = vt.colormap_entries
+    s.red_mask = vt.red_mask
+    s.green_mask = vt.green_mask
+    s.blue_mask = vt.blue_mask
+
+    return s
