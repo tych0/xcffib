@@ -434,6 +434,11 @@ def pack_list(from_, pack_type, count=None):
     if isinstance(pack_type, six.string_types):
         return struct.pack("=" + pack_type * len(from_), *tuple(from_))
     else:
-        # from_ = List(from_, 0, -1, pack_type)
-        # TODO: implement packing of lists that aren't base types.
-        raise NotImplementedError("implement this correctly, fool")
+        buf = six.BytesIO()
+        for item in from_:
+            # If we can't pack it, you'd better have packed it yourself...
+            if isinstance(item, Struct):
+                buf.write(item.pack())
+            else:
+                buf.write(item)
+        return buf.getvalue()

@@ -258,50 +258,57 @@ structElemToPyUnpack _ _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
 structElemToPyPack :: String
                    -> TypeInfoMap
+                   -> (String -> String)
                    -> GenStructElem Type
                    -> Either (Maybe String, String) ([String], Expr ())
-structElemToPyPack _ _ (Pad i) = Left (Nothing, mkPad i)
+structElemToPyPack _ _ _ (Pad i) = Left (Nothing, mkPad i)
 -- TODO: implement doc, switch, and fd?
-structElemToPyPack _ _ (Doc _ _ _) = Left (Nothing, "")
-structElemToPyPack _ _ (Switch _ _ _) = Left (Nothing, "")
-structElemToPyPack _ _ (Fd _) = Left (Nothing, "")
-structElemToPyPack _ m (SField n typ _ _) =
-  case m M.! typ of
-    BaseType c _ -> Left (Just n, c)
-    -- TODO: be a little smarter here; we should really make sure that things
-    -- have a .pack(); if users are calling us via the old style api, we need
-    -- to support that as well.
-    CompositeType _ _ _ -> Right $ ([n], mkCall (n ++ ".pack") noArgs)
+structElemToPyPack _ _ _ (Doc _ _ _) = Left (Nothing, "")
+structElemToPyPack _ _ _ (Switch _ _ _) = Left (Nothing, "")
+structElemToPyPack _ _ _ (Fd _) = Left (Nothing, "")
+structElemToPyPack _ m accessor (SField n typ _ _) =
+  let name = accessor n
+  in case m M.! typ of
+       BaseType c _ -> Left (Just name, c)
+       -- XXX: be a little smarter here? we should really make sure that things
+       -- have a .pack(); if users are calling us via the old style api, we need
+       -- to support that as well. This isn't super necessary, though, because
+       -- currently (xcb-proto 1.10) there are no direct packs of raw structs, so
+       -- this is really only necessary if xpyb gets forward ported in the future if
+       -- there are actually calls of this type.
+       CompositeType _ _ _ -> Right $ ([name], mkCall (name ++ ".pack") noArgs)
 -- TODO: assert values are in enum?
-structElemToPyPack ext m (X.List n typ len _) =
-  let listLen = mkCall "len" [mkName n]
+structElemToPyPack ext m accessor (X.List n typ len _) =
+  let name = accessor n
+      listLen = mkCall "len" [mkName name]
       len' = fromMaybe listLen $ fmap xExpressionToPyExpr len
   in case m M.! typ of
-        BaseType c _ -> Right $ ([n], mkCall "xcffib.pack_list" [ mkName n
-                                                                , mkStr c
-                                                                , len'
-                                                                ])
+        BaseType c _ -> Right $ ([name], mkCall "xcffib.pack_list" [ mkName $ name
+                                                                   , mkStr c
+                                                                   , len'
+                                                                   ])
         CompositeType tExt c _ ->
           let c' = if tExt == ext then c else (tExt ++ "." ++ c)
-          in Right $ ([n], mkCall "xcffib.pack_list" ([ mkName n
-                                                      , mkName c'
-                                                      , len'
-                                                      ]))
-structElemToPyPack _ m (ExprField name typ expr) =
+          in Right $ ([name], mkCall "xcffib.pack_list" ([ mkName $ name
+                                                         , mkName c'
+                                                         , len'
+                                                         ]))
+structElemToPyPack _ m accessor (ExprField name typ expr) =
   let e = xExpressionToPyExpr expr
+      name' = accessor name
   in case m M.! typ of
-       BaseType c _ -> Right $ ([name], mkCall "struct.pack" [ mkStr ('=' : c)
-                                                             , e
-                                                             ])
-       CompositeType _ _ _ -> Right $ ([name],
+       BaseType c _ -> Right $ ([name'], mkCall "struct.pack" [ mkStr ('=' : c)
+                                                              , e
+                                                              ])
+       CompositeType _ _ _ -> Right $ ([name'],
                                        mkCall (mkDot e (mkName "pack")) noArgs)
 
 -- As near as I can tell here the padding param is unused.
-structElemToPyPack _ m (ValueParam typ mask _ list) =
+structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
   case m M.! typ of
     BaseType c i ->
-      let mask' = mkCall "struct.pack" [mkStr ('=' : c), mkName mask]
-          list' = mkCall "xcffib.pack_list" [ mkName list
+      let mask' = mkCall "struct.pack" [mkStr ('=' : c), mkName $ accessor mask]
+          list' = mkCall "xcffib.pack_list" [ mkName $ accessor list
                                             , mkStr "I"
                                             , mkInt i
                                             ]
@@ -309,6 +316,46 @@ structElemToPyPack _ m (ValueParam typ mask _ list) =
       in Right $ ([mask, list], mkCall "buf.write" [toWrite])
     CompositeType _ _ _ -> error (
       "ValueParams other than CARD{16,32} not allowed.")
+
+mkPackStmts :: String
+            -> String
+            -> TypeInfoMap
+            -> (String -> String)
+            -> (String, Int)
+            -> [GenStructElem Type]
+            -> ([String], Suite ())
+mkPackStmts ext name m accessor prefix membs =
+  let buf = [mkAssign "buf" (mkCall "six.BytesIO" noArgs)]
+      packF = structElemToPyPack ext m accessor
+      (toPack, stmts) = partitionEithers $ map packF membs
+      (listNames, lists) = let (lns, ls) = unzip stmts in (concat lns, ls)
+      lists' = map (flip StmtExpr () . mkCall "buf.write" . (: [])) lists
+      (args, keys) = unzip toPack
+      args' = catMaybes args
+      methodArgs =
+        let theArgs = args' ++ listNames
+        in case (ext, name) of
+             -- XXX: The 1.10 ConfigureWindow definiton has value_mask
+             -- explicitly listed in the protocol definition, but everywhere
+             -- else it isn't; to keep things uniform, we remove it here.
+             ("xproto", "ConfigureWindow") -> nub $ theArgs
+             _ -> theArgs
+      (packStr, _) = addStructData prefix $ intercalate "" keys
+      write = mkCall "buf.write" [mkCall "struct.pack"
+                                         (mkStr ('=' : packStr) : (map mkName args'))]
+      writeStmt = if length packStr > 0 then [StmtExpr write ()] else []
+  in (methodArgs, buf ++ writeStmt ++ lists')
+
+mkPackMethod :: String
+             -> String
+             -> TypeInfoMap
+             -> [GenStructElem Type]
+             -> Statement ()
+mkPackMethod ext name m structElems =
+  let accessor = ((++) "self.")
+      (_, packStmts) = mkPackStmts ext name m accessor ("", 0) structElems
+      ret = [mkReturn $ mkCall "buf.getvalue" noArgs]
+  in mkMethod "pack" (mkParams ["self"]) $ packStmts ++ ret
 
 -- | Make a struct style (i.e. not union style) unpack.
 mkStructStyleUnpack :: (String, Int)
@@ -370,15 +417,16 @@ processXDecl _ (XEnum name membs) =
 processXDecl ext (XStruct n membs) = do
   m <- get
   let (statements, structLen) = mkStructStyleUnpack ("", 0) ext m membs
+      pack = mkPackMethod ext n m membs
   modify $ mkModify ext n (CompositeType ext n structLen)
-  return $ Declaration [mkXClass n "xcffib.Struct" Nothing statements]
+  return $ Declaration [mkXClass n "xcffib.Struct" Nothing statements [pack]]
 processXDecl ext (XEvent name number membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       prefix = if fromMaybe False noSequence then ("x", 1) else ("x{0}2x", 4)
       (statements, structLen) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" number cname
-  return $ Declaration [ mkXClass cname "xcffib.Event" structLen statements
+  return $ Declaration [ mkXClass cname "xcffib.Event" structLen statements []
                        , eventsUpd
                        ]
 processXDecl ext (XError name number membs) = do
@@ -387,40 +435,19 @@ processXDecl ext (XError name number membs) = do
       (statements, structLen) = mkStructStyleUnpack ("xx2x", 4) ext m membs
       errorsUpd = mkDictUpdate "_errors" number cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
-  return $ Declaration [ mkXClass cname "xcffib.Error" structLen statements
+  return $ Declaration [ mkXClass cname "xcffib.Error" structLen statements []
                        , alias
                        , errorsUpd
                        ]
 processXDecl ext (XRequest name number membs reply) = do
   m <- get
-  let packF = structElemToPyPack ext m
-      (toPack, stmts) = partitionEithers $ map packF membs
-      (listNames, lists) = let (lns, ls) = unzip stmts in (concat lns, ls)
-      lists' = map (flip StmtExpr ()) lists
-      (args, keys) = unzip toPack
-      args' = catMaybes args
-      methodArgs =
-        let theArgs = args' ++ listNames
-        in case (ext, name) of
-             -- XXX: The 1.10 ConfigureWindow definiton has value_mask
-             -- explicitly listed in the protocol definition, but everywhere
-             -- else it isn't; to keep things uniform, we remove it here.
-             ("xproto", "ConfigureWindow") -> nub $ theArgs
-             _ -> theArgs
-      isChecked = pyTruth $ isJust reply
-      checkedParam = Param (ident "is_checked") Nothing (Just isChecked) ()
-      allArgs = (mkParams $ "self" : methodArgs) ++ [checkedParam]
-      buf = mkAssign "buf" (mkCall "six.BytesIO" noArgs)
-      (packStr, _) = addStructData ("x{0}2x", 4) $ intercalate "" keys
-      write = mkCall "buf.write" [mkCall "struct.pack"
-                                         (mkStr ('=' : packStr) : (map mkName args'))]
-      writeStmt = if length packStr > 0 then [StmtExpr write ()] else []
+  let (args, packStmts) = mkPackStmts ext name m id ("x{0}2x", 4) membs
       cookieName = (name ++ "Cookie")
       replyDecl = concat $ maybeToList $ do
         reply' <- reply
         let (replyStmts, _) = mkStructStyleUnpack ("x{0}2x4x", 8) ext m reply'
             replyName = name ++ "Reply"
-            theReply = mkXClass replyName "xcffib.Reply" Nothing replyStmts
+            theReply = mkXClass replyName "xcffib.Reply" Nothing replyStmts []
             replyType = mkAssign "reply_type" $ mkName replyName
             cookie = mkClass cookieName "xcffib.Cookie" [replyType]
         return [theReply, cookie]
@@ -428,14 +455,17 @@ processXDecl ext (XRequest name number membs reply) = do
       hasReply = if length replyDecl > 0
                  then [ArgExpr (mkName cookieName) ()]
                  else []
+      isChecked = pyTruth $ isJust reply
       argChecked = ArgKeyword (ident "is_checked") (mkName "is_checked") ()
+      checkedParam = Param (ident "is_checked") Nothing (Just isChecked) ()
+      allArgs = (mkParams $ "self" : args) ++ [checkedParam]
       mkArg = flip ArgExpr ()
       ret = mkReturn $ mkCall "self.send_request" ((map mkArg [ mkInt number
                                                               , mkName "buf"
                                                               ])
                                                               ++ hasReply
                                                               ++ [argChecked])
-      requestBody = [buf] ++ writeStmt ++ lists' ++ [ret]
+      requestBody = packStmts ++ [ret]
       request = mkMethod name allArgs requestBody
   return $ Request request replyDecl
 processXDecl ext (XUnion name membs) = do
@@ -448,7 +478,8 @@ processXDecl ext (XUnion name membs) = do
                    name ++ " has fields of different length")
       lengths' = catMaybes $ nub sizes
       unionLen = if length lists' > 0 then Nothing else listToMaybe lengths'
-      decl = [mkXClass name "xcffib.Union" Nothing $ (fst $ unzip lists) ++ toUnpack]
+      initMethod = (fst $ unzip lists) ++ toUnpack
+      decl = [mkXClass name "xcffib.Union" Nothing initMethod []]
   -- There should be at most one size of object in the struct.
   unless ((length $ lengths') <= 1) err
   -- List in list, so we don't know a length here. -1 is the sentinel value

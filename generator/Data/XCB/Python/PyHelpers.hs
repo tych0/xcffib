@@ -112,9 +112,9 @@ mkParams = map (\x -> Param (ident x) Nothing Nothing ())
 mkArg :: String -> Argument ()
 mkArg n = ArgExpr (mkName n) ()
 
-mkXClass :: String -> String -> Maybe Int -> Suite () -> Statement ()
-mkXClass clazz superclazz _ [] = mkEmptyClass clazz superclazz
-mkXClass clazz superclazz size constructor =
+mkXClass :: String -> String -> Maybe Int -> Suite () -> Suite () -> Statement ()
+mkXClass clazz superclazz _ [] [] = mkEmptyClass clazz superclazz
+mkXClass clazz superclazz size constructor methods =
   let sizeArg = if isJust size then [] else ["size"]
       args = [ "self", "parent", "offset" ] ++ sizeArg
       super = mkCall (superclazz ++ ".__init__") $ map mkName args
@@ -122,7 +122,7 @@ mkXClass clazz superclazz size constructor =
       initParams = mkParams args
       initMethod = Fun (ident "__init__") initParams Nothing body ()
       structLength = map (mkAssign "struct_length" . mkInt) $ maybeToList size
-  in mkClass clazz superclazz $ structLength ++ [initMethod]
+  in mkClass clazz superclazz $ structLength ++ [initMethod] ++ methods
 
 mkEmptyClass :: String -> String -> Statement ()
 mkEmptyClass clazz superclazz = mkClass clazz superclazz [Pass ()]
