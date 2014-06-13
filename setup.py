@@ -13,6 +13,8 @@ if not os.path.exists('./xcffib'):
 
 # version = subprocess.check_output(['git', 'describe', '--tags'])
 
+import xcffib
+
 setup(
     name="xcffib",
     version="prerelease",
@@ -20,5 +22,7 @@ setup(
     keywords="xcb xpyb cffi x11 x windows",
     license="MIT",
     install_requires=['six', 'cffi>=0.8.2'],
-    packages= ['xcffib'],
+    packages=['xcffib'],
+    zip_safe=False,
+    ext_modules=[xcffib.ffi.verifier.get_extension()],
 )
