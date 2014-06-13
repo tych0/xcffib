@@ -271,7 +271,7 @@ structElemToPyPack _ m (SField n typ _ _) =
     -- TODO: be a little smarter here; we should really make sure that things
     -- have a .pack(); if users are calling us via the old style api, we need
     -- to support that as well.
-    CompositeType _ _ _ -> Right $ ([n], mkCall (n ++ ".pack") [])
+    CompositeType _ _ _ -> Right $ ([n], mkCall (n ++ ".pack") noArgs)
 -- TODO: assert values are in enum?
 structElemToPyPack ext m (X.List n typ len _) =
   let listLen = mkCall "len" [mkName n]
@@ -294,7 +294,7 @@ structElemToPyPack _ m (ExprField name typ expr) =
                                                              , e
                                                              ])
        CompositeType _ _ _ -> Right $ ([name],
-                                       mkCall (mkDot e (mkName "pack")) [])
+                                       mkCall (mkDot e (mkName "pack")) noArgs)
 
 -- As near as I can tell here the padding param is unused.
 structElemToPyPack _ m (ValueParam typ mask _ list) =
@@ -398,11 +398,13 @@ processXDecl ext (XRequest name number membs reply) = do
         in case (ext, name) of
              -- XXX: The 1.10 ConfigureWindow definiton has value_mask
              -- explicitly listed in the protocol definition, but everywhere
-             -- else it isn't, but everywhere else it isn't; to keep things
-             -- uniform, we remove it here.
+             -- else it isn't; to keep things uniform, we remove it here.
              ("xproto", "ConfigureWindow") -> nub $ theArgs
              _ -> theArgs
-      buf = mkAssign "buf" (mkCall "six.BytesIO" [])
+      isChecked = pyTruth $ isJust reply
+      checkedParam = Param (ident "is_checked") Nothing (Just isChecked) ()
+      allArgs = (mkParams $ "self" : methodArgs) ++ [checkedParam]
+      buf = mkAssign "buf" (mkCall "six.BytesIO" noArgs)
       (packStr, _) = addStructData ("x{0}2x", 4) $ intercalate "" keys
       write = mkCall "buf.write" [mkCall "struct.pack"
                                          (mkStr packStr : (map mkName args'))]
@@ -417,13 +419,18 @@ processXDecl ext (XRequest name number membs reply) = do
             cookie = mkClass cookieName "xcffib.Cookie" [replyType]
         return [theReply, cookie]
 
-      hasReply = if length replyDecl > 0 then [mkName cookieName] else []
-      ret = mkReturn $ mkCall "self.send_request" ([ mkInt number
-                                                   , mkName "buf"
-                                                   ] ++ hasReply)
+      hasReply = if length replyDecl > 0
+                 then [ArgExpr (mkName cookieName) ()]
+                 else []
+      argChecked = ArgKeyword (ident "is_checked") (mkName "is_checked") ()
+      mkArg = flip ArgExpr ()
+      ret = mkReturn $ mkCall "self.send_request" ((map mkArg [ mkInt number
+                                                              , mkName "buf"
+                                                              ])
+                                                              ++ hasReply
+                                                              ++ [argChecked])
       requestBody = [buf] ++ writeStmt ++ lists' ++ [ret]
-      -- TODO: checked vs. unchecked?
-      request = mkMethod name ("self" : methodArgs) requestBody
+      request = mkMethod name allArgs requestBody
   return $ Request request replyDecl
 processXDecl ext (XUnion name membs) = do
   m <- get

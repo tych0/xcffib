@@ -45,6 +45,12 @@ because `xcffib` isn't done yet :-)
 * Most of the lower level XCB connection primitives that were previously not
   exposed are now available via `xcffib.ffi.{ffi,C}`, assuming you want to go
   out of band of the binding.
+* Checked vs. Unchecked requests are still supported (via Checked and Unchecked
+  function calls). However, there is also an additional optional parameter
+  `is_checked` to each request function, to allow you to set the checked status
+  that way. Additionally, requests that are (un)checked by default, e.g.
+  `QueryTree` (`CreateWindow`), have a `QueryTreeChecked`
+  (`CreateWindowUnchecked`) version which just has the same default behavior.
 
 ## Why haskell?
 

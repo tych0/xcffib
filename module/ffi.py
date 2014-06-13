@@ -150,6 +150,7 @@ ffi.cdef("""
     xcb_connection_t *xcb_connect(const char *displayname, int *screenp);
     xcb_connection_t *xcb_connect_to_display_with_auth_info(const char *display, xcb_auth_info_t *auth, int *screen);
     uint32_t xcb_generate_id(xcb_connection_t *c);
+    xcb_generic_error_t *xcb_request_check(xcb_connection_t *c, xcb_void_cookie_t cookie);
 """)
 
 ffi.cdef("""

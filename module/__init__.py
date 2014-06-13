@@ -9,9 +9,11 @@ from .ffi import ffi, C, bytes_to_cdata
 def popcount(n):
     return bin(n).count('1')
 
+
 class XcffibException(Exception):
     """ Generic XcbException; replaces xcb.Exception. """
     pass
+
 
 class ConnectionException(XcffibException):
     REASONS = {
@@ -39,8 +41,10 @@ class ConnectionException(XcffibException):
         XcffibException.__init__(
             self, self.REASONS.get(err, "Unknown connection error."))
 
+
 class ProtocolException(XcffibException):
     pass
+
 
 core = None
 core_events = None
@@ -67,10 +71,12 @@ def _add_core(value, _setup, events, errors):
     core_errors = errors
     setup = _setup
 
+
 def _add_ext(key, value, events, errors):
     if not issubclass(value, Extension):
         raise XcffibException("Extension type not derived from xcffib.Extension")
     extensions[key] = (value, events, errors)
+
 
 class ExtensionKey(object):
     """ This definitely isn't needed, but we keep it around for compatibilty
@@ -118,22 +124,33 @@ class Protobj(object):
 class Struct(Protobj):
     pass
 
+
 class Union(Protobj):
     pass
 
+
 class Cookie(object):
     reply_type = None
-    def __init__(self, conn, sequence):
+    def __init__(self, conn, sequence, is_checked):
         self.conn = conn
         self.sequence = sequence
+        self.is_checked = is_checked
 
     def reply(self):
         data = self.conn.wait_for_reply(self.sequence)
         return self.reply_type(data, 0, len(data))
 
+    def check(self):
+        # Request is not void and checked.
+        assert self.is_checked and self.reply_type is None, (
+            "Request is not void and checked")
+        self.conn.request_check(self.sequence)
+
+
 class VoidCookie(Cookie):
     def reply(self):
         raise XcffibException("No reply for this message type")
+
 
 class Extension(object):
     def __init__(self, conn):
@@ -144,7 +161,8 @@ class Extension(object):
         else:
             self.ext_name = name
 
-    def send_request(self, opcode, data, cookie=VoidCookie, reply=None):
+    def send_request(self, opcode, data, cookie=VoidCookie, reply=None,
+                     is_checked=False):
         data = data.getvalue()
 
         assert len(data) > 3, "xcb_send_request data must be ast least 4 bytes"
@@ -172,11 +190,25 @@ class Extension(object):
         xcb_parts[1].iov_base = ffi.NULL
         xcb_parts[1].iov_len = -len(data) & 3  # is this really necessary?
 
-        # TODO: support checked requests
-        flags = 0
+        flags = C.XCB_REQUEST_CHECKED if is_checked else 0
         seq = C.xcb_send_request(self.conn._conn, flags, xcb_parts, xcb_req)
 
-        return cookie(self.conn, seq)
+        return cookie(self.conn, seq, is_checked)
+
+    def __getattr__(self, name):
+        if name.endswith("Checked"):
+            real = name[:-len("Checked")]
+            is_checked = True
+        elif name.endswith("Unchecked"):
+            real = name[:-len("Unchecked")]
+            is_checked = False
+        else:
+            raise AttributeError(name)
+
+        real = getattr(self, real)
+
+        return functools.partial(real, is_checked=is_checked)
+
 
 class List(Protobj):
     def __init__(self, parent, offset, count, typ, size=-1):
@@ -331,6 +363,14 @@ class Connection(object):
         reply = ffi.cast("xcb_generic_reply_t *", data)
         # why is this 32 and not sizeof(xcb_generic_reply_t) == 8?
         return bytes(ffi.buffer(data, 32 + reply.length * 4))
+
+    @ensure_connected
+    def request_check(self, sequence):
+        cookie = ffi.new("xcb_void_cookie_t [1]")
+        cookie[0].sequence = sequence
+
+        err = C.xcb_request_check(self._conn, cookie[0])
+        self._process_error(err)
 
 
 class Response(Protobj):

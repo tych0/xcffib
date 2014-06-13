@@ -23,7 +23,7 @@ class TestConnection(XvfbTest):
         return self.conn.setup.roots[self.conn.pref_screen]
 
 
-    def create_window(self, wid=None, x=0, y=0, w=1, h=1):
+    def create_window(self, wid=None, x=0, y=0, w=1, h=1, is_checked=False):
         if wid is None:
             wid = self.conn.generate_id()
         return self.xproto.CreateWindow(
@@ -38,7 +38,8 @@ class TestConnection(XvfbTest):
             [
                 self.default_screen.black_pixel,
                 xcffib.xproto.EventMask.StructureNotify
-            ]
+            ],
+            is_checked=is_checked
         )
 
     def test_connect(self):
@@ -101,3 +102,20 @@ class TestConnection(XvfbTest):
         assert reply.children_len == 1
         assert len(reply.children) == 1
 
+    @raises(AssertionError)
+    def test_checking_unchecked_fails(self):
+        wid = self.conn.generate_id()
+        self.create_window(wid)
+        self.xproto.QueryTreeUnchecked(self.default_screen.root).check()
+
+    @raises(AssertionError)
+    def test_checking_default_checked_fails(self):
+        wid = self.conn.generate_id()
+        self.create_window(wid)
+        cookie = self.xproto.QueryTree(self.default_screen.root)
+        cookie.check()
+
+    def test_checking_foreced_checked_succeeds(self):
+        wid = self.conn.generate_id()
+        cookie = self.create_window(wid, is_checked=True)
+        cookie.check()

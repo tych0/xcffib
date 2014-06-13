@@ -4,6 +4,7 @@ module Data.XCB.Python.PyHelpers (
   mkInt,
   mkAssign,
   mkCall,
+  noArgs,
   mkEnum,
   mkName,
   mkDot,
@@ -17,7 +18,10 @@ module Data.XCB.Python.PyHelpers (
   mkDict,
   mkDictUpdate,
   mkMethod,
-  mkReturn
+  mkReturn,
+  pyTruth,
+  mkParams,
+  ident
   ) where
 
 import Data.List.Split
@@ -83,8 +87,19 @@ mkAssign name expr = Assign [getExpr name] expr ()
 mkIncr :: String -> Expr () -> Statement ()
 mkIncr name expr = AugmentedAssign (mkName name) (PlusAssign ()) expr ()
 
-mkCall :: PseudoExpr a => a -> [Expr ()] -> Expr ()
-mkCall name args = Call (getExpr name) (map (\e -> ArgExpr e ()) args) ()
+class PseudoArgument a where
+  getArgument :: a -> Argument ()
+
+instance PseudoArgument (Expr ()) where
+  getArgument p = ArgExpr p ()
+instance PseudoArgument (Argument ()) where
+  getArgument = id
+
+mkCall :: (PseudoExpr a, PseudoArgument b) => a -> [b] -> Expr ()
+mkCall name args = Call (getExpr name) (map getArgument args) ()
+
+noArgs :: [Argument ()]
+noArgs = []
 
 mkEnum :: String -> [(String, Expr ())] -> Statement ()
 mkEnum cname values =
@@ -138,8 +153,11 @@ mkDictUpdate :: String -> Int -> String -> Statement ()
 mkDictUpdate dict key value =
   mkAssign (Subscript (mkName dict) (mkInt key) ()) (mkName value)
 
-mkMethod :: String -> [String] -> Suite () -> Statement ()
-mkMethod name args body = Fun (ident name) (mkParams args) Nothing body ()
+mkMethod :: String -> [Parameter ()] -> Suite () -> Statement ()
+mkMethod name args body = Fun (ident name) args Nothing body ()
 
 mkReturn :: Expr () -> Statement ()
 mkReturn = flip Return () . Just
+
+pyTruth :: Bool -> Expr ()
+pyTruth = flip Bool ()
