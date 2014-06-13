@@ -1,3 +1,2 @@
-six
-cffi>=0.8.2
 flake8
+-e .

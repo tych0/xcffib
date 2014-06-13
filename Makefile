@@ -6,10 +6,11 @@ $(GEN):
 
 .PHONY: clean
 clean:
-	cabal clean
-	rm -rf xcffib
-	rm -rf module/*pyc module/__pycache__
-	rm -rf tests/*pyc tests/__pycache__
+	-cabal clean
+	-rm -rf xcffib
+	-rm -rf module/*pyc module/__pycache__
+	-rm -rf tests/*pyc tests/__pycache__
+	-rm -rf build *egg*
 
 # A target for just running nosetests. Travis will run 'check', which does
 # everything. (Additionally, travis uses separate environments where nosetests
