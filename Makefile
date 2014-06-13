@@ -15,9 +15,8 @@ clean:
 # everything. (Additionally, travis uses separate environments where nosetests
 # points to The Right Thing for each, so we don't need to do nosetests3.)
 pycheck: xcffib
-	xvfb-run nosetests -d
-	-@sleep 1 # apparently xvfb doesn't clean up after itself right away
-	xvfb-run nosetests3 -d
+	nosetests -d
+	nosetests3 -d
 
 # you should have xcb-proto installed to run this
 xcffib: $(GEN)
