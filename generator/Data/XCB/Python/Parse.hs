@@ -366,9 +366,6 @@ mkStructStyleUnpack :: (String, Int)
 mkStructStyleUnpack prefix ext m membs =
   let unpackF = structElemToPyUnpack ext m
       (toUnpack, lists) = partitionEithers $ map unpackF membs
-      -- XXX: Here we assume that all the lists come after all the unpacked
-      -- members. While (I think) this is true today, it may not always be
-      -- true and we should probably fix this.
       (names, packs, lengths) = unzip3 toUnpack
       (packs', lengthMod) = case prefix of
                               ("", 0) -> (concat packs, id)
