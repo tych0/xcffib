@@ -107,6 +107,7 @@ ffi.cdef("""
         uint8_t       pad1[4]; /**<  */
     } xcb_setup_t;
 
+    typedef ... xcb_drawable_t;
     typedef uint32_t xcb_visualid_t;
 
     typedef struct xcb_visualtype_t {
