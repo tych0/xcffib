@@ -9,6 +9,7 @@ import Control.Monad.State.Strict
 
 import Data.Either
 import Data.List
+import Data.List.Utils
 import qualified Data.Map as M
 import Data.Tree
 import Data.Maybe
@@ -339,6 +340,11 @@ mkPackStmts ext name m accessor prefix membs =
              -- explicitly listed in the protocol definition, but everywhere
              -- else it isn't; to keep things uniform, we remove it here.
              ("xproto", "ConfigureWindow") -> nub $ theArgs
+             -- XXX: QueryTextExtents has a field named "odd_length" with a
+             -- fieldref of "string_len", so we fix it up here to match.
+             ("xproto", "QueryTextExtents") -> replace ["odd_length"]
+                                                       ["string_len"]
+                                                       theArgs
              _ -> theArgs
       (packStr, _) = addStructData prefix $ intercalate "" keys
       write = mkCall "buf.write" [mkCall "struct.pack"
