@@ -314,7 +314,7 @@ structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
                                             , mkInt i
                                             ]
           toWrite = BinaryOp (Plus ()) mask' list' ()
-      in Right $ ([mask, list], mkCall "buf.write" [toWrite])
+      in Right $ ([mask, list], toWrite)
     CompositeType _ _ _ -> error (
       "ValueParams other than CARD{16,32} not allowed.")
 
