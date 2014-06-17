@@ -1,2 +1,3 @@
 flake8
--e .
+six
+cffi>=0.8.2
