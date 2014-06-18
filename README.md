@@ -32,6 +32,14 @@ because `xcffib` isn't done yet :-)
 * `xcb.Request` is gone. It was an entirely internal and unnecessary interface.
 * `xcffib.Connection.send_request` takes slightly different (but more sensible)
    arguments.
+* Everywhere `xcb-proto` says `char`, `xcffib` uses a char. That means on input
+  for a `<list type="char"/>`, you can use a python string literal. `xcffib`
+  also gives you a string of length 1 out for each element in such a list,
+  instead of an `int`. Finally, there is a helper method called `to_string` on
+  `xcffib.List`, to convert these string-like things into native strings. In
+  both python2 and python3 you get a native `str`. This means that for things
+  like `xproto.STR`, you can just do `the_str.name.to_string()` instead of
+  `''.join(map(chr, the_str.name))`.
 
 ## Enhancements
 

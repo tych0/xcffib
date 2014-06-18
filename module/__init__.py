@@ -248,11 +248,14 @@ class List(Protobj):
     def __delitem__(self, key):
         del self.list[key]
 
-    def to_string(self, encoding='utf-8'):
+    def to_string(self):
         """ A helper for converting a List of chars to a native string. Dies if
         the list contents are not something that could be reasonably converted
         to a string. """
-        return ''.join([c.decode(encoding) for c in self])
+        if six.PY2:
+            return ''.join(self)
+        else:
+            return ''.join([c.decode('latin1') for c in self])
 
 class Connection(object):
 
