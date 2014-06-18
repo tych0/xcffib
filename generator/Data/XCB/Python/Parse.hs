@@ -155,31 +155,32 @@ xBinopToPyOp X.RShift = P.ShiftRight ()
 xUnopToPyOp :: X.Unop -> P.Op ()
 xUnopToPyOp X.Complement = P.Invert ()
 
-xExpressionToPyExpr :: XExpression -> Expr ()
-xExpressionToPyExpr (Value i) = mkInt i
-xExpressionToPyExpr (Bit i) = BinaryOp (ShiftLeft ()) (mkInt 1) (mkInt i) ()
-xExpressionToPyExpr (FieldRef n) = mkAttr n
-xExpressionToPyExpr (EnumRef _ n) = mkName n
-xExpressionToPyExpr (PopCount e) =
-  mkCall "xcffib.popcount" [xExpressionToPyExpr e]
+xExpressionToPyExpr :: (String -> String) -> XExpression -> Expr ()
+xExpressionToPyExpr _ (Value i) = mkInt i
+xExpressionToPyExpr _ (Bit i) = BinaryOp (ShiftLeft ()) (mkInt 1) (mkInt i) ()
+xExpressionToPyExpr acc (FieldRef n) = mkName $ acc n
+xExpressionToPyExpr _ (EnumRef _ n) = mkName n
+xExpressionToPyExpr acc (PopCount e) =
+  mkCall "xcffib.popcount" [xExpressionToPyExpr acc e]
 -- http://cgit.freedesktop.org/xcb/proto/tree/doc/xml-xcb.txt#n290
-xExpressionToPyExpr (SumOf n) = mkCall "sum" [mkAttr n]
-xExpressionToPyExpr (Op o e1 e2) =
+xExpressionToPyExpr acc (SumOf n) = mkCall "sum" [mkName $ acc n]
+xExpressionToPyExpr acc (Op o e1 e2) =
   let o' = xBinopToPyOp o
-      e1' = xExpressionToPyExpr e1
-      e2' = xExpressionToPyExpr e2
+      e1' = xExpressionToPyExpr acc e1
+      e2' = xExpressionToPyExpr acc e2
   in BinaryOp o' e1' e2' ()
-xExpressionToPyExpr (Unop o e) =
+xExpressionToPyExpr acc (Unop o e) =
   let o' = xUnopToPyOp o
-      e' = xExpressionToPyExpr e
+      e' = xExpressionToPyExpr acc e
   in UnaryOp o' e' ()
 
-xEnumElemsToPyEnum :: [XEnumElem] -> [(String, Expr ())]
-xEnumElemsToPyEnum membs = reverse $ conv membs [] [1..]
+xEnumElemsToPyEnum :: (String -> String) -> [XEnumElem] -> [(String, Expr ())]
+xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] [1..]
   where
+    exprConv = xExpressionToPyExpr accessor
     conv :: [XEnumElem] -> [(String, Expr ())] -> [Int] -> [(String, Expr ())]
     conv ((EnumElem name expr) : els) acc is =
-      let expr' = fromMaybe (mkInt (head is)) $ fmap xExpressionToPyExpr expr
+      let expr' = fromMaybe (mkInt (head is)) $ fmap exprConv expr
           is' = tail is
           acc' = (name, expr') : acc
       in conv els acc' is'
@@ -227,7 +228,8 @@ structElemToPyUnpack _ _ (Switch _ _ _) = Left (Nothing, "", Nothing)
 structElemToPyUnpack ext m (X.List n typ len _) =
   -- -1 is the "I don't know" List sentinel, by XCB convention. We should
   -- probably switch this to None.
-  let len' = fromMaybe (mkInt (-1)) $ fmap xExpressionToPyExpr len
+  let attr = ((++) "self.")
+      len' = fromMaybe (mkInt (-1)) $ fmap (xExpressionToPyExpr attr) len
       (cons, sz) = case m M.! typ of
                      BaseType c i -> (mkStr c, Just i)
                      CompositeType tExt c i | ext /= tExt ->
@@ -282,7 +284,7 @@ structElemToPyPack _ m accessor (SField n typ _ _) =
 structElemToPyPack ext m accessor (X.List n typ len _) =
   let name = accessor n
       listLen = mkCall "len" [mkName name]
-      len' = fromMaybe listLen $ fmap xExpressionToPyExpr len
+      len' = fromMaybe listLen $ fmap (xExpressionToPyExpr accessor) len
   in case m M.! typ of
         BaseType c _ -> Right $ ([name], mkCall "xcffib.pack_list" [ mkName $ name
                                                                    , mkStr c
@@ -295,7 +297,7 @@ structElemToPyPack ext m accessor (X.List n typ len _) =
                                                          , len'
                                                          ]))
 structElemToPyPack _ m accessor (ExprField name typ expr) =
-  let e = xExpressionToPyExpr expr
+  let e = (xExpressionToPyExpr accessor) expr
       name' = accessor name
   in case m M.! typ of
        BaseType c _ -> Right $ ([name'], mkCall "struct.pack" [ mkStr ('=' : c)
@@ -416,7 +418,7 @@ processXDecl ext (XidType name) =
 processXDecl _ (XImport n) =
   return $ Declaration [mkImport n]
 processXDecl _ (XEnum name membs) =
-  return $ Declaration [mkEnum name $ xEnumElemsToPyEnum membs]
+  return $ Declaration [mkEnum name $ xEnumElemsToPyEnum id membs]
 processXDecl ext (XStruct n membs) = do
   m <- get
   let (statements, structLen) = mkStructStyleUnpack ("", 0) ext m membs
