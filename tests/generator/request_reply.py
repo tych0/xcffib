@@ -9,13 +9,13 @@ class STR(xcffib.Struct):
         base = offset
         self.name_len, = struct.unpack_from("B", parent, offset)
         offset += 1
-        self.name = xcffib.List(parent, offset, self.name_len, "b", 1)
+        self.name = xcffib.List(parent, offset, self.name_len, "c", 1)
         offset += self.name.bufsize
         self.bufsize = offset - base
     def pack(self):
         buf = six.BytesIO()
         buf.write(struct.pack("=B", self.name_len))
-        buf.write(xcffib.pack_list(self.name, "b", self.name_len))
+        buf.write(xcffib.pack_list(self.name, "c", self.name_len))
         return buf.getvalue()
 class ListExtensionsReply(xcffib.Reply):
     def __init__(self, parent, offset, size):

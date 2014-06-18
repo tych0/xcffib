@@ -72,7 +72,7 @@ class TestConnection(XvfbTest):
 
     def test_list_extensions(self):
         reply = self.conn.core.ListExtensions().reply()
-        exts = [''.join(map(chr, ext.name)) for ext in reply.names]
+        exts = [ext.name.to_string() for ext in reply.names]
         assert "XVideo" in exts
 
     def test_create_window(self):
