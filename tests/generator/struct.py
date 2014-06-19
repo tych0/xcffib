@@ -28,4 +28,4 @@ class ValuatorInfo(xcffib.Struct):
         buf.write(struct.pack("=BBBBI", self.class_id, self.len, self.axes_len, self.mode, self.motion_size))
         buf.write(xcffib.pack_list(self.axes, AxisInfo, self.axes_len))
         return buf.getvalue()
-xcffib._add_ext(xcffib.ExtensionKey("struct"), structExtension, _events, _errors)
+xcffib._add_ext(key, structExtension, _events, _errors)

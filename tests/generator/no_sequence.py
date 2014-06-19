@@ -12,4 +12,4 @@ class KeymapNotifyEvent(xcffib.Event):
         offset += self.keys.bufsize
         self.bufsize = offset - base
 _events[11] = KeymapNotifyEvent
-xcffib._add_ext(xcffib.ExtensionKey("no_sequence"), no_sequenceExtension, _events, _errors)
+xcffib._add_ext(key, no_sequenceExtension, _events, _errors)

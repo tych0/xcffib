@@ -4,7 +4,7 @@ import functools
 import six
 import struct
 
-from .ffi import ffi, C, bytes_to_cdata
+from .ffi import ffi, C, bytes_to_cdata, visualtype_to_c_struct
 
 def popcount(n):
     return bin(n).count('1')
@@ -153,13 +153,12 @@ class VoidCookie(Cookie):
 
 
 class Extension(object):
-    def __init__(self, conn):
+    def __init__(self, conn, key=None):
         self.conn = conn
-        name = self.__class__.__name__[:-len('Extension')]
-        if name == 'xproto':
+        if key is None:
             self.ext_name = None
         else:
-            self.ext_name = name
+            self.ext_name = key.name
 
     def send_request(self, opcode, data, cookie=VoidCookie, reply=None,
                      is_checked=False):
@@ -173,8 +172,8 @@ class Extension(object):
         xcb_req.count = 2
 
         if self.ext_name is not None:
-            key = ffi.new("xcb_extension_t *")
-            key.name = self.ext_name
+            key = ffi.new("struct xcb_extension_t *")
+            key.name = bytes_to_cdata(self.ext_name)
             # xpyb doesn't ever set global_id, which seems wrong, but whatever.
             key.global_id = 0
             xcb_req.ext = key
@@ -190,8 +189,11 @@ class Extension(object):
         xcb_parts[1].iov_base = ffi.NULL
         xcb_parts[1].iov_len = -len(data) & 3  # is this really necessary?
 
+        # TODO: this should probably go in Connection
         flags = C.XCB_REQUEST_CHECKED if is_checked else 0
         seq = C.xcb_send_request(self.conn._conn, flags, xcb_parts, xcb_req)
+
+        self.conn.invalid()
 
         return cookie(self.conn, seq, is_checked)
 
@@ -280,6 +282,9 @@ class Connection(object):
 
         self.core = core(self)
         self.setup = self.get_setup()
+
+    def __call__(self, key):
+        return extensions[key][0](self, key)
 
     def invalid(self):
         if self._conn is None:

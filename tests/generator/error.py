@@ -16,4 +16,4 @@ class RequestError(xcffib.Error):
         self.bufsize = offset - base
 BadRequest = RequestError
 _errors[1] = RequestError
-xcffib._add_ext(xcffib.ExtensionKey("error"), errorExtension, _events, _errors)
+xcffib._add_ext(key, errorExtension, _events, _errors)

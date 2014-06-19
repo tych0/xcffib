@@ -9,4 +9,4 @@ class requestExtension(xcffib.Extension):
         buf.write(struct.pack("=xB2xIIhhHHHHI", depth, wid, parent, x, y, width, height, border_width, _class, visual))
         buf.write(struct.pack("=I", value_mask) + xcffib.pack_list(value_list, "I", 4))
         return self.send_request(1, buf, is_checked=is_checked)
-xcffib._add_ext(xcffib.ExtensionKey("request"), requestExtension, _events, _errors)
+xcffib._add_ext(key, requestExtension, _events, _errors)

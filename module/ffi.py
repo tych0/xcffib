@@ -70,7 +70,6 @@ ffi.cdef("""
     } xcb_auth_info_t;
 
     typedef ... xcb_connection_t;
-    typedef ... xcb_extension_t;
 
     // xproto.h
     typedef struct xcb_query_extension_reply_t {
@@ -107,7 +106,7 @@ ffi.cdef("""
         uint8_t       pad1[4]; /**<  */
     } xcb_setup_t;
 
-    typedef ... xcb_drawable_t;
+    typedef uint32_t xcb_drawable_t;
     typedef uint32_t xcb_visualid_t;
 
     typedef struct xcb_visualtype_t {
@@ -123,10 +122,10 @@ ffi.cdef("""
 
 
     // xcbext.h
-    struct xcb_extension_t {
+    typedef struct xcb_extension_t {
         const char *name;
         int global_id;
-    };
+    } xcb_extension_t;
 
     typedef struct {
         size_t count;

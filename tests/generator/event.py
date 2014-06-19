@@ -15,4 +15,4 @@ class ScreenChangeNotifyEvent(xcffib.Event):
         offset += 32
         self.bufsize = offset - base
 _events[0] = ScreenChangeNotifyEvent
-xcffib._add_ext(xcffib.ExtensionKey("event"), eventExtension, _events, _errors)
+xcffib._add_ext(key, eventExtension, _events, _errors)

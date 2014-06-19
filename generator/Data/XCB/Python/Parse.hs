@@ -110,8 +110,7 @@ mkAddExt (xheader_header -> "xproto") =
                                                ]
 mkAddExt header =
   let name = xheader_header header
-      ext = mkCall "xcffib.ExtensionKey" [ mkStr name ]
-  in flip StmtExpr () $ mkCall "xcffib._add_ext" [ ext
+  in flip StmtExpr () $ mkCall "xcffib._add_ext" [ mkName "key"
                                                  , mkName (name ++ "Extension")
                                                  , mkName "_events"
                                                  , mkName "_errors"
