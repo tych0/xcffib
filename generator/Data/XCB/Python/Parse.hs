@@ -139,7 +139,7 @@ baseTypeInfo = M.fromList $
   , (UnQualType "BYTE",     BaseType "B" 1)
   , (UnQualType "BOOL",     BaseType "B" 1)
   , (UnQualType "char",     BaseType "c" 1)
-  , (UnQualType "void",     BaseType "B" 1)
+  , (UnQualType "void",     BaseType "c" 1)
   , (UnQualType "float",    BaseType "f" 4)
   , (UnQualType "double",   BaseType "d" 8)
   ]

@@ -40,6 +40,8 @@ because `xcffib` isn't done yet :-)
   both python2 and python3 you get a native `str`. This means that for things
   like `xproto.STR`, you can just do `the_str.name.to_string()` instead of
   `''.join(map(chr, the_str.name))`.
+* As above, `void` is also packed/unpacked as `char`s, since the convention is
+  to use it as string data, e.g. in `xproto.ChangeProperty`.
 
 ## Enhancements
 
