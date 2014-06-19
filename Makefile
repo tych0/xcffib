@@ -1,5 +1,10 @@
 GEN=./dist/build/xcffibgen/xcffibgen
 
+# you should have xcb-proto installed to run this
+xcffib: $(GEN) module/*.py
+	$(GEN) --input /usr/share/xcb --output ./xcffib
+	cp ./module/*py ./xcffib/
+
 .PHONY: $(GEN)
 $(GEN):
 	cabal build
@@ -18,11 +23,6 @@ clean:
 pycheck: xcffib
 	nosetests -d
 	nosetests3 -d
-
-# you should have xcb-proto installed to run this
-xcffib: $(GEN)
-	$(GEN) --input /usr/share/xcb --output ./xcffib
-	cp ./module/*py ./xcffib/
 
 newtests: $(GEN)
 	$(GEN) --input ./tests/generator/ --output ./tests/generator/
