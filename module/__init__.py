@@ -360,18 +360,18 @@ class Connection(object):
         self.invalid()
         return C.xcb_disconnect(self._conn)
 
-    def _process_error(self, error_p):
+    def _process_error(self, c_error):
         self.invalid()
-        if error_p[0] != ffi.NULL:
-            error = core_errors[error_p[0].error_code]
-            raise error(ffi.buffer(error_p[0], error.struct_length), 0)
+        if c_error != ffi.NULL:
+            error = core_errors[c_error.error_code]
+            raise error(ffi.buffer(c_error, error.struct_length), 0)
 
     @ensure_connected
     def wait_for_reply(self, sequence):
         error_p = ffi.new("xcb_generic_error_t **")
         data = C.xcb_wait_for_reply(self._conn, sequence, error_p)
 
-        self._process_error(error_p)
+        self._process_error(error_p[0])
         if data == ffi.NULL:
             # No data and no error => bad sequence number
             raise XcffibException("Bad sequence number %d" % sequence)
