@@ -24,6 +24,9 @@ pycheck: xcffib
 	nosetests -d
 	nosetests3 -d
 
+valgrind: xcffib
+	valgrind --leak-check=full --show-leak-kinds=definite nosetests -d
+
 newtests: $(GEN)
 	$(GEN) --input ./tests/generator/ --output ./tests/generator/
 	git diff tests

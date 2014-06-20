@@ -140,6 +140,9 @@ ffi.cdef("""
       void *iov_base; /* BSD uses caddr_t (1003.1g requires void *) */
       size_t iov_len; /* Must be size_t (1003.1g) */
     };
+
+    // need to manually free some things that XCB allocates
+    void free(void *ptr);
 """)
 
 # connection manipulation, mostly generated with:

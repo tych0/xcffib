@@ -320,6 +320,7 @@ class Connection(object):
     @ensure_connected
     def wait_for_event(self):
         e = C.xcb_wait_for_event(self._conn)
+        e = ffi.gc(e, C.free)
         self.invalid()
         return self.hoist_event(e)
 
@@ -370,8 +371,14 @@ class Connection(object):
     def wait_for_reply(self, sequence):
         error_p = ffi.new("xcb_generic_error_t **")
         data = C.xcb_wait_for_reply(self._conn, sequence, error_p)
+        data = ffi.gc(data, C.free)
 
-        self._process_error(error_p[0])
+        try:
+            self._process_error(error_p[0])
+        finally:
+            if error_p[0] != ffi.NULL:
+                C.free(error_p[0])
+
         if data == ffi.NULL:
             # No data and no error => bad sequence number
             raise XcffibException("Bad sequence number %d" % sequence)
