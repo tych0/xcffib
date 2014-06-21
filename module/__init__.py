@@ -6,6 +6,29 @@ import struct
 
 from .ffi import ffi, C, bytes_to_cdata, visualtype_to_c_struct
 
+X_PROTOCOL = C.X_PROTOCOL
+X_PROTOCOL_REVISION = C.X_PROTOCOL_REVISION
+
+XCB_NONE = C.XCB_NONE
+XCB_COPY_FROM_PARENT = C.XCB_COPY_FROM_PARENT
+XCB_CURRENT_TIME = C.XCB_CURRENT_TIME
+XCB_NO_SYMBOL = C.XCB_NO_SYMBOL
+
+# For xpyb compatibility
+NONE = XCB_NONE
+CopyFromParent = XCB_COPY_FROM_PARENT
+CurrentTime = XCB_CURRENT_TIME
+NoSymbol = XCB_NO_SYMBOL
+
+XCB_CONN_ERROR = C.XCB_CONN_ERROR
+XCB_CONN_CLOSED_EXT_NOTSUPPORTED = C.XCB_CONN_CLOSED_EXT_NOTSUPPORTED
+XCB_CONN_CLOSED_MEM_INSUFFICIENT = C.XCB_CONN_CLOSED_MEM_INSUFFICIENT
+XCB_CONN_CLOSED_REQ_LEN_EXCEED = C.XCB_CONN_CLOSED_REQ_LEN_EXCEED
+XCB_CONN_CLOSED_PARSE_ERR = C.XCB_CONN_CLOSED_PARSE_ERR
+# XCB_CONN_CLOSED_INVALID_SCREEN = C.XCB_CONN_CLOSED_INVALID_SCREEN
+# XCB_CONN_CLOSED_FDPASSING_FAILED = C.XCB_CONN_CLOSED_FDPASSING_FAILED
+
+
 def popcount(n):
     return bin(n).count('1')
 
@@ -410,6 +433,10 @@ class Connection(object):
 
         buf = ffi.buffer(e, event.struct_length)
         return event(buf, 0)
+
+
+# More backwards compatibility
+connect = Connection
 
 
 class Response(Protobj):

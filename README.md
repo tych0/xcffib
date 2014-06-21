@@ -42,6 +42,9 @@ because `xcffib` isn't done yet :-)
   `''.join(map(chr, the_str.name))`.
 * As above, `void` is also packed/unpacked as `char`s, since the convention is
   to use it as string data, e.g. in `xproto.ChangeProperty`.
+* The submodule `xcb` is gone. The top module re-exported all these constants
+  anyway, so they live there now. i.e. `xcb.xcb.CurrentTime` is now just
+  `xcffib.CurrentTime`.
 
 ## Enhancements
 
