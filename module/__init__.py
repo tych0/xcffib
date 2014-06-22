@@ -282,6 +282,9 @@ class List(Protobj):
         else:
             return ''.join([c.decode('latin1') for c in self])
 
+    def buf(self):
+        return six.b('').join(self.list)
+
 class Connection(object):
 
     def __init__(self, display=None, fd=-1, auth=None):
