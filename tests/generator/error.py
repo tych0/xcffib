@@ -7,13 +7,11 @@ key = xcffib.ExtensionKey("ERROR")
 _events = {}
 _errors = {}
 class RequestError(xcffib.Error):
-    struct_length = 12
-    def __init__(self, parent, offset):
-        xcffib.Error.__init__(self, parent, offset)
-        base = offset
-        self.bad_value, self.minor_opcode, self.major_opcode = struct.unpack_from("xx2xIHBx", parent, offset)
-        offset += 12
-        self.bufsize = offset - base
+    def __init__(self, unpacker):
+        xcffib.Error.__init__(self, unpacker)
+        base = unpacker.offset
+        self.bad_value, self.minor_opcode, self.major_opcode = unpacker.unpack("xx2xIHBx")
+        self.bufsize = unpacker.offset - base
 BadRequest = RequestError
 _errors[1] = RequestError
 xcffib._add_ext(key, errorExtension, _events, _errors)

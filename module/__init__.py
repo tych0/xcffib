@@ -29,6 +29,37 @@ XCB_CONN_CLOSED_PARSE_ERR = C.XCB_CONN_CLOSED_PARSE_ERR
 # XCB_CONN_CLOSED_FDPASSING_FAILED = C.XCB_CONN_CLOSED_FDPASSING_FAILED
 
 
+class Unpacker(object):
+
+    def __init__(self, cdata, known_max=None):
+        self.cdata = cdata
+        self.size = 0
+        self.offset = 0
+        self.known_max = known_max
+        if self.known_max is not None:
+            self._resize(known_max)
+
+    def _resize(self, increment):
+        if self.offset + increment > self.size:
+            if self.known_max is not None:
+                assert self.size + increment <= self.known_max
+            self.size = self.offset + increment
+            self.buf = ffi.buffer(self.cdata, self.size)
+
+    def unpack(self, fmt, increment=True):
+        size = struct.calcsize(fmt)
+        self._resize(size)
+        ret = struct.unpack_from("=" + fmt, self.buf, self.offset)
+
+        if increment:
+            self.offset += size
+        return ret
+
+    def cast(self, typ):
+        assert self.offset == 0
+        return ffi.cast(typ, self.cdata)
+
+
 def popcount(n):
     return bin(n).count('1')
 
@@ -128,20 +159,16 @@ class Protobj(object):
     that's all we save.
     """
 
-    def __init__(self, parent, offset, size=None):
+    def __init__(self, unpacker):
         """
         Params:
-        - parent: a bytes()
-        - offset: the start of this offest in the bytes()
-        - size: the size of this object (if none, then it is assumed to be
-          len(parent))
+        - unpacker: an Unpacker object
         """
 
-        if size is not None:
-            assert size == 0 or len(parent) >= offset
-        else:
-            size = len(parent)
-        self.bufsize = size
+        # if we don't know the size right now, we expect it to be calculated
+        # based on stuff in the structure, so we don't save it right now.
+        if unpacker.known_max is not None:
+            self.bufsize = unpacker.known_max
 
 
 class Struct(Protobj):
@@ -161,7 +188,7 @@ class Cookie(object):
 
     def reply(self):
         data = self.conn.wait_for_reply(self.sequence)
-        return self.reply_type(data, 0, len(data))
+        return self.reply_type(data)
 
     def check(self):
         # Request is not void and checked.
@@ -236,24 +263,27 @@ class Extension(object):
 
 
 class List(Protobj):
-    def __init__(self, parent, offset, count, typ, size=-1):
-        Protobj.__init__(self, parent, offset, count * size)
+    def __init__(self, unpacker, typ, count=None):
+        Protobj.__init__(self, unpacker)
 
         self.list = []
+        old = unpacker.offset
 
         if isinstance(typ, str):
-            assert size > 0
-            self.list = list(struct.unpack_from(typ * count, parent, offset))
-            self.bufsize = count * size
-        else:
-            cur = offset
+            self.list = list(unpacker.unpack(typ * count))
+        elif count is not None:
             for _ in range(count):
-                item = typ(parent, cur, size)
-                cur += item.bufsize
+                item = typ(unpacker)
                 self.list.append(item)
-            self.bufsize = cur - offset
+        else:
+            assert unpacker.known_max is not None
+            while unpacker.offset < unpacker.known_max:
+                item = typ(unpacker)
+                self.list.append(item)
 
-        assert count == len(self.list)
+        self.bufsize = unpacker.offset - old
+
+        assert count is None or count == len(self.list)
 
     def __str__(self):
         return str(self.list)
@@ -337,11 +367,12 @@ class Connection(object):
     @ensure_connected
     def get_setup(self):
         s = C.xcb_get_setup(self._conn)
-        # No idea where this 8 comes from either :-)
-        buf = ffi.buffer(s, 8 + s.length * 4)
 
-        global setup
-        return setup(buf, 0, len(buf))
+        # No idea where this 8 comes from either, similar complate to the
+        # sizeof(xcb_generic_reply_t) below.
+        buf = Unpacker(s, known_max=8 + s.length * 4)
+
+        return setup(buf)
 
     @ensure_connected
     def wait_for_event(self):
@@ -391,7 +422,8 @@ class Connection(object):
         self.invalid()
         if c_error != ffi.NULL:
             error = core_errors[c_error.error_code]
-            raise error(ffi.buffer(c_error, error.struct_length), 0)
+            buf = Unpacker(c_error)
+            raise error(buf)
 
     @ensure_connected
     def wait_for_reply(self, sequence):
@@ -410,8 +442,9 @@ class Connection(object):
             raise XcffibException("Bad sequence number %d" % sequence)
 
         reply = ffi.cast("xcb_generic_reply_t *", data)
+
         # why is this 32 and not sizeof(xcb_generic_reply_t) == 8?
-        return bytes(ffi.buffer(data, 32 + reply.length * 4))
+        return Unpacker(data, known_max=32 + reply.length * 4)
 
     @ensure_connected
     def request_check(self, sequence):
@@ -434,8 +467,8 @@ class Connection(object):
             assert core_events, "You probably need to import xcffib.xproto"
             event = core_events[e.response_type & 0x7f]
 
-        buf = ffi.buffer(e, event.struct_length)
-        return event(buf, 0)
+        buf = Unpacker(e)
+        return event(buf)
 
 
 # More backwards compatibility
@@ -443,24 +476,23 @@ connect = Connection
 
 
 class Response(Protobj):
-    def __init__(self, parent, offset, size=None):
-        if size is None:
-            size = len(parent) - offset
-        Protobj.__init__(self, parent, offset, size)
+    def __init__(self, unpacker):
+        Protobj.__init__(self, unpacker)
 
         # These (and the ones in Reply) aren't used internally and I suspect
         # they're not used by anyone else, but they're here for xpyb
         # compatibility.
-        resp = ffi.cast("xcb_generic_event_t *", bytes_to_cdata(parent[offset:]))
+        resp = unpacker.cast("xcb_generic_event_t *")
         self.response_type = resp.response_type
         self.sequence = resp.sequence
 
 
 class Reply(Response):
-    def __init__(self, parent, offset, size):
-        Response.__init__(self, parent, offset, size)
+    def __init__(self, unpacker):
+        Response.__init__(self, unpacker)
 
-        resp = ffi.cast("xcb_generic_reply_t *", bytes_to_cdata(parent[offset:]))
+        # also for compat
+        resp = unpacker.cast("xcb_generic_reply_t *")
         self.length = resp.length
 
 
@@ -469,13 +501,13 @@ class Event(Response):
 
 
 class Error(Response, XcffibException):
-    def __init__(self, parent, offset):
-        Response.__init__(self, parent, offset, len(parent) - offset)
+    def __init__(self, unpacker):
+        Response.__init__(self, unpacker)
         XcffibException.__init__(self)
-        self.code = struct.unpack_from('B', parent)
+        self.code = unpacker.unpack('B', increment=False)
 
 
-def pack_list(from_, pack_type, count=None):
+def pack_list(from_, pack_type):
     """ Return the wire packed version of `from_`. `pack_type` should be some
     subclass of `xcffib.Struct`, or a string that can be passed to
     `struct.pack`. You must pass `size` if `pack_type` is a struct.pack string.

@@ -21,7 +21,8 @@ module Data.XCB.Python.PyHelpers (
   mkReturn,
   pyTruth,
   mkParams,
-  ident
+  ident,
+  pyNone
   ) where
 
 import Data.List.Split
@@ -112,17 +113,15 @@ mkParams = map (\x -> Param (ident x) Nothing Nothing ())
 mkArg :: String -> Argument ()
 mkArg n = ArgExpr (mkName n) ()
 
-mkXClass :: String -> String -> Maybe Int -> Suite () -> Suite () -> Statement ()
-mkXClass clazz superclazz _ [] [] = mkEmptyClass clazz superclazz
-mkXClass clazz superclazz size constructor methods =
-  let sizeArg = if isJust size then [] else ["size"]
-      args = [ "self", "parent", "offset" ] ++ sizeArg
+mkXClass :: String -> String -> Suite () -> Suite () -> Statement ()
+mkXClass clazz superclazz [] [] = mkEmptyClass clazz superclazz
+mkXClass clazz superclazz constructor methods =
+  let args = [ "self", "unpacker" ]
       super = mkCall (superclazz ++ ".__init__") $ map mkName args
       body = [(StmtExpr super ())] ++ constructor
       initParams = mkParams args
       initMethod = Fun (ident "__init__") initParams Nothing body ()
-      structLength = map (mkAssign "struct_length" . mkInt) $ maybeToList size
-  in mkClass clazz superclazz $ structLength ++ [initMethod] ++ methods
+  in mkClass clazz superclazz $ initMethod : methods
 
 mkEmptyClass :: String -> String -> Statement ()
 mkEmptyClass clazz superclazz = mkClass clazz superclazz [Pass ()]
@@ -136,13 +135,12 @@ mkStr s = Strings ["\"", s, "\""] ()
 mkTuple :: [Expr ()] -> Expr ()
 mkTuple = flip Tuple ()
 
-mkUnpackFrom :: [String] -> String -> Statement ()
-mkUnpackFrom names packs =
+mkUnpackFrom :: [String] -> String -> Bool -> Statement ()
+mkUnpackFrom names packs isUnion =
   let lhs = mkTuple $ map mkAttr names
-      rhs = mkCall "struct.unpack_from" [ mkStr packs
-                                        , mkName "parent"
-                                        , mkName "offset"
-                                        ]
+      -- Don't span with this default arg unless it is really necessary.
+      increment = if isUnion then [pyTruth False] else []
+      rhs = mkCall "unpacker.unpack" $ mkStr packs : increment
   in mkAssign lhs rhs
 
 mkDict :: String -> Statement ()
@@ -160,3 +158,6 @@ mkReturn = flip Return () . Just
 
 pyTruth :: Bool -> Expr ()
 pyTruth = flip Bool ()
+
+pyNone :: Expr ()
+pyNone = None ()
