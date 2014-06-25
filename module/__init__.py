@@ -221,7 +221,7 @@ class Extension(object):
 
         if self.ext_name is not None:
             key = ffi.new("struct xcb_extension_t *")
-            key.name = bytes_to_cdata(self.ext_name)
+            key.name = bytes_to_cdata(self.ext_name.encode())
             # xpyb doesn't ever set global_id, which seems wrong, but whatever.
             key.global_id = 0
             xcb_req.ext = key
@@ -512,11 +512,16 @@ def pack_list(from_, pack_type):
     `struct.pack`. You must pass `size` if `pack_type` is a struct.pack string.
     """
 
-    # PY3 is "helpful" in that when you do tuple(bytes('foo', 'latin1')) you
-    # get (102, 111, 111) instead of something more reasonable like
-    # (b'f', b'o', b'o'), so we have to add this special case.
-    if six.PY3 and isinstance(from_, str):
-        from_ = [bytes(b, 'latin1') for b in from_]
+    if six.PY3:
+        # If a string is passed as `from_`, it has to be encoded as a list of
+        # bytes (see py3 problem below)
+        if isinstance(from_, str):
+            from_ = [bytes(b, 'latin1') for b in from_]
+        # PY3 is "helpful" in that when you do tuple(b'foo') you get
+        # (102, 111, 111) instead of something more reasonable like
+        # (b'f', b'o', b'o'), so we have to add this other special case.
+        elif isinstance(from_, bytes):
+            from_ = [bytes([b]) for b in from_]
 
     if isinstance(pack_type, six.string_types):
         return struct.pack("=" + pack_type * len(from_), *tuple(from_))
