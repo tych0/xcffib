@@ -512,6 +512,12 @@ def pack_list(from_, pack_type):
     `struct.pack`. You must pass `size` if `pack_type` is a struct.pack string.
     """
 
+    # PY3 is "helpful" in that when you do tuple(bytes('foo', 'latin1')) you
+    # get (102, 111, 111) instead of something more reasonable like
+    # (b'f', b'o', b'o'), so we have to add this special case.
+    if six.PY3 and isinstance(from_, str):
+        from_ = [bytes(b, 'latin1') for b in from_]
+
     if isinstance(pack_type, six.string_types):
         return struct.pack("=" + pack_type * len(from_), *tuple(from_))
     else:

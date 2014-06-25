@@ -146,3 +146,7 @@ class TestConnection(XvfbTest):
     def test_query_invalid_wid_generates_error(self):
         # query a bad WINDOW
         self.xproto.QueryTree(0xf00).reply()
+
+    def test_OpenFont(self):
+        fid = self.conn.generate_id()
+        self.xproto.OpenFont(fid, len("cursor"), "cursor")
