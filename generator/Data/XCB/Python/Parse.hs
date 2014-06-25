@@ -388,7 +388,7 @@ processXDecl ext (XidType name) =
   do modify $ mkModify ext name (BaseType "I")
      return Noop
 processXDecl _ (XImport n) =
-  return $ Declaration [mkImport n]
+  return $ Declaration [ mkRelImport n]
 processXDecl _ (XEnum name membs) =
   return $ Declaration [mkEnum name $ xEnumElemsToPyEnum id membs]
 processXDecl ext (XStruct n membs) = do

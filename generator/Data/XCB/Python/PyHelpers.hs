@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Data.XCB.Python.PyHelpers (
   mkImport,
+  mkRelImport,
   mkInt,
   mkAssign,
   mkCall,
@@ -70,6 +71,9 @@ mkAttr s = mkName ("self." ++ s)
 
 mkImport :: String -> Statement ()
 mkImport name = Import [ImportItem (mkDottedName name) Nothing ()] ()
+
+mkRelImport :: String -> Statement ()
+mkRelImport name = FromImport (ImportRelative 1 Nothing ()) (FromItems [FromItem (ident name) Nothing ()] ()) ()
 
 mkInt :: Int -> Expr ()
 mkInt i = Int (toInteger i) (show i) ()

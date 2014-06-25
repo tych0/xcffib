@@ -1,6 +1,8 @@
+build
 dist
 *.swp
 *.swo
 *.pyc
 *__pycache__*
+*.egg-info
 xcffib
