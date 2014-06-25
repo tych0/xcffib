@@ -154,6 +154,12 @@ xBinopToPyOp X.RShift = P.ShiftRight ()
 xUnopToPyOp :: X.Unop -> P.Op ()
 xUnopToPyOp X.Complement = P.Invert ()
 
+xExpressionToNestedPyExpr :: (String -> String) -> XExpression -> Expr ()
+xExpressionToNestedPyExpr acc (Op o e1 e2) =
+  Paren (xExpressionToPyExpr acc (Op o e1 e2)) ()
+xExpressionToNestedPyExpr acc xexpr =
+  xExpressionToPyExpr acc xexpr
+
 xExpressionToPyExpr :: (String -> String) -> XExpression -> Expr ()
 xExpressionToPyExpr _ (Value i) = mkInt i
 xExpressionToPyExpr _ (Bit i) = BinaryOp (ShiftLeft ()) (mkInt 1) (mkInt i) ()
@@ -165,13 +171,13 @@ xExpressionToPyExpr acc (PopCount e) =
 xExpressionToPyExpr acc (SumOf n) = mkCall "sum" [mkName $ acc n]
 xExpressionToPyExpr acc (Op o e1 e2) =
   let o' = xBinopToPyOp o
-      e1' = xExpressionToPyExpr acc e1
-      e2' = xExpressionToPyExpr acc e2
+      e1' = xExpressionToNestedPyExpr acc e1
+      e2' = xExpressionToNestedPyExpr acc e2
   in BinaryOp o' e1' e2' ()
 xExpressionToPyExpr acc (Unop o e) =
   let o' = xUnopToPyOp o
-      e' = xExpressionToPyExpr acc e
-  in UnaryOp o' e' ()
+      e' = xExpressionToNestedPyExpr acc e
+  in Paren (UnaryOp o' e' ()) ()
 
 xEnumElemsToPyEnum :: (String -> String) -> [XEnumElem] -> [(String, Expr ())]
 xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] [1..]
