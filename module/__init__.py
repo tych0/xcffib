@@ -216,8 +216,6 @@ class Extension(object):
 
         assert len(data) > 3, "xcb_send_request data must be ast least 4 bytes"
 
-        self.conn.invalid()
-
         xcb_req = ffi.new("xcb_protocol_request_t *")
         xcb_req.count = 2
 
@@ -239,11 +237,9 @@ class Extension(object):
         xcb_parts[1].iov_base = ffi.NULL
         xcb_parts[1].iov_len = -len(data) & 3  # is this really necessary?
 
-        # TODO: this should probably go in Connection
         flags = C.XCB_REQUEST_CHECKED if is_checked else 0
-        seq = C.xcb_send_request(self.conn._conn, flags, xcb_parts, xcb_req)
 
-        self.conn.invalid()
+        seq = self.conn.send_request(flags, xcb_parts, xcb_req)
 
         return cookie(self.conn, seq, is_checked)
 
@@ -470,6 +466,9 @@ class Connection(object):
         buf = Unpacker(e)
         return event(buf)
 
+    @ensure_connected
+    def send_request(self, flags, xcb_parts, xcb_req):
+        return C.xcb_send_request(self._conn, flags, xcb_parts, xcb_req)
 
 # More backwards compatibility
 connect = Connection
