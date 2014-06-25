@@ -147,7 +147,7 @@ xBinopToPyOp :: X.Binop -> P.Op ()
 xBinopToPyOp X.Add = P.Plus ()
 xBinopToPyOp X.Sub = P.Minus ()
 xBinopToPyOp X.Mult = P.Multiply ()
-xBinopToPyOp X.Div = P.Divide ()
+xBinopToPyOp X.Div = P.FloorDivide ()
 xBinopToPyOp X.And = P.BinaryAnd ()
 xBinopToPyOp X.RShift = P.ShiftRight ()
 
