@@ -6,11 +6,6 @@ python:
   - 3.4
   - pypy
 
-# TODO: fix this when I have time to set up a real build environment
-matrix:
-  allow_failures:
-    - python: pypy
-
 before_install:
   - sudo apt-get update
 
