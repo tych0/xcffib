@@ -323,6 +323,7 @@ class Connection(object):
         display = display.encode('latin1')
 
         i = ffi.new("int *")
+        i[0] = 0
 
         if fd > 0:
             self._conn = C.xcb_connect_to_fd(fd, c_auth)
@@ -331,6 +332,7 @@ class Connection(object):
         else:
             self._conn = C.xcb_connect(display, i)
         self.pref_screen = i[0]
+        self.invalid()
 
         self.core = core(self)
         self.setup = self.get_setup()
