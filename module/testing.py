@@ -48,9 +48,8 @@ class XvfbTest(object):
         except OSError as e:
             # we don't care if it doesn't exist, maybe something crashed and
             # cleaned it up during a test.
-            if e.errno == errno.ENOENT:
-                pass
-            raise
+            if e.errno != errno.ENOENT:
+                raise
 
         if self._old_display is None:
             del os.environ['DISPLAY']
