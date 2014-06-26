@@ -351,11 +351,11 @@ class Connection(object):
         after the function is invoked.
         """
         @functools.wraps(f)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args):
             self = args[0]
             self.invalid()
             try:
-                return f(*args, **kwargs)
+                return f(*args)
             finally:
                 self.invalid()
         return wrapper
