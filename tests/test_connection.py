@@ -45,6 +45,16 @@ class TestConnection(XvfbTest):
         )
 
     def xeyes(self):
+        # Enable CreateNotify
+        self.xproto.ChangeWindowAttributes(
+            self.default_screen.root,
+            xcffib.xproto.CW.EventMask,
+            [ EventMask.SubstructureNotify |
+              EventMask.StructureNotify |
+              EventMask.SubstructureRedirect
+            ]
+        )
+
         self.spawn(['xeyes'])
 
     def test_connect(self):
@@ -150,3 +160,17 @@ class TestConnection(XvfbTest):
     def test_OpenFont(self):
         fid = self.conn.generate_id()
         self.xproto.OpenFont(fid, len("cursor"), "cursor")
+
+    def test_ConfigureWindow(self):
+        wid = self.conn.generate_id()
+        self.create_window(wid=wid)
+        self.xproto.ConfigureWindowChecked(wid, 0, []).check()
+
+    def test_external_ConfigureWindow(self):
+        self.xeyes()
+        self.conn.flush()
+
+        e = self.conn.wait_for_event()
+
+        r = self.xproto.ConfigureWindowChecked(e.window, 0, []).check()
+        r = self.xproto.DestroyWindowChecked(e.window).check()
