@@ -13,6 +13,7 @@ class AxisInfo(xcffib.Struct):
         buf = six.BytesIO()
         buf.write(struct.pack("=Iii", self.resolution, self.minimum, self.maximum))
         return buf.getvalue()
+    fixed_size = 12
 class ValuatorInfo(xcffib.Struct):
     def __init__(self, unpacker):
         xcffib.Struct.__init__(self, unpacker)

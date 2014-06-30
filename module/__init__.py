@@ -29,9 +29,13 @@ XCB_CONN_CLOSED_PARSE_ERR = C.XCB_CONN_CLOSED_PARSE_ERR
 # XCB_CONN_CLOSED_FDPASSING_FAILED = C.XCB_CONN_CLOSED_FDPASSING_FAILED
 
 
+def type_pad(t, i):
+    return -i & (3 if t > 4 else t - 1)
+
+
 class Unpacker(object):
 
-    def __init__(self, cdata, known_max=None):
+    def __init__(self, cdata, known_max=None, needs_pad=False):
         self.cdata = cdata
         self.size = 0
         self.offset = 0
@@ -45,6 +49,17 @@ class Unpacker(object):
                 assert self.size + increment <= self.known_max
             self.size = self.offset + increment
             self.buf = ffi.buffer(self.cdata, self.size)
+
+    def pad(self, thing):
+        if type(thing) in [Struct, Union]:
+            if thing.is_fixed:
+                size = thing.size
+            else:
+                size = 4
+        else:
+            size = struct.calcsize(thing)
+
+        self.offset += type_pad(size, self.offset)
 
     def unpack(self, fmt, increment=True):
         size = struct.calcsize(fmt)

@@ -145,7 +145,7 @@ mkUnpackFrom names packs isUnion =
       -- Don't span with this default arg unless it is really necessary.
       increment = if isUnion then [pyTruth False] else []
       rhs = mkCall "unpacker.unpack" $ mkStr packs : increment
-  in mkAssign lhs rhs
+  in if length names > 0 then mkAssign lhs rhs else StmtExpr rhs ()
 
 mkDict :: String -> Statement ()
 mkDict name = mkAssign name (Dictionary [] ())

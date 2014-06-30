@@ -12,16 +12,16 @@ import Test.HUnit hiding ( Test )
 
 import System.FilePath
 
-tests :: [String]
-tests = [ "event"
-        , "error"
-        , "request"
-        , "union"
-        , "struct"
-        , "enum"
-        , "request_reply"
-        , "no_sequence"
-        ]
+pyTests :: [String]
+pyTests = [ "event"
+          , "error"
+          , "request"
+          , "union"
+          , "struct"
+          , "enum"
+          , "request_reply"
+          , "no_sequence"
+          ]
 
 mkFname :: String -> FilePath
 mkFname = (</>) $ "tests" </> "generator"
@@ -36,5 +36,19 @@ mkTest name = do
                               -- TODO: we should really parse and compare ASTs
                               assertEqual "rendering equal" rawExpected rawOut
 
+
+calcsizeTests :: [Test]
+calcsizeTests =
+  let tests = [ ("x2xBx", 5)
+              , ("24xHhII", 24 + 2 * 2 + 2 * 4)
+              ]
+  in map mkTest tests
+  where
+    mkTest (str, expected) =
+      let result = calcsize str
+      in testCase "calcsize" (assertEqual str expected result)
+
 main :: IO ()
-main = mapM mkTest tests >>= defaultMain
+main = do
+  genTests <- mapM mkTest pyTests
+  defaultMain $ calcsizeTests ++ genTests

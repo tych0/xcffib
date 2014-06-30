@@ -31,7 +31,7 @@ badHeaders = [ "xkb"
 
 run :: Xcffibgen -> IO ()
 run (Xcffibgen inp out) = do
-  headers <- parse inp
+  headers <- parseXHeaders inp
   let headers' = filter (flip notElem badHeaders . xheader_header) headers
   createDirectoryIfMissing True out
   sequence_ $ map processFile $ xform headers'

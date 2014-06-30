@@ -1,12 +1,17 @@
 {-# LANGUAGE ViewPatterns #-}
 module Data.XCB.Python.Parse (
-  parse,
+  parseXHeaders,
   xform,
-  renderPy
+  renderPy,
+  calcsize
   ) where
 
+import Control.Applicative hiding (getConst)
 import Control.Monad.State.Strict
 
+import Data.Attoparsec.ByteString.Char8
+import Data.Bits
+import qualified Data.ByteString.Char8 as BS
 import Data.Either
 import Data.List
 import qualified Data.Map as M
@@ -48,8 +53,8 @@ collectBindings = foldr collectR ([], [])
     collectR (Declaration decl) (defs, decls) = (defs, decl ++ decls)
     collectR Noop x = x
 
-parse :: FilePath -> IO [XHeader]
-parse fp = do
+parseXHeaders :: FilePath -> IO [XHeader]
+parseXHeaders fp = do
   files <- globDir1 (compile "*.xml") fp
   fromFiles files
 
@@ -142,6 +147,33 @@ baseTypeInfo = M.fromList $
   , (UnQualType "double",   BaseType "d")
   ]
 
+-- | Clone of python's struct.calcsize.
+calcsize :: String -> Int
+calcsize str = sum [fromMaybe 1 i * getSize c | (i, c) <- parseMembers str]
+  where
+    sizeM :: M.Map Char Int
+    sizeM = M.fromList [ ('c', 1)
+                       , ('B', 1)
+                       , ('b', 1)
+                       , ('H', 2)
+                       , ('h', 2)
+                       , ('I', 4)
+                       , ('i', 4)
+                       , ('Q', 8)
+                       , ('q', 8)
+                       , ('f', 4)
+                       , ('d', 8)
+                       , ('x', 1)
+                       ]
+    getSize = (M.!) sizeM
+
+    parseMembers :: String -> [(Maybe Int, Char)]
+    parseMembers s = case parseOnly lang (BS.pack s) of
+                       Left err -> error ("can't calcsize " ++ s ++ " " ++ err)
+                       Right xs -> xs
+
+    lang = many $ (,) <$> optional decimal <*> (satisfy $ inClass $ M.keys sizeM)
+
 xBinopToPyOp :: X.Binop -> P.Op ()
 xBinopToPyOp X.Add = P.Plus ()
 xBinopToPyOp X.Sub = P.Minus ()
@@ -178,6 +210,26 @@ xExpressionToPyExpr acc (Unop o e) =
       e' = xExpressionToNestedPyExpr acc e
   in Paren (UnaryOp o' e' ()) ()
 
+getConst :: XExpression -> Maybe Int
+getConst (Value i) = Just i
+getConst (Bit i) = Just $ bit i
+getConst (Op o e1 e2) = do
+  c1 <- getConst e1
+  c2 <- getConst e2
+  return $ case o of
+             X.Add -> c1 + c2
+             X.Sub -> c1 - c2
+             X.Mult -> c1 * c2
+             X.Div -> c1 `quot` c2
+             X.And -> c1 .&. c2
+             X.RShift -> c1 `shift` c2
+getConst (Unop o e) = do
+  c <- getConst e
+  return $ case o of
+             X.Complement -> complement c
+getConst (PopCount e) = fmap popCount $ getConst e
+getConst _ = Nothing
+
 xEnumElemsToPyEnum :: (String -> String) -> [XEnumElem] -> [(String, Expr ())]
 xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] [1..]
   where
@@ -212,7 +264,7 @@ structElemToPyUnpack :: String
                      -> TypeInfoMap
                      -> GenStructElem Type
                      -> Either (Maybe String, String)
-                               (Statement ())
+                               (String, Expr (), Maybe Int)
 structElemToPyUnpack _ _ (Pad i) = Left (Nothing, mkPad i)
 
 -- XXX: This is a cheap hack for noop, we should really do better.
@@ -233,8 +285,10 @@ structElemToPyUnpack ext m (X.List n typ len _) =
                                   , cons
                                   , len'
                                   ]
-      assign = mkAssign (mkAttr n) list
-  in Right assign
+      constLen = do
+        l <- len
+        getConst l
+  in Right (n, list, constLen)
 
 -- The mask and enum fields are for user information, we can ignore them here.
 structElemToPyUnpack ext m (SField n typ _ _) =
@@ -242,8 +296,10 @@ structElemToPyUnpack ext m (SField n typ _ _) =
     BaseType c -> Left (Just n, c)
     CompositeType tExt c ->
       let c' = if tExt == ext then c else tExt ++ "." ++ c
-          assign = mkAssign (mkAttr n) (mkCall c' [mkName "unpacker"])
-      in Right assign
+          field = mkCall c' [mkName "unpacker"]
+      -- TODO: Ugh. Nothing here is wrong. Do we really need to carry the
+      -- length of these things around?
+      in Right (n, field, Nothing)
 structElemToPyUnpack _ _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
@@ -302,6 +358,7 @@ structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
     CompositeType _ _ -> error (
       "ValueParams other than CARD{16,32} not allowed.")
 
+
 mkPackStmts :: String
             -> String
             -> TypeInfoMap
@@ -353,25 +410,46 @@ mkStructStyleUnpack :: String
                     -> String
                     -> TypeInfoMap
                     -> [GenStructElem Type]
-                    -> Suite ()
+                    -> (Suite (), Maybe Int)
 mkStructStyleUnpack prefix ext m membs =
   let unpackF = structElemToPyUnpack ext m
-      (toUnpack, lists) = partitionEithers $ map unpackF membs
-      (names, packs) = unzip toUnpack
-      packs' = case prefix of
-                 "" -> concat packs
-                 _ -> addStructData prefix $ concat packs
-      names' = catMaybes names
+      (names, unpackStmts, size) = mkUnpackStmtsR (([], prefix), Just 0) $ map unpackF membs
       base = [mkAssign "base" $ mkName "unpacker.offset"]
-      assign = mkUnpackFrom names' packs' False
-      baseTUnpack = if length names' > 0 then [assign] else []
-
       bufsize =
         let rhs = BinaryOp (Minus ()) (mkName "unpacker.offset") (mkName "base") ()
         in [mkAssign (mkAttr "bufsize") rhs]
+      statements = base ++ unpackStmts ++ bufsize
+  in (statements, size)
+    where
+      mkUnpackStmtsR :: (([String], String), Maybe Int)
+                   -> [Either (Maybe String, String) (String, Expr (), Maybe Int)]
+                   -> ([String], Suite (), Maybe Int)
+      mkUnpackStmtsR ((names, packs), sz) [] =
+        let (stmt, size) = flushAcc names packs
+        in (names, stmt, fmap ((+) size) sz)
+      mkUnpackStmtsR ((names, packs), sz) ((Left (name, pack)) : xs) =
+        let pack' = if "{0}" `isInfixOf` packs
+                    then addStructData packs pack
+                    else packs ++ pack
+        in mkUnpackStmtsR ((names ++ maybeToList name, pack'), sz) xs
+      mkUnpackStmtsR ((names, packs), sz) ((Right (listName, list, length)) : xs) =
+        let (stmt, size) = flushAcc names packs
+            (restNames, restStmts, restSz) = mkUnpackStmtsR (([], ""), Just 0) xs
+            totalSize = do
+              before <- sz
+              rest <- restSz
+              listLen <- length
+              return $ before + listLen + rest
+            listStmt = mkAssign (mkAttr listName) list
+        in (names ++ [listName] ++ restNames, stmt ++ [listStmt] ++ restStmts, totalSize)
 
-      statements = base ++ baseTUnpack ++ lists ++ bufsize
-  in statements
+      flushAcc :: [String] -> String -> (Suite (), Int)
+      flushAcc args keys =
+        let size = calcsize keys
+            assign = if length args > 0
+                     then [mkUnpackFrom args keys False]
+                     else []
+        in (assign, size)
 
 -- | Given a (qualified) type name and a target type, generate a TypeInfoMap
 -- updater.
@@ -398,15 +476,19 @@ processXDecl _ (XEnum name membs) =
   return $ Declaration [mkEnum name $ xEnumElemsToPyEnum id membs]
 processXDecl ext (XStruct n membs) = do
   m <- get
-  let statements = mkStructStyleUnpack "" ext m membs
+  let (statements, len) = mkStructStyleUnpack "" ext m membs
       pack = mkPackMethod ext n m membs
+      fixedLength = maybeToList $ do
+        theLen <- len
+        let rhs = mkInt theLen
+        return $ mkAssign "fixed_size" rhs
   modify $ mkModify ext n (CompositeType ext n)
-  return $ Declaration [mkXClass n "xcffib.Struct" statements [pack]]
+  return $ Declaration [mkXClass n "xcffib.Struct" statements (pack : fixedLength)]
 processXDecl ext (XEvent name number membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       prefix = if fromMaybe False noSequence then "x" else "x{0}2x"
-      statements = mkStructStyleUnpack prefix ext m membs
+      (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" number cname
   return $ Declaration [ mkXClass cname "xcffib.Event" statements []
                        , eventsUpd
@@ -414,7 +496,7 @@ processXDecl ext (XEvent name number membs noSequence) = do
 processXDecl ext (XError name number membs) = do
   m <- get
   let cname = name ++ "Error"
-      statements = mkStructStyleUnpack "xx2x" ext m membs
+      (statements, _) = mkStructStyleUnpack "xx2x" ext m membs
       errorsUpd = mkDictUpdate "_errors" number cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
   return $ Declaration [ mkXClass cname "xcffib.Error" statements []
@@ -427,7 +509,7 @@ processXDecl ext (XRequest name number membs reply) = do
       cookieName = (name ++ "Cookie")
       replyDecl = concat $ maybeToList $ do
         reply' <- reply
-        let replyStmts = mkStructStyleUnpack "x{0}2x4x" ext m reply'
+        let (replyStmts, _) = mkStructStyleUnpack "x{0}2x4x" ext m reply'
             replyName = name ++ "Reply"
             theReply = mkXClass replyName "xcffib.Reply" replyStmts []
             replyType = mkAssign "reply_type" $ mkName replyName
@@ -453,8 +535,10 @@ processXDecl ext (XRequest name number membs reply) = do
 processXDecl ext (XUnion name membs) = do
   m <- get
   let unpackF = structElemToPyUnpack ext m
-      (fields, lists) = partitionEithers $ map unpackF membs
+      (fields, listInfo) = partitionEithers $ map unpackF membs
       toUnpack = map mkUnionUnpack fields
+      (names, exprs, lengths) = unzip3 listInfo
+      lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
       initMethod = lists ++ toUnpack
       decl = [mkXClass name "xcffib.Union" initMethod []]
   modify $ mkModify ext name (CompositeType ext name)
