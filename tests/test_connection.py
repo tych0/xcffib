@@ -8,6 +8,7 @@ from xcffib.testing import XvfbTest
 
 from nose.tools import raises
 
+import struct
 import subprocess
 
 
@@ -200,7 +201,12 @@ class TestConnection(XvfbTest):
 
         self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
                 wm_protocols, xcffib.xproto.Atom.ATOM, 32,
-                1, [wm_delete_window])
+                1, (wm_delete_window,))
+
+        reply = self.xproto.GetProperty(False, wid, wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
+        prop = struct.unpack("=I", reply.value.buf())
+
+        assert prop == (wm_delete_window,)
 
     def test_GetAtomName(self):
         wm_protocols = "WM_PROTOCOLS"
