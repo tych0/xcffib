@@ -530,12 +530,17 @@ def pack_list(from_, pack_type):
     """
 
     # If a string is passed as `from_` in Python 3, it has to be encoded
-    if six.PY3 and isinstance(from_, str):
+    if isinstance(from_, str):
         from_ = from_.encode('latin1')
-
-    # Pack from_ as char array, where from_ may be an array of ints
-    if pack_type == 'c':
-        from_ = bytes(bytearray(from_))
+    # Pack from_ as char array, where from_ may be an array of ints possibly
+    # greater than 256
+    elif pack_type == 'c':
+        def to_bytes(v):
+            for _ in range(4):
+                v, r = divmod(v, 256)
+                yield r
+            raise StopIteration
+        from_ = bytes(bytearray([b for i in from_ for b in to_bytes(i)]))
 
     # PY3 is "helpful" in that when you do tuple(b'foo') you get
     # (102, 111, 111) instead of something more reasonable like
