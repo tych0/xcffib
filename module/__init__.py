@@ -318,17 +318,14 @@ class List(Protobj):
         """ A helper for converting a List of chars to a native string. Dies if
         the list contents are not something that could be reasonably converted
         to a string. """
-        if six.PY2:
-            return ''.join(self)
-        else:
-            return ''.join([c.decode('latin1') for c in self])
+        return b''.join(self).decode('latin1')
 
     def to_atoms(self):
         """ A helper for converting a List of chars to an array of atoms """
-        return struct.unpack("=" + "I" * (len(self) // 4), self.buf())
+        return struct.unpack("=" + "I" * (len(self) // 4), b''.join(self))
 
     def buf(self):
-        return six.b('').join(self.list)
+        return b''.join(self.list)
 
 class Connection(object):
 
