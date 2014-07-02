@@ -186,7 +186,8 @@ class TestConnection(XvfbTest):
                 len(title), title)
 
         reply = self.xproto.GetProperty(False, wid,
-                xcffib.xproto.Atom.WM_NAME, xcffib.xproto.GetPropertyType.Any, 0, 1).reply()
+                xcffib.xproto.Atom.WM_NAME,
+                xcffib.xproto.GetPropertyType.Any, 0, 1).reply()
         assert b''.join(reply.value).decode() == title
 
     def test_ChangeProperty_WM_PROTOCOLS(self):
@@ -194,22 +195,26 @@ class TestConnection(XvfbTest):
         self.create_window(wid=wid)
 
         wm_protocols = "WM_PROTOCOLS"
-        wm_protocols = self.xproto.InternAtom(0, len(wm_protocols), wm_protocols).reply().atom
+        wm_protocols = self.xproto.InternAtom(0, len(wm_protocols),
+                wm_protocols).reply().atom
 
         wm_delete_window = "WM_DELETE_WINDOW"
-        wm_delete_window = self.xproto.InternAtom(0, len(wm_delete_window), wm_delete_window).reply().atom
+        wm_delete_window = self.xproto.InternAtom(0, len(wm_delete_window),
+                wm_delete_window).reply().atom
 
         self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
                 wm_protocols, xcffib.xproto.Atom.ATOM, 32,
-                1, (wm_delete_window,))
+                1, struct.pack("=I", wm_delete_window))
 
-        reply = self.xproto.GetProperty(False, wid, wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
+        reply = self.xproto.GetProperty(False, wid,
+                wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
 
         assert reply.value.to_atoms() == (wm_delete_window,)
 
     def test_GetAtomName(self):
         wm_protocols = "WM_PROTOCOLS"
-        atom = self.xproto.InternAtom(0, len(wm_protocols), wm_protocols).reply().atom
+        atom = self.xproto.InternAtom(0, len(wm_protocols),
+                wm_protocols).reply().atom
         atom_name = self.xproto.GetAtomName(atom).reply().name
 
         assert atom_name.to_string() == wm_protocols
