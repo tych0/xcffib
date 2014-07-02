@@ -204,9 +204,8 @@ class TestConnection(XvfbTest):
                 1, (wm_delete_window,))
 
         reply = self.xproto.GetProperty(False, wid, wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
-        prop = struct.unpack("=I", reply.value.buf())
 
-        assert prop == (wm_delete_window,)
+        assert reply.value.to_atoms() == (wm_delete_window,)
 
     def test_GetAtomName(self):
         wm_protocols = "WM_PROTOCOLS"

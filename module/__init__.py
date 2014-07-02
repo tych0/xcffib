@@ -323,6 +323,10 @@ class List(Protobj):
         else:
             return ''.join([c.decode('latin1') for c in self])
 
+    def to_atoms(self):
+        """ A helper for converting a List of chars to an array of atoms """
+        return struct.unpack("=" + "I" * (len(self) // 4), self.buf())
+
     def buf(self):
         return six.b('').join(self.list)
 
