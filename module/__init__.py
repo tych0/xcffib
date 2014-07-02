@@ -52,8 +52,8 @@ class Unpacker(object):
 
     def pad(self, thing):
         if type(thing) in [Struct, Union]:
-            if thing.is_fixed:
-                size = thing.size
+            if hasattr(thing, "fixed_size"):
+                size = thing.fixed_size
             else:
                 size = 4
         else:
