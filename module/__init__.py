@@ -540,7 +540,6 @@ def pack_list(from_, pack_type):
             for _ in range(4):
                 v, r = divmod(v, 256)
                 yield r
-            raise StopIteration
         from_ = bytes(bytearray([b for i in from_ for b in to_bytes(i)]))
 
     # PY3 is "helpful" in that when you do tuple(b'foo') you get
