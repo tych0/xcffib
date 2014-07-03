@@ -187,7 +187,7 @@ class TestConnection(XvfbTest):
 
         reply = self.xproto.GetProperty(False, wid,
                 xcffib.xproto.Atom.WM_NAME, xcffib.xproto.GetPropertyType.Any, 0, 1).reply()
-        assert b''.join(reply.value).decode() == title
+        assert reply.value.to_string() == title
 
     def test_ChangeProperty_WM_PROTOCOLS(self):
         wid = self.conn.generate_id()
@@ -206,6 +206,17 @@ class TestConnection(XvfbTest):
         reply = self.xproto.GetProperty(False, wid, wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
 
         assert reply.value.to_atoms() == (wm_delete_window,)
+
+        wm_take_focus = "WM_TAKE_FOCUS"
+        wm_take_focus = self.xproto.InternAtom(0, len(wm_take_focus), wm_take_focus).reply().atom
+
+        self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
+                wm_protocols, xcffib.xproto.Atom.ATOM, 32,
+                1, struct.pack("=I", wm_take_focus))
+
+        reply = self.xproto.GetProperty(False, wid, wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
+
+        assert reply.value.to_atoms() == (wm_take_focus,)
 
     def test_GetAtomName(self):
         wm_protocols = "WM_PROTOCOLS"
