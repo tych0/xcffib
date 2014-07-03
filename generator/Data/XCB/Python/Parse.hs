@@ -299,7 +299,7 @@ structElemToPyUnpack ext m (SField n typ _ _) =
           field = mkCall c' [mkName "unpacker"]
       -- TODO: Ugh. Nothing here is wrong. Do we really need to carry the
       -- length of these things around?
-      in Right (n, field, mkStr c', Nothing)
+      in Right (n, field, mkName c', Nothing)
 structElemToPyUnpack _ _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
@@ -462,6 +462,7 @@ mkStructStyleUnpack prefix ext m membs =
       mkUnpackStmtsR (Right (listName, list, cons, length) : xs) = do
         (packNames, packStmt, packSz) <- flushAcc
         st <- get
+        put $ st { stNeedsPad = True }
         let pad = if stNeedsPad st
                   then [typePad cons]
                   else []
@@ -481,7 +482,7 @@ mkStructStyleUnpack prefix ext m membs =
       flushAcc = do
         StructUnpackState needsPad args keys <- get
         let size = calcsize keys
-            assign = mkUnpackFrom args keys False
+            assign = mkUnpackFrom args keys needsPad
         put $ StructUnpackState needsPad [] ""
         return (args, assign, Just size)
 

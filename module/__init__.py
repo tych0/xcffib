@@ -51,7 +51,7 @@ class Unpacker(object):
             self.buf = ffi.buffer(self.cdata, self.size)
 
     def pad(self, thing):
-        if type(thing) in [Struct, Union]:
+        if any([issubclass(thing, c) for c in [Struct, Union]]):
             if hasattr(thing, "fixed_size"):
                 size = thing.fixed_size
             else:
