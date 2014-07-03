@@ -7,6 +7,7 @@ class KeymapNotifyEvent(xcffib.Event):
     def __init__(self, unpacker):
         xcffib.Event.__init__(self, unpacker)
         base = unpacker.offset
+        unpacker.unpack("x")
         self.keys = xcffib.List(unpacker, "B", 31)
         self.bufsize = unpacker.offset - base
 _events[11] = KeymapNotifyEvent

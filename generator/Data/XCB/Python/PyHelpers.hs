@@ -139,13 +139,14 @@ mkStr s = Strings ["\"", s, "\""] ()
 mkTuple :: [Expr ()] -> Expr ()
 mkTuple = flip Tuple ()
 
-mkUnpackFrom :: [String] -> String -> Bool -> Statement ()
+mkUnpackFrom :: [String] -> String -> Bool -> Suite ()
 mkUnpackFrom names packs isUnion =
   let lhs = mkTuple $ map mkAttr names
       -- Don't span with this default arg unless it is really necessary.
       increment = if isUnion then [pyTruth False] else []
       rhs = mkCall "unpacker.unpack" $ mkStr packs : increment
-  in if length names > 0 then mkAssign lhs rhs else StmtExpr rhs ()
+      stmt = if length names > 0 then mkAssign lhs rhs else StmtExpr rhs ()
+  in if length packs > 0 then [stmt] else []
 
 mkDict :: String -> Statement ()
 mkDict name = mkAssign name (Dictionary [] ())

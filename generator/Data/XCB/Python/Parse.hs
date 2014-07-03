@@ -264,7 +264,7 @@ structElemToPyUnpack :: String
                      -> TypeInfoMap
                      -> GenStructElem Type
                      -> Either (Maybe String, String)
-                               (String, Expr (), Maybe Int)
+                               (String, Expr (), Expr (), Maybe Int)
 structElemToPyUnpack _ _ (Pad i) = Left (Nothing, mkPad i)
 
 -- XXX: This is a cheap hack for noop, we should really do better.
@@ -288,7 +288,7 @@ structElemToPyUnpack ext m (X.List n typ len _) =
       constLen = do
         l <- len
         getConst l
-  in Right (n, list, constLen)
+  in Right (n, list, cons, constLen)
 
 -- The mask and enum fields are for user information, we can ignore them here.
 structElemToPyUnpack ext m (SField n typ _ _) =
@@ -299,7 +299,7 @@ structElemToPyUnpack ext m (SField n typ _ _) =
           field = mkCall c' [mkName "unpacker"]
       -- TODO: Ugh. Nothing here is wrong. Do we really need to carry the
       -- length of these things around?
-      in Right (n, field, Nothing)
+      in Right (n, field, mkStr c', Nothing)
 structElemToPyUnpack _ _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
@@ -441,10 +441,13 @@ mkStructStyleUnpack prefix ext m membs =
 
     where
 
-      mkUnpackStmtsR :: [Either (Maybe String, String) (String, Expr (), Maybe Int)]
+      -- Apparently you only type_pad before unpacking Structs or Lists, never
+      -- base types.
+      mkUnpackStmtsR :: [Either (Maybe String, String)
+                                (String, Expr (), Expr (), Maybe Int)]
                      -> State StructUnpackState ([String], Suite (), Maybe Int)
 
-      mkUnpackStmtsR [] = flushAcc ()
+      mkUnpackStmtsR [] = flushAcc
 
       mkUnpackStmtsR (Left (name, pack) : xs) = do
         st <- get
@@ -456,8 +459,12 @@ mkStructStyleUnpack prefix ext m membs =
                  }
         mkUnpackStmtsR xs
 
-      mkUnpackStmtsR (Right (listName, list, length) : xs) = do
-        (packNames, packStmt, packSz) <- flushAcc ()
+      mkUnpackStmtsR (Right (listName, list, cons, length) : xs) = do
+        (packNames, packStmt, packSz) <- flushAcc
+        st <- get
+        let pad = if stNeedsPad st
+                  then [typePad cons]
+                  else []
         (restNames, restStmts, restSz) <- mkUnpackStmtsR xs
         let totalSize = do
                           before <- packSz
@@ -466,19 +473,19 @@ mkStructStyleUnpack prefix ext m membs =
                           return $ before + rest + listSz
             listStmt = mkAssign (mkAttr listName) list
         return ( packNames ++ [listName] ++ restNames
-               , packStmt ++ listStmt : restStmts
+               , packStmt ++ pad ++ listStmt : restStmts
                , totalSize
                )
 
-      flushAcc :: () -> State StructUnpackState ([String], Suite (), Maybe Int)
-      flushAcc _ = do
+      flushAcc :: State StructUnpackState ([String], Suite (), Maybe Int)
+      flushAcc = do
         StructUnpackState needsPad args keys <- get
         let size = calcsize keys
-            assign = [mkUnpackFrom args keys False]
+            assign = mkUnpackFrom args keys False
         put $ StructUnpackState needsPad [] ""
         return (args, assign, Just size)
 
-      typePad e = mkCall "xcffib.type_pad" [e]
+      typePad e = StmtExpr (mkCall "unpacker.pad" [e]) ()
 
 -- | Given a (qualified) type name and a target type, generate a TypeInfoMap
 -- updater.
@@ -565,8 +572,8 @@ processXDecl ext (XUnion name membs) = do
   m <- get
   let unpackF = structElemToPyUnpack ext m
       (fields, listInfo) = partitionEithers $ map unpackF membs
-      toUnpack = map mkUnionUnpack fields
-      (names, exprs, lengths) = unzip3 listInfo
+      toUnpack = concat $ map mkUnionUnpack fields
+      (names, exprs, _, lengths) = unzip4 listInfo
       lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
       initMethod = lists ++ toUnpack
       decl = [mkXClass name "xcffib.Union" initMethod []]
@@ -574,7 +581,7 @@ processXDecl ext (XUnion name membs) = do
   return $ Declaration decl
   where
     mkUnionUnpack :: (Maybe String, String)
-                  -> Statement ()
+                  -> Suite ()
     mkUnionUnpack (n, typ) =
       mkUnpackFrom (maybeToList n) typ False
 
