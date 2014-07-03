@@ -21,6 +21,7 @@ pyTests = [ "event"
           , "enum"
           , "request_reply"
           , "no_sequence"
+          , "type_pad"
           ]
 
 mkFname :: String -> FilePath

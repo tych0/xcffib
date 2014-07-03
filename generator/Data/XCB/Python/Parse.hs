@@ -482,7 +482,7 @@ mkStructStyleUnpack prefix ext m membs =
       flushAcc = do
         StructUnpackState needsPad args keys <- get
         let size = calcsize keys
-            assign = mkUnpackFrom args keys needsPad
+            assign = mkUnpackFrom args keys False
         put $ StructUnpackState needsPad [] ""
         return (args, assign, Just size)
 
@@ -584,7 +584,7 @@ processXDecl ext (XUnion name membs) = do
     mkUnionUnpack :: (Maybe String, String)
                   -> Suite ()
     mkUnionUnpack (n, typ) =
-      mkUnpackFrom (maybeToList n) typ False
+      mkUnpackFrom (maybeToList n) typ True
 
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.

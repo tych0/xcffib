@@ -142,7 +142,7 @@ mkTuple = flip Tuple ()
 mkUnpackFrom :: [String] -> String -> Bool -> Suite ()
 mkUnpackFrom names packs isUnion =
   let lhs = mkTuple $ map mkAttr names
-      -- Don't span with this default arg unless it is really necessary.
+      -- Don't spam with this default arg unless it is really necessary.
       increment = if isUnion then [pyTruth False] else []
       rhs = mkCall "unpacker.unpack" $ mkStr packs : increment
       stmt = if length names > 0 then mkAssign lhs rhs else StmtExpr rhs ()

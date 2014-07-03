@@ -1,0 +1,111 @@
+<xcb header="type_pad">
+
+  <struct name="CHARINFO">
+    <field type="INT16" name="left_side_bearing" />
+    <field type="INT16" name="right_side_bearing" />
+    <field type="INT16" name="character_width" />
+    <field type="INT16" name="ascent" />
+    <field type="INT16" name="descent" />
+    <field type="CARD16" name="attributes" />
+  </struct>
+
+  <xidtype name="ATOM" />
+
+  <struct name="FONTPROP">
+    <field type="ATOM" name="name" />
+    <field type="CARD32" name="value" />
+  </struct>
+
+  <request name="ListFontsWithInfo" opcode="50">
+    <pad bytes="1" />
+    <field type="CARD16" name="max_names" />
+    <field type="CARD16" name="pattern_len" />
+    <list type="char" name="pattern">
+      <fieldref>pattern_len</fieldref>
+    </list>
+    <reply>
+      <field type="CARD8" name="name_len" />
+      <field type="CHARINFO" name="min_bounds" />
+      <pad bytes="4" />
+      <field type="CHARINFO" name="max_bounds" />
+      <pad bytes="4" />
+      <field type="CARD16" name="min_char_or_byte2" />
+      <field type="CARD16" name="max_char_or_byte2" />
+      <field type="CARD16" name="default_char" />
+      <field type="CARD16" name="properties_len" />
+      <field type="BYTE" name="draw_direction" enum="FontDraw" />
+      <field type="CARD8" name="min_byte1" />
+      <field type="CARD8" name="max_byte1" />
+      <field type="BOOL" name="all_chars_exist" />
+      <field type="INT16" name="font_ascent" />
+      <field type="INT16" name="font_descent" />
+      <field type="CARD32" name="replies_hint" />
+      <list type="FONTPROP" name="properties">
+        <fieldref>properties_len</fieldref>
+      </list>
+      <list type="char" name="name">
+        <fieldref>name_len</fieldref>
+      </list>
+      <doc>
+        <field name="name_len"><![CDATA[
+The number of matched font names.
+        ]]></field>
+        <field name="min_bounds"><![CDATA[
+minimum bounds over all existing char
+        ]]></field>
+        <field name="max_bounds"><![CDATA[
+maximum bounds over all existing char
+        ]]></field>
+        <field name="min_char_or_byte2"><![CDATA[
+first character
+        ]]></field>
+        <field name="max_char_or_byte2"><![CDATA[
+last character
+        ]]></field>
+        <field name="default_char"><![CDATA[
+char to print for undefined character
+        ]]></field>
+        <field name="properties_len"><![CDATA[
+how many properties there are
+        ]]></field>
+        <field name="all_chars_exist"><![CDATA[
+flag if all characters have nonzero size
+        ]]></field>
+        <field name="font_ascent"><![CDATA[
+baseline to top edge of raster
+        ]]></field>
+        <field name="font_descent"><![CDATA[
+baseline to bottom edge of raster
+        ]]></field>
+        <field name="replies_hint"><![CDATA[
+An indication of how many more fonts will be returned. This is only a hint and
+may be larger or smaller than the number of fonts actually returned. A zero
+value does not guarantee that no more fonts will be returned.
+        ]]></field>
+        <!-- enum doc is sufficient -->
+        <field name="draw_direction" />
+      </doc>
+    </reply>
+    <doc>
+      <brief>get matching font names and information</brief>
+      <description><![CDATA[
+Gets a list of available font names which match the given `pattern`.
+      ]]></description>
+      <field name="pattern_len"><![CDATA[
+The length (in bytes) of `pattern`.
+      ]]></field>
+      <field name="pattern"><![CDATA[
+A font pattern, for example "-misc-fixed-*".
+
+The asterisk (*) is a wildcard for any number of characters. The question mark
+(?) is a wildcard for a single character. Use of uppercase or lowercase does
+not matter.
+      ]]></field>
+      <field name="max_names"><![CDATA[
+The maximum number of fonts to be returned.
+      ]]></field>
+    </doc>
+
+  </request>
+
+</xcb>
