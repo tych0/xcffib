@@ -540,9 +540,14 @@ def pack_list(from_, pack_type):
         elif isinstance(from_, bytes):
             from_ = [bytes([b]) for b in from_]
 
+    try:
+        elt_type = type(from_[0])
+    except IndexError:
+        return bytes()
+
     # Pack from_ as char array, where from_ may be an array of ints possibly
     # greater than 256
-    if pack_type == 'c':
+    if pack_type == 'c' and issubclass(elt_type, int):
         def to_bytes(v):
             for _ in range(4):
                 v, r = divmod(v, 256)
