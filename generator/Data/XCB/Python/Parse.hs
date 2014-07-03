@@ -405,6 +405,23 @@ mkPackMethod ext name m structElems =
       ret = [mkReturn $ mkCall "buf.getvalue" noArgs]
   in mkMethod "pack" (mkParams ["self"]) $ packStmts ++ ret
 
+data StructUnpackState = StructUnpackState {
+  -- | stNeedsPad is whether or not a type_pad() is needed. As near
+  -- as I can tell the conditions are:
+  --    1. a list was unpacked
+  --    2. a struct was unpacked
+  -- ListFontsWithInfoReply is an example of a struct which has lots of
+  -- this type of thing.
+  stNeedsPad :: Bool,
+
+  -- The list of names the struct.pack accumulator has, and the
+  stNames :: [String],
+
+  -- The list of pack directives (potentially with a "{0}" in it for
+  -- the prefix byte).
+  stPacks :: String
+}
+
 -- | Make a struct style (i.e. not union style) unpack.
 mkStructStyleUnpack :: String
                     -> String
@@ -412,44 +429,56 @@ mkStructStyleUnpack :: String
                     -> [GenStructElem Type]
                     -> (Suite (), Maybe Int)
 mkStructStyleUnpack prefix ext m membs =
-  let unpackF = structElemToPyUnpack ext m
-      (names, unpackStmts, size) = mkUnpackStmtsR (([], prefix), Just 0) $ map unpackF membs
+  let unpacked = map (structElemToPyUnpack ext m) membs
+      initial = StructUnpackState False [] prefix
+      (names, unpackStmts, size) = evalState (mkUnpackStmtsR unpacked) initial
       base = [mkAssign "base" $ mkName "unpacker.offset"]
       bufsize =
         let rhs = BinaryOp (Minus ()) (mkName "unpacker.offset") (mkName "base") ()
         in [mkAssign (mkAttr "bufsize") rhs]
       statements = base ++ unpackStmts ++ bufsize
   in (statements, size)
-    where
-      mkUnpackStmtsR :: (([String], String), Maybe Int)
-                   -> [Either (Maybe String, String) (String, Expr (), Maybe Int)]
-                   -> ([String], Suite (), Maybe Int)
-      mkUnpackStmtsR ((names, packs), sz) [] =
-        let (stmt, size) = flushAcc names packs
-        in (names, stmt, fmap ((+) size) sz)
-      mkUnpackStmtsR ((names, packs), sz) ((Left (name, pack)) : xs) =
-        let pack' = if "{0}" `isInfixOf` packs
-                    then addStructData packs pack
-                    else packs ++ pack
-        in mkUnpackStmtsR ((names ++ maybeToList name, pack'), sz) xs
-      mkUnpackStmtsR ((names, packs), sz) ((Right (listName, list, length)) : xs) =
-        let (stmt, size) = flushAcc names packs
-            (restNames, restStmts, restSz) = mkUnpackStmtsR (([], ""), Just 0) xs
-            totalSize = do
-              before <- sz
-              rest <- restSz
-              listLen <- length
-              return $ before + listLen + rest
-            listStmt = mkAssign (mkAttr listName) list
-        in (names ++ [listName] ++ restNames, stmt ++ [listStmt] ++ restStmts, totalSize)
 
-      flushAcc :: [String] -> String -> (Suite (), Int)
-      flushAcc args keys =
+    where
+
+      mkUnpackStmtsR :: [Either (Maybe String, String) (String, Expr (), Maybe Int)]
+                     -> State StructUnpackState ([String], Suite (), Maybe Int)
+
+      mkUnpackStmtsR [] = flushAcc ()
+
+      mkUnpackStmtsR (Left (name, pack) : xs) = do
+        st <- get
+        let packs = if "{0}" `isInfixOf` (stPacks st)
+                    then addStructData (stPacks st) pack
+                    else (stPacks st) ++ pack
+        put $ st { stNames = stNames st ++ maybeToList name
+                 , stPacks = packs
+                 }
+        mkUnpackStmtsR xs
+
+      mkUnpackStmtsR (Right (listName, list, length) : xs) = do
+        (packNames, packStmt, packSz) <- flushAcc ()
+        (restNames, restStmts, restSz) <- mkUnpackStmtsR xs
+        let totalSize = do
+                          before <- packSz
+                          rest <- restSz
+                          listSz <- length
+                          return $ before + rest + listSz
+            listStmt = mkAssign (mkAttr listName) list
+        return ( packNames ++ [listName] ++ restNames
+               , packStmt ++ listStmt : restStmts
+               , totalSize
+               )
+
+      flushAcc :: () -> State StructUnpackState ([String], Suite (), Maybe Int)
+      flushAcc _ = do
+        StructUnpackState needsPad args keys <- get
         let size = calcsize keys
-            assign = if length args > 0
-                     then [mkUnpackFrom args keys False]
-                     else []
-        in (assign, size)
+            assign = [mkUnpackFrom args keys False]
+        put $ StructUnpackState needsPad [] ""
+        return (args, assign, Just size)
+
+      typePad e = mkCall "xcffib.type_pad" [e]
 
 -- | Given a (qualified) type name and a target type, generate a TypeInfoMap
 -- updater.
