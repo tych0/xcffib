@@ -530,18 +530,19 @@ def pack_list(from_, pack_type):
     `struct.pack`. You must pass `size` if `pack_type` is a struct.pack string.
     """
 
-    # If a string is passed as `from_` in Python 3, it has to be encoded
-    if isinstance(from_, str):
-        if six.PY3:
+    if six.PY3:
+        # If a string is passed as `from_` in Python 3, it has to be encoded
+        if isinstance(from_, str):
             from_ = [b.encode('latin1') for b in from_]
-    # PY3 is "helpful" in that when you do tuple(b'foo') you get
-    # (102, 111, 111) instead of something more reasonable like
-    # (b'f', b'o', b'o'), so we have to add this other special case.
-    elif isinstance(from_, bytes):
-        from_ = [bytes([b]) for b in from_]
+        # PY3 is "helpful" in that when you do tuple(b'foo') you get
+        # (102, 111, 111) instead of something more reasonable like
+        # (b'f', b'o', b'o'), so we have to add this other special case.
+        elif isinstance(from_, bytes):
+            from_ = [bytes([b]) for b in from_]
+
     # Pack from_ as char array, where from_ may be an array of ints possibly
     # greater than 256
-    elif pack_type == 'c':
+    if pack_type == 'c':
         def to_bytes(v):
             for _ in range(4):
                 v, r = divmod(v, 256)
