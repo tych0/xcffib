@@ -431,7 +431,7 @@ mkStructStyleUnpack :: String
 mkStructStyleUnpack prefix ext m membs =
   let unpacked = map (structElemToPyUnpack ext m) membs
       initial = StructUnpackState False [] prefix
-      (names, unpackStmts, size) = evalState (mkUnpackStmtsR unpacked) initial
+      (_, unpackStmts, size) = evalState (mkUnpackStmtsR unpacked) initial
       base = [mkAssign "base" $ mkName "unpacker.offset"]
       bufsize =
         let rhs = BinaryOp (Minus ()) (mkName "unpacker.offset") (mkName "base") ()
@@ -459,7 +459,7 @@ mkStructStyleUnpack prefix ext m membs =
                  }
         mkUnpackStmtsR xs
 
-      mkUnpackStmtsR (Right (listName, list, cons, length) : xs) = do
+      mkUnpackStmtsR (Right (listName, list, cons, listSz) : xs) = do
         (packNames, packStmt, packSz) <- flushAcc
         st <- get
         put $ st { stNeedsPad = True }
@@ -470,8 +470,8 @@ mkStructStyleUnpack prefix ext m membs =
         let totalSize = do
                           before <- packSz
                           rest <- restSz
-                          listSz <- length
-                          return $ before + rest + listSz
+                          listSz' <- listSz
+                          return $ before + rest + listSz'
             listStmt = mkAssign (mkAttr listName) list
         return ( packNames ++ [listName] ++ restNames
                , packStmt ++ pad ++ listStmt : restStmts
@@ -521,26 +521,26 @@ processXDecl ext (XStruct n membs) = do
         return $ mkAssign "fixed_size" rhs
   modify $ mkModify ext n (CompositeType ext n)
   return $ Declaration [mkXClass n "xcffib.Struct" statements (pack : fixedLength)]
-processXDecl ext (XEvent name number membs noSequence) = do
+processXDecl ext (XEvent name opcode membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       prefix = if fromMaybe False noSequence then "x" else "x{0}2x"
       (statements, _) = mkStructStyleUnpack prefix ext m membs
-      eventsUpd = mkDictUpdate "_events" number cname
+      eventsUpd = mkDictUpdate "_events" opcode cname
   return $ Declaration [ mkXClass cname "xcffib.Event" statements []
                        , eventsUpd
                        ]
-processXDecl ext (XError name number membs) = do
+processXDecl ext (XError name opcode membs) = do
   m <- get
   let cname = name ++ "Error"
       (statements, _) = mkStructStyleUnpack "xx2x" ext m membs
-      errorsUpd = mkDictUpdate "_errors" number cname
+      errorsUpd = mkDictUpdate "_errors" opcode cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
   return $ Declaration [ mkXClass cname "xcffib.Error" statements []
                        , alias
                        , errorsUpd
                        ]
-processXDecl ext (XRequest name number membs reply) = do
+processXDecl ext (XRequest name opcode membs reply) = do
   m <- get
   let (args, packStmts) = mkPackStmts ext name m id "x{0}2x" membs
       cookieName = (name ++ "Cookie")
@@ -561,7 +561,7 @@ processXDecl ext (XRequest name number membs reply) = do
       checkedParam = Param (ident "is_checked") Nothing (Just isChecked) ()
       allArgs = (mkParams $ "self" : args) ++ [checkedParam]
       mkArg = flip ArgExpr ()
-      ret = mkReturn $ mkCall "self.send_request" ((map mkArg [ mkInt number
+      ret = mkReturn $ mkCall "self.send_request" ((map mkArg [ mkInt opcode
                                                               , mkName "buf"
                                                               ])
                                                               ++ hasReply
@@ -574,7 +574,7 @@ processXDecl ext (XUnion name membs) = do
   let unpackF = structElemToPyUnpack ext m
       (fields, listInfo) = partitionEithers $ map unpackF membs
       toUnpack = concat $ map mkUnionUnpack fields
-      (names, exprs, _, lengths) = unzip4 listInfo
+      (names, exprs, _, _) = unzip4 listInfo
       lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
       initMethod = lists ++ toUnpack
       decl = [mkXClass name "xcffib.Union" initMethod []]
