@@ -113,10 +113,12 @@ class TestConnection(XvfbTest):
         assert len(reply.children) == 0
 
     def test_create_window_creates_window(self):
-        self.create_window()
+        wid = self.conn.generate_id()
+        self.create_window(wid=wid)
         reply = self.xproto.QueryTree(self.default_screen.root).reply()
         assert reply.children_len == 1
         assert len(reply.children) == 1
+        assert reply.children[0] == wid
 
     @raises(AssertionError)
     def test_checking_unchecked_fails(self):
