@@ -11,7 +11,6 @@ from nose.tools import raises
 import struct
 import subprocess
 
-
 class TestConnection(XvfbTest):
 
     def setUp(self):
@@ -216,3 +215,21 @@ class TestConnection(XvfbTest):
         atom_name = self.xproto.GetAtomName(atom).reply().name
 
         assert atom_name.to_string() == wm_protocols
+
+    def test_KillClient(self):
+        self.xeyes()
+
+        self.conn.flush()
+
+        e1 = self.conn.wait_for_event()
+        self.xproto.KillClient(e1.window)
+
+        # one is MapRequest and the other is DestroyNotify, they may be in
+        # either order
+        for _ in range(2):
+            self.conn.flush()
+            k1 = self.conn.wait_for_event()
+            if isinstance(k1, xcffib.xproto.DestroyNotifyEvent):
+                assert e1.window == k1.window
+                return
+        assert False, "no DestroyNotifyEvent"
