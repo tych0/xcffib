@@ -139,16 +139,6 @@ class TestConnection(XvfbTest):
         cookie.check()
 
     def test_create_window_generates_event(self):
-        # Enable CreateNotify
-        self.xproto.ChangeWindowAttributes(
-            self.default_screen.root,
-            xcffib.xproto.CW.EventMask,
-            [ EventMask.SubstructureNotify |
-              EventMask.StructureNotify |
-              EventMask.SubstructureRedirect
-            ]
-        )
-
         self.xeyes()
         self.conn.flush()
 
