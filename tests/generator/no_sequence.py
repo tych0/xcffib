@@ -10,5 +10,9 @@ class KeymapNotifyEvent(xcffib.Event):
         unpacker.unpack("x")
         self.keys = xcffib.List(unpacker, "B", 31)
         self.bufsize = unpacker.offset - base
+    def pack(self):
+        buf = six.BytesIO()
+        buf.write(xcffib.pack_list(self.keys, "B"))
+        return buf.getvalue()
 _events[11] = KeymapNotifyEvent
 xcffib._add_ext(key, no_sequenceExtension, _events, _errors)

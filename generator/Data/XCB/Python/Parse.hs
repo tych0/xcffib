@@ -524,19 +524,21 @@ processXDecl ext (XStruct n membs) = do
 processXDecl ext (XEvent name opcode membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
+      pack = mkPackMethod ext name m membs
       prefix = if fromMaybe False noSequence then "x" else "x{0}2x"
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" opcode cname
-  return $ Declaration [ mkXClass cname "xcffib.Event" statements []
+  return $ Declaration [ mkXClass cname "xcffib.Event" statements [pack]
                        , eventsUpd
                        ]
 processXDecl ext (XError name opcode membs) = do
   m <- get
   let cname = name ++ "Error"
+      pack = mkPackMethod ext name m membs
       (statements, _) = mkStructStyleUnpack "xx2x" ext m membs
       errorsUpd = mkDictUpdate "_errors" opcode cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
-  return $ Declaration [ mkXClass cname "xcffib.Error" statements []
+  return $ Declaration [ mkXClass cname "xcffib.Error" statements [pack]
                        , alias
                        , errorsUpd
                        ]

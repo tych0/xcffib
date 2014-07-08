@@ -76,3 +76,4 @@ Why is the binding generator written in haskell? Because haskell is awesome.
 * XGE support? (xpyb doesn't implement this either)
 * xprint and xkb support. These will require some non-trivial work in
   xcb-types, since it won't parse them correctly.
+* A nice way to create Events/Errors/Structs without a raw xcb message buffer.
