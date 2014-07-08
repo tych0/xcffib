@@ -473,13 +473,12 @@ class Connection(object):
         if e.response_type == 0:
             return self._process_error(ffi.cast("xcb_generic_error_t *", e))
 
-        if e.response_type > 128:
-            # avoid circular imports
-            from .xproto import ClientMessageEvent
-            event = ClientMessageEvent
-        else:
-            assert core_events, "You probably need to import xcffib.xproto"
-            event = core_events[e.response_type & 0x7f]
+        assert core_events, "You probably need to import xcffib.xproto"
+        # We mask off the high bit here because events sent with SendEvent have
+        # this bit set. We don't actually care where the event came from, so we
+        # just throw this away. Maybe we could expose this, if anyone actually
+        # cares about it.
+        event = core_events[e.response_type & 0x7f]
 
         buf = Unpacker(e)
         return event(buf)
