@@ -23,14 +23,12 @@ class cffi_build(build):
         self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
         build.finalize_options(self)
 
-# version = subprocess.check_output(['git', 'describe', '--tags'])
-
-
+version = subprocess.check_output(['git', 'describe', '--tags'])
 dependencies = ['six', 'cffi>=0.8.2']
 
 setup(
     name="xcffib",
-    version="prerelease",
+    version=version,
     description="A drop in replacement for xpyb, an XCB python binding",
     keywords="xcb xpyb cffi x11 x windows",
     license="MIT",
