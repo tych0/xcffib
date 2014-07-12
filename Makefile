@@ -5,8 +5,11 @@ xcffib: $(GEN) module/*.py
 	$(GEN) --input /usr/share/xcb --output ./xcffib
 	cp ./module/*py ./xcffib/
 
+dist:
+	cabal configure
+
 .PHONY: $(GEN)
-$(GEN):
+$(GEN): dist
 	cabal build
 
 .PHONY: clean
