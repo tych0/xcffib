@@ -7,7 +7,13 @@ have pypy support. `xcffib` is a binding which uses
 described above. `xcffib` also builds bindings for 27 of the 29 (xprint and xkb
 are missing) X extensions in 1.10.
 
-## Dependencies
+## Installation
+
+For most end users of software that depends on xcffib or developers writing
+code against xcffib, it can be installed simply via `pip install xcffib`. If
+you're interested in doing development, read on...
+
+## Development dependencies
 
 Currently `xcb-types` (any tagged version, not just the old one on Hackage)
 doesn't run against `xcb-proto` 1.10; there is a hacked branch available at
