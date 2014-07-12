@@ -66,6 +66,13 @@ because `xcffib` isn't done yet :-)
   to actually catch if you wanted to handle an error. Instead, `FooError` and
   `BadFoo` are aliases, and both implement the X error object description and
   python Exception (via inheriting from `XcffibException`).
+* You can now create synthtic events. This makes it much easier to work with
+  `ClientMessageEvent`s. For example:
+
+  ```python
+  e = xcffib.xproto.ClientMessageEvent.synthetic(format=..., window=..., ...)
+  conn.core.SendEvent(..., e.pack())
+  ```
 
 ## Why haskell?
 
@@ -76,4 +83,3 @@ Why is the binding generator written in haskell? Because haskell is awesome.
 * XGE support? (xpyb doesn't implement this either)
 * xprint and xkb support. These will require some non-trivial work in
   xcb-types, since it won't parse them correctly.
-* A nice way to create Events/Errors/Structs without a raw xcb message buffer.
