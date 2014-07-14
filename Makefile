@@ -34,10 +34,21 @@ newtests: $(GEN)
 	$(GEN) --input ./tests/generator/ --output ./tests/generator/
 	git diff tests
 
-newversion:
-	sed -i "s/version = .*/version = \"$(shell git describe --tags)\"/" setup.py
-
 check: xcffib
 	cabal test
 	flake8 --config=./tests/flake8.cfg ./xcffib
 	nosetests -d
+
+# make release ver=v0.99.99
+release:
+ifeq (${ver},)
+	@echo "no version (ver=) specified, not releasing."
+else ifneq ($(wildcard ./xcffib.egg-info*),)
+	@echo "xcffib.egg-info exists, not releasing."
+else
+	sed -i "s/version = .*/version = \"${ver}\"/" setup.py
+	git commit -a -m "Release ${ver}"
+	git tag ${ver}
+	python setup.py sdist
+	python setup.py sdist upload
+endif
