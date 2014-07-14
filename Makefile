@@ -34,6 +34,9 @@ newtests: $(GEN)
 	$(GEN) --input ./tests/generator/ --output ./tests/generator/
 	git diff tests
 
+newversion:
+	sed -i "s/version = .*/version = \"$(shell git describe --tags)\"/" setup.py
+
 check: xcffib
 	cabal test
 	flake8 --config=./tests/flake8.cfg ./xcffib
