@@ -32,14 +32,14 @@ ffi.cdef('\n'.join("#define %s ..." % c for c in CONSTANTS))
 ffi.cdef("""
     // xcb.h
     typedef struct {
-        uint8_t   response_type;  /**< Type of the response */
+        uint8_t  response_type;  /**< Type of the response */
         uint8_t  pad0;           /**< Padding */
         uint16_t sequence;       /**< Sequence number */
         uint32_t length;         /**< Length of the response */
     } xcb_generic_reply_t;
 
     typedef struct {
-        uint8_t   response_type;  /**< Type of the response */
+        uint8_t  response_type;  /**< Type of the response */
         uint8_t  pad0;           /**< Padding */
         uint16_t sequence;       /**< Sequence number */
         uint32_t pad[7];         /**< Padding */
@@ -47,13 +47,13 @@ ffi.cdef("""
     } xcb_generic_event_t;
 
     typedef struct {
-        uint8_t   response_type;  /**< Type of the response */
-        uint8_t   error_code;     /**< Error code */
+        uint8_t  response_type;  /**< Type of the response */
+        uint8_t  error_code;     /**< Error code */
         uint16_t sequence;       /**< Sequence number */
         uint32_t resource_id;     /** < Resource ID for requests with side effects only */
         uint16_t minor_code;      /** < Minor opcode of the failed request */
-        uint8_t major_code;       /** < Major opcode of the failed request */
-        uint8_t pad0;
+        uint8_t  major_code;       /** < Major opcode of the failed request */
+        uint8_t  pad0;
         uint32_t pad[5];         /**< Padding */
         uint32_t full_sequence;  /**< full sequence */
     } xcb_generic_error_t;
@@ -72,6 +72,12 @@ ffi.cdef("""
     typedef ... xcb_connection_t;
 
     // xproto.h
+    typedef uint32_t xcb_colormap_t;
+    typedef uint32_t xcb_drawable_t;
+    typedef uint32_t xcb_pixmap_t;
+    typedef uint32_t xcb_visualid_t;
+    typedef uint32_t xcb_window_t;
+
     typedef struct xcb_query_extension_reply_t {
         uint8_t  response_type;
         uint8_t  pad0;
@@ -106,9 +112,6 @@ ffi.cdef("""
         uint8_t       pad1[4]; /**<  */
     } xcb_setup_t;
 
-    typedef uint32_t xcb_drawable_t;
-    typedef uint32_t xcb_visualid_t;
-
     typedef struct xcb_visualtype_t {
         xcb_visualid_t visual_id; /**<  */
         uint8_t        _class; /**<  */
@@ -120,6 +123,47 @@ ffi.cdef("""
         uint8_t        pad0[4]; /**<  */
     } xcb_visualtype_t;
 
+    typedef struct xcb_screen_t {
+        xcb_window_t   root; /**<  */
+        xcb_colormap_t default_colormap; /**<  */
+        uint32_t       white_pixel; /**<  */
+        uint32_t       black_pixel; /**<  */
+        uint32_t       current_input_masks; /**<  */
+        uint16_t       width_in_pixels; /**<  */
+        uint16_t       height_in_pixels; /**<  */
+        uint16_t       width_in_millimeters; /**<  */
+        uint16_t       height_in_millimeters; /**<  */
+        uint16_t       min_installed_maps; /**<  */
+        uint16_t       max_installed_maps; /**<  */
+        xcb_visualid_t root_visual; /**<  */
+        uint8_t        backing_stores; /**<  */
+        uint8_t        save_unders; /**<  */
+        uint8_t        root_depth; /**<  */
+        uint8_t        allowed_depths_len; /**<  */
+    } xcb_screen_t;
+
+    // render.h
+    typedef uint32_t xcb_render_pictformat_t;
+
+    typedef struct xcb_render_directformat_t {
+        uint16_t red_shift; /**<  */
+        uint16_t red_mask; /**<  */
+        uint16_t green_shift; /**<  */
+        uint16_t green_mask; /**<  */
+        uint16_t blue_shift; /**<  */
+        uint16_t blue_mask; /**<  */
+        uint16_t alpha_shift; /**<  */
+        uint16_t alpha_mask; /**<  */
+    } xcb_render_directformat_t;
+
+    typedef struct xcb_render_pictforminfo_t {
+        xcb_render_pictformat_t   id; /**<  */
+        uint8_t                   type; /**<  */
+        uint8_t                   depth; /**<  */
+        uint8_t                   pad0[2]; /**<  */
+        xcb_render_directformat_t direct; /**<  */
+        xcb_colormap_t            colormap; /**<  */
+    } xcb_render_pictforminfo_t;
 
     // xcbext.h
     typedef struct xcb_extension_t {
@@ -176,6 +220,7 @@ C = ffi.verify("""
     #include <stdlib.h>
     #include <xcb/xcb.h>
     #include <xcb/xcbext.h>
+    #include <xcb/render.h>
 """, libraries=['xcb'])
 
 def bytes_to_cdata(bs):
