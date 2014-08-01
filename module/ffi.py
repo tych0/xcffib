@@ -173,6 +173,7 @@ ffi.cdef("""
 """)
 
 C = ffi.verify("""
+    #include <stdlib.h>
     #include <xcb/xcb.h>
     #include <xcb/xcbext.h>
 """, libraries=['xcb'])
