@@ -489,8 +489,8 @@ class Connection(object):
         buf = Unpacker(e)
         return event(buf)
 
-    @ensure_connected
     def send_request(self, flags, xcb_parts, xcb_req):
+        self.invalid()
         return C.xcb_send_request(self._conn, flags, xcb_parts, xcb_req)
 
 # More backwards compatibility
