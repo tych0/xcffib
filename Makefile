@@ -40,7 +40,7 @@ check: xcffib
 	nosetests -d
 
 # make release ver=v0.99.99
-release:
+release: xcffib
 ifeq (${ver},)
 	@echo "no version (ver=) specified, not releasing."
 else ifneq ($(wildcard ./xcffib.egg-info*),)
