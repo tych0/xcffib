@@ -233,3 +233,8 @@ class TestConnection(XvfbTest):
                 assert e1.window == k1.window
                 return
         assert False, "no DestroyNotifyEvent"
+
+    def test_connect(self):
+        c = xcffib.connect()
+        c.invalid()
+        c.disconnect()

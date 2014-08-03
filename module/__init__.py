@@ -342,7 +342,11 @@ class Connection(object):
                 raise XcffibException("invalid xauth")
         else:
             c_auth = ffi.NULL
-        display = display.encode('latin1')
+
+        if display is None:
+            display = ffi.NULL
+        else:
+            display = display.encode('latin1')
 
         i = ffi.new("int *")
         i[0] = 0
