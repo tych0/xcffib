@@ -260,28 +260,29 @@ mkPad :: Int -> String
 mkPad 1 = "x"
 mkPad i = (show i) ++ "x"
 
-structElemToPyUnpack :: String
+structElemToPyUnpack :: Expr ()
+                     -> String
                      -> TypeInfoMap
                      -> GenStructElem Type
                      -> Either (Maybe String, String)
                                (String, Expr (), Expr (), Maybe Int)
-structElemToPyUnpack _ _ (Pad i) = Left (Nothing, mkPad i)
+structElemToPyUnpack _ _ _ (Pad i) = Left (Nothing, mkPad i)
 
 -- XXX: This is a cheap hack for noop, we should really do better.
-structElemToPyUnpack _ _ (Doc _ _ _) = Left (Nothing, "")
+structElemToPyUnpack _ _ _ (Doc _ _ _) = Left (Nothing, "")
 -- XXX: What does fd/switch mean? we should implement it correctly
-structElemToPyUnpack _ _ (Fd _) = Left (Nothing, "")
-structElemToPyUnpack _ _ (Switch _ _ _) = Left (Nothing, "")
+structElemToPyUnpack _ _ _ (Fd _) = Left (Nothing, "")
+structElemToPyUnpack _ _ _ (Switch _ _ _) = Left (Nothing, "")
 
 -- The enum field is mostly for user information, so we ignore it.
-structElemToPyUnpack ext m (X.List n typ len _) =
+structElemToPyUnpack unpacker ext m (X.List n typ len _) =
   let attr = ((++) "self.")
       len' = fromMaybe pyNone $ fmap (xExpressionToPyExpr attr) len
       cons = case m M.! typ of
                BaseType c -> mkStr c
                CompositeType tExt c | ext /= tExt -> mkName $ tExt ++ "." ++ c
                CompositeType _ c -> mkName c
-      list = mkCall "xcffib.List" [ (mkName "unpacker")
+      list = mkCall "xcffib.List" [ unpacker
                                   , cons
                                   , len'
                                   ]
@@ -291,17 +292,17 @@ structElemToPyUnpack ext m (X.List n typ len _) =
   in Right (n, list, cons, constLen)
 
 -- The mask and enum fields are for user information, we can ignore them here.
-structElemToPyUnpack ext m (SField n typ _ _) =
+structElemToPyUnpack unpacker ext m (SField n typ _ _) =
   case m M.! typ of
     BaseType c -> Left (Just n, c)
     CompositeType tExt c ->
       let c' = if tExt == ext then c else tExt ++ "." ++ c
-          field = mkCall c' [mkName "unpacker"]
+          field = mkCall c' [unpacker]
       -- TODO: Ugh. Nothing here is wrong. Do we really need to carry the
       -- length of these things around?
       in Right (n, field, mkName c', Nothing)
-structElemToPyUnpack _ _ (ExprField _ _ _) = error "Only valid for requests"
-structElemToPyUnpack _ _ (ValueParam _ _ _ _) = error "Only valid for requests"
+structElemToPyUnpack _ _ _ (ExprField _ _ _) = error "Only valid for requests"
+structElemToPyUnpack _ _ _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
 structElemToPyPack :: String
                    -> TypeInfoMap
@@ -429,7 +430,7 @@ mkStructStyleUnpack :: String
                     -> [GenStructElem Type]
                     -> (Suite (), Maybe Int)
 mkStructStyleUnpack prefix ext m membs =
-  let unpacked = map (structElemToPyUnpack ext m) membs
+  let unpacked = map (structElemToPyUnpack (mkName "unpacker") ext m) membs
       initial = StructUnpackState False [] prefix
       (_, unpackStmts, size) = evalState (mkUnpackStmtsR unpacked) initial
       base = [mkAssign "base" $ mkName "unpacker.offset"]
@@ -482,7 +483,7 @@ mkStructStyleUnpack prefix ext m membs =
       flushAcc = do
         StructUnpackState needsPad args keys <- get
         let size = calcsize keys
-            assign = mkUnpackFrom args keys False
+            assign = mkUnpackFrom "unpacker" args keys
         put $ StructUnpackState needsPad [] ""
         return (args, assign, Just size)
 
@@ -573,7 +574,7 @@ processXDecl ext (XRequest name opcode membs reply) = do
   return $ Request request replyDecl
 processXDecl ext (XUnion name membs) = do
   m <- get
-  let unpackF = structElemToPyUnpack ext m
+  let unpackF = structElemToPyUnpack unpackerCopy ext m
       (fields, listInfo) = partitionEithers $ map unpackF membs
       toUnpack = concat $ map mkUnionUnpack fields
       (names, exprs, _, _) = unzip4 listInfo
@@ -583,10 +584,11 @@ processXDecl ext (XUnion name membs) = do
   modify $ mkModify ext name (CompositeType ext name)
   return $ Declaration decl
   where
+    unpackerCopy = mkCall "unpacker.copy" noArgs
     mkUnionUnpack :: (Maybe String, String)
                   -> Suite ()
     mkUnionUnpack (n, typ) =
-      mkUnpackFrom (maybeToList n) typ True
+      mkUnpackFrom unpackerCopy (maybeToList n) typ
 
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.

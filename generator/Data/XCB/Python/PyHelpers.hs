@@ -39,6 +39,13 @@ _reserved = [ "None"
             , "or"
             ]
 
+class PseudoExpr a where
+  getExpr :: a -> Expr ()
+
+instance PseudoExpr String where
+  getExpr s = mkName s
+instance PseudoExpr (Expr ()) where
+  getExpr = id
 
 -- | Create and sanatize a python identifier.
 ident :: String -> Ident ()
@@ -62,8 +69,8 @@ mkName s =
   let strings = map mkVar $ reverse $ splitOn "." s
   in foldr mkDot (head strings) (reverse $ tail strings)
 
-mkDot :: Expr () -> Expr () -> Expr ()
-mkDot e1 e2 = BinaryOp (Dot ()) e1 e2 ()
+mkDot :: (PseudoExpr a, PseudoExpr b) => a -> b -> Expr ()
+mkDot e1 e2 = BinaryOp (Dot ()) (getExpr e1) (getExpr e2) ()
 
 -- | Make an attribute access, i.e. self.<string>.
 mkAttr :: String -> Expr ()
@@ -77,14 +84,6 @@ mkRelImport name = FromImport (ImportRelative 1 Nothing ()) (FromItems [FromItem
 
 mkInt :: Int -> Expr ()
 mkInt i = Int (toInteger i) (show i) ()
-
-class PseudoExpr a where
-  getExpr :: a -> Expr ()
-
-instance PseudoExpr String where
-  getExpr s = mkName s
-instance PseudoExpr (Expr ()) where
-  getExpr = id
 
 mkAssign :: PseudoExpr a => a -> Expr () -> Statement ()
 mkAssign name expr = Assign [getExpr name] expr ()
@@ -139,12 +138,12 @@ mkStr s = Strings ["\"", s, "\""] ()
 mkTuple :: [Expr ()] -> Expr ()
 mkTuple = flip Tuple ()
 
-mkUnpackFrom :: [String] -> String -> Bool -> Suite ()
-mkUnpackFrom names packs isUnion =
+mkUnpackFrom :: PseudoExpr a => a -> [String] -> String -> Suite ()
+mkUnpackFrom unpacker names packs =
   let lhs = mkTuple $ map mkAttr names
       -- Don't spam with this default arg unless it is really necessary.
-      increment = if isUnion then [pyTruth False] else []
-      rhs = mkCall "unpacker.unpack" $ mkStr packs : increment
+      unpackF = mkDot unpacker "unpack"
+      rhs = mkCall unpackF [mkStr packs]
       stmt = if length names > 0 then mkAssign lhs rhs else StmtExpr rhs ()
   in if length packs > 0 then [stmt] else []
 

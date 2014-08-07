@@ -35,7 +35,7 @@ def type_pad(t, i):
 
 class Unpacker(object):
 
-    def __init__(self, cdata, known_max=None, needs_pad=False):
+    def __init__(self, cdata, known_max=None):
         self.cdata = cdata
         self.size = 0
         self.offset = 0
@@ -74,6 +74,10 @@ class Unpacker(object):
         assert self.offset == 0
         return ffi.cast(typ, self.cdata)
 
+    def copy(self):
+        new = Unpacker(self.cdata, self.known_max)
+        new.offset = self.offset
+        return new
 
 def popcount(n):
     return bin(n).count('1')
