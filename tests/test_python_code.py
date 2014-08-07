@@ -25,8 +25,8 @@ class TestPythonCode(object):
 
         cm = xcffib.xproto.ClientMessageData(xcffib.Unpacker(cffi_data))
 
-        for actual, expected in zip(data, cm.data8):
-            assert actual == chr(expected), actual
+        for actual, expected in zip(range(20), cm.data8):
+            assert actual == expected, actual
 
         assert cm.data32[0] == 0x03020100
         assert cm.data32[1] == 0x07060504
