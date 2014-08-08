@@ -167,6 +167,12 @@ class ExtensionKey(object):
     def __ne__(self, o):
         return self.name != o.name
 
+    def to_cffi(self):
+        c_key = ffi.new("struct xcb_extension_t *")
+        c_key.name = bytes_to_cdata(self.name.encode())
+        # xpyb doesn't ever set global_id, which seems wrong, but whatever.
+        c_key.global_id = 0
+        return c_key
 
 class Protobj(object):
 
@@ -230,10 +236,11 @@ class VoidCookie(Cookie):
 class Extension(object):
     def __init__(self, conn, key=None):
         self.conn = conn
+
         if key is None:
-            self.ext_name = None
+            self.c_key = ffi.NULL
         else:
-            self.ext_name = key.name
+            self.c_key = key.to_cffi()
 
     def send_request(self, opcode, data, cookie=VoidCookie, reply=None,
                      is_checked=False):
@@ -243,16 +250,7 @@ class Extension(object):
 
         xcb_req = ffi.new("xcb_protocol_request_t *")
         xcb_req.count = 2
-
-        if self.ext_name is not None:
-            key = ffi.new("struct xcb_extension_t *")
-            key.name = ffi.new('char[]', self.ext_name.encode())
-            # xpyb doesn't ever set global_id, which seems wrong, but whatever.
-            key.global_id = 0
-            xcb_req.ext = key
-        else:
-            xcb_req.ext = ffi.NULL
-
+        xcb_req.ext = self.c_key
         xcb_req.opcode = opcode
         xcb_req.isvoid = issubclass(cookie, VoidCookie)
 
@@ -337,6 +335,23 @@ class List(Protobj):
     def buf(self):
         return b''.join(self.list)
 
+
+class OffsetMap(object):
+    def __init__(self, core):
+        self.offsets = [(0, core)]
+
+    def add(self, offset, things):
+        self.offsets.append((offset, things))
+        self.offsets.sort(reverse=True)
+
+    def __getitem__(self, item):
+        try:
+            offset, things = next((k, v) for k, v in self.offsets if item > k)
+            return things[item - offset]
+        except StopIteration:
+            raise IndexError(item)
+
+
 class Connection(object):
 
     def __init__(self, display=None, fd=-1, auth=None):
@@ -366,6 +381,17 @@ class Connection(object):
 
         self.core = core(self)
         self.setup = self.get_setup()
+
+        self._event_offsets = OffsetMap(core_events)
+        self._error_offsets = OffsetMap(core_errors)
+        self._setup_extensions()
+
+    def _setup_extensions(self):
+        for key, (_, events, errors) in extensions.items():
+            reply = C.xcb_get_extension_data(self._conn, key.to_cffi())
+            self.invalid()
+            self._event_offsets.add(reply.first_event, events)
+            self._error_offsets.add(reply.first_error, errors)
 
     def __call__(self, key):
         return extensions[key][0](self, key)
@@ -449,7 +475,7 @@ class Connection(object):
     def _process_error(self, c_error):
         self.invalid()
         if c_error != ffi.NULL:
-            error = core_errors[c_error.error_code]
+            error = self._error_offsets[c_error.error_code]
             buf = Unpacker(c_error)
             raise error(buf)
 
@@ -487,12 +513,11 @@ class Connection(object):
         if e.response_type == 0:
             return self._process_error(ffi.cast("xcb_generic_error_t *", e))
 
-        assert core_events, "You probably need to import xcffib.xproto"
         # We mask off the high bit here because events sent with SendEvent have
         # this bit set. We don't actually care where the event came from, so we
         # just throw this away. Maybe we could expose this, if anyone actually
         # cares about it.
-        event = core_events[e.response_type & 0x7f]
+        event = self._event_offsets[e.response_type & 0x7f]
 
         buf = Unpacker(e)
         return event(buf)
@@ -500,6 +525,7 @@ class Connection(object):
     def send_request(self, flags, xcb_parts, xcb_req):
         self.invalid()
         return C.xcb_send_request(self._conn, flags, xcb_parts, xcb_req)
+
 
 # More backwards compatibility
 connect = Connection
