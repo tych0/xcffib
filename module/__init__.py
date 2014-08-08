@@ -524,7 +524,9 @@ class Connection(object):
 
     def send_request(self, flags, xcb_parts, xcb_req):
         self.invalid()
-        return C.xcb_send_request(self._conn, flags, xcb_parts, xcb_req)
+        ret = C.xcb_send_request(self._conn, flags, xcb_parts, xcb_req)
+        self.invalid()
+        return ret
 
 
 # More backwards compatibility
