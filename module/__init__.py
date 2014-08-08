@@ -3,8 +3,11 @@ from __future__ import division, absolute_import
 import functools
 import six
 import struct
+import weakref
 
 from .ffi import ffi, C, visualtype_to_c_struct
+
+global_weakkeydict = weakref.WeakKeyDictionary()
 
 X_PROTOCOL = C.X_PROTOCOL
 X_PROTOCOL_REVISION = C.X_PROTOCOL_REVISION
@@ -169,9 +172,13 @@ class ExtensionKey(object):
 
     def to_cffi(self):
         c_key = ffi.new("struct xcb_extension_t *")
-        c_key.name = bytes_to_cdata(self.name.encode())
+        name = bytes_to_cdata(self.name.encode())
+
+        c_key.name = name
         # xpyb doesn't ever set global_id, which seems wrong, but whatever.
         c_key.global_id = 0
+
+        global_weakkeydict[c_key] = (name, )
         return c_key
 
 class Protobj(object):
@@ -342,7 +349,7 @@ class OffsetMap(object):
 
     def add(self, offset, things):
         self.offsets.append((offset, things))
-        self.offsets.sort(reverse=True)
+        self.offsets.sort(key=lambda x: x[0], reverse=True)
 
     def __getitem__(self, item):
         try:
@@ -353,7 +360,6 @@ class OffsetMap(object):
 
 
 class Connection(object):
-
     def __init__(self, display=None, fd=-1, auth=None):
         if auth is not None:
             c_auth = ffi.new("xcb_auth_info_t *")
