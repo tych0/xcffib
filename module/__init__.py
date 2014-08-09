@@ -328,7 +328,7 @@ class List(Protobj):
         """ A helper for converting a List of chars to a native string. Dies if
         the list contents are not something that could be reasonably converted
         to a string. """
-        return b''.join(self).decode('latin1')
+        return ''.join(chr(six.byte2int(i)) for i in self)
 
     def to_atoms(self):
         """ A helper for converting a List of chars to an array of atoms """
@@ -542,33 +542,31 @@ def pack_list(from_, pack_type):
     subclass of `xcffib.Struct`, or a string that can be passed to
     `struct.pack`. You must pass `size` if `pack_type` is a struct.pack string.
     """
-
-    if six.PY3:
-        # If a string is passed as `from_` in Python 3, it has to be encoded
-        if isinstance(from_, str):
-            from_ = [b.encode('latin1') for b in from_]
-        # PY3 is "helpful" in that when you do tuple(b'foo') you get
-        # (102, 111, 111) instead of something more reasonable like
-        # (b'f', b'o', b'o'), so we have to add this other special case.
-        elif isinstance(from_, bytes):
-            from_ = [bytes([b]) for b in from_]
-
-    try:
-        elt_type = type(from_[0])
-    except IndexError:
+    # We need from_ to not be empty
+    if len(from_) == 0:
         return bytes()
 
-    # Pack from_ as char array, where from_ may be an array of ints possibly
-    # greater than 256
-    if pack_type == 'c' and issubclass(elt_type, int):
-        def to_bytes(v):
-            for _ in range(4):
-                v, r = divmod(v, 256)
-                yield r
-        from_ = [bytes(bytearray([b])) for i in from_ for b in to_bytes(i)]
+    if pack_type == 'c':
+        if isinstance(from_, bytes):
+            # PY3 is "helpful" in that when you do tuple(b'foo') you get
+            # (102, 111, 111) instead of something more reasonable like
+            # (b'f', b'o', b'o'), so we rebuild from_ as a tuple of bytes
+            from_ = [six.int2byte(b) for b in six.iterbytes(from_)]
+        elif isinstance(from_, str):
+            # Only run in Python 3, where bytes are different than strings
+            # Here we create the tuple of bytes by encoding each character
+            from_ = [b.encode('latin-1') for b in from_]
+        elif isinstance(from_[0], int):
+            # Pack from_ as char array, where from_ may be an array of ints
+            # possibly greater than 256
+            def to_bytes(v):
+                for _ in range(4):
+                    v, r = divmod(v, 256)
+                    yield r
+            from_ = [six.int2byte(b) for i in from_ for b in to_bytes(i)]
 
     if isinstance(pack_type, six.string_types):
-        return struct.pack("=" + pack_type * len(from_), *tuple(from_))
+        return struct.pack("=" + pack_type * len(from_), *from_)
     else:
         buf = six.BytesIO()
         for item in from_:
