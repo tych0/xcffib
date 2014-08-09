@@ -197,9 +197,9 @@ class TestConnection(XvfbTest):
                 len(title), title)
 
         reply = self.xproto.GetProperty(False, wid,
-                net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, 1).reply()
+                net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, (2 ** 32) - 1).reply()
 
-        assert reply.value.buf() == b"test\xc2\xb7"
+        assert reply.value.buf() == six.b("test\xc2\xb7")
         assert reply.value.to_string() == title
 
     def test_ChangeProperty_WM_PROTOCOLS(self):
