@@ -180,6 +180,28 @@ class TestConnection(XvfbTest):
                 xcffib.xproto.Atom.WM_NAME, xcffib.xproto.GetPropertyType.Any, 0, 1).reply()
         assert reply.value.to_string() == title
 
+    def test_ChangeProperty_NET_WM_NAME(self):
+        wid = self.conn.generate_id()
+        self.create_window(wid=wid)
+
+        title = "test\xc2\xb7"
+
+        net_wm_name = "_NET_WM_NAME"
+        net_wm_name = self.xproto.InternAtom(0, len(net_wm_name), net_wm_name).reply().atom
+
+        utf8_string = "UTF8_STRING"
+        utf8_string = self.xproto.InternAtom(0, len(utf8_string), utf8_string).reply().atom
+
+        self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
+                net_wm_name, utf8_string, 8,
+                len(title), title)
+
+        reply = self.xproto.GetProperty(False, wid,
+                net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, 1).reply()
+
+        assert reply.value.buf() == b"test\xc2\xb7"
+        assert reply.value.to_string() == title
+
     def test_ChangeProperty_WM_PROTOCOLS(self):
         wid = self.conn.generate_id()
         self.create_window(wid=wid)
