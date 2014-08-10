@@ -178,15 +178,6 @@ class ExtensionKey(object):
         # xpyb doesn't ever set global_id, which seems wrong, but whatever.
         c_key.global_id = 0
 
-        # This is a little wonky. Because CFFI sees a __del__ on the c_key
-        # name when the function returns, it may free the underlying memory.
-        # So, we say that self depends on the return value so the memory is
-        # frozen until self is deleted. The caller still has to manage the
-        # lifetime of the return value themselves, but at least this way it
-        # won't be deleted before they even see it, since we know self is in
-        # scope (the caller has a reference to it, otherwise they couldn't call
-        # us) when we return.
-        cffi_explicit_lifetimes[self] = c_key
         return c_key
 
 class Protobj(object):
