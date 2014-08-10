@@ -31,3 +31,11 @@ class TestPythonCode(object):
         assert cm.data32[0] == 0x03020100
         assert cm.data32[1] == 0x07060504
         assert cm.data32[2] == 0x0b0a0908
+
+    def test_offset_map(self):
+        om = xcffib.OffsetMap({0: "Event0,0"})
+        om.add(1, {0: "Event1,0", 1: "Event1,1"})
+
+        assert om[0] == "Event0,0"
+        assert om[1] == "Event1,0"
+        assert om[2] == "Event1,1"

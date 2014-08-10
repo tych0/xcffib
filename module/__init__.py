@@ -361,7 +361,7 @@ class OffsetMap(object):
 
     def __getitem__(self, item):
         try:
-            offset, things = next((k, v) for k, v in self.offsets if item > k)
+            offset, things = next((k, v) for k, v in self.offsets if item >= k)
             return things[item - offset]
         except StopIteration:
             raise IndexError(item)
