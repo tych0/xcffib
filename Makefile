@@ -6,7 +6,7 @@ xcffib: $(GEN) module/*.py
 	cp ./module/*py ./xcffib/
 
 dist:
-	cabal configure
+	cabal configure --enable-tests
 
 .PHONY: $(GEN)
 $(GEN): dist
