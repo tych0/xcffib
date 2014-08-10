@@ -7,8 +7,6 @@ import weakref
 
 from .ffi import ffi, C, visualtype_to_c_struct
 
-global_weakkeydict = weakref.WeakKeyDictionary()
-
 X_PROTOCOL = C.X_PROTOCOL
 X_PROTOCOL_REVISION = C.X_PROTOCOL_REVISION
 
@@ -30,6 +28,8 @@ XCB_CONN_CLOSED_REQ_LEN_EXCEED = C.XCB_CONN_CLOSED_REQ_LEN_EXCEED
 XCB_CONN_CLOSED_PARSE_ERR = C.XCB_CONN_CLOSED_PARSE_ERR
 # XCB_CONN_CLOSED_INVALID_SCREEN = C.XCB_CONN_CLOSED_INVALID_SCREEN
 # XCB_CONN_CLOSED_FDPASSING_FAILED = C.XCB_CONN_CLOSED_FDPASSING_FAILED
+
+cffi_explicit_lifetimes = weakref.WeakKeyDictionary()
 
 
 def type_pad(t, i):
@@ -172,13 +172,21 @@ class ExtensionKey(object):
 
     def to_cffi(self):
         c_key = ffi.new("struct xcb_extension_t *")
-        name = bytes_to_cdata(self.name.encode())
-
+        name = ffi.new('char[]', self.name.encode())
+        cffi_explicit_lifetimes[c_key] = name
         c_key.name = name
         # xpyb doesn't ever set global_id, which seems wrong, but whatever.
         c_key.global_id = 0
 
-        global_weakkeydict[c_key] = (name, )
+        # This is a little wonky. Because CFFI sees a __del__ on the c_key
+        # name when the function returns, it may free the underlying memory.
+        # So, we say that self depends on the return value so the memory is
+        # frozen until self is deleted. The caller still has to manage the
+        # lifetime of the return value themselves, but at least this way it
+        # won't be deleted before they even see it, since we know self is in
+        # scope (the caller has a reference to it, otherwise they couldn't call
+        # us) when we return.
+        cffi_explicit_lifetimes[self] = c_key
         return c_key
 
 class Protobj(object):
@@ -394,8 +402,10 @@ class Connection(object):
 
     def _setup_extensions(self):
         for key, (_, events, errors) in extensions.items():
-            reply = C.xcb_get_extension_data(self._conn, key.to_cffi())
-            self.invalid()
+            # We're explicitly not putting this as an argument to the next call
+            # as a hack for lifetime management.
+            c_ext = key.to_cffi()
+            reply = C.xcb_get_extension_data(self._conn, c_ext)
             self._event_offsets.add(reply.first_event, events)
             self._error_offsets.add(reply.first_error, errors)
 
