@@ -223,10 +223,6 @@ C = ffi.verify("""
     #include <xcb/render.h>
 """, libraries=['xcb'])
 
-def bytes_to_cdata(bs):
-    buf = ffi.new('char[]', bs)
-    return buf
-
 # cfficairo needs an xcb_visualtype_t
 def visualtype_to_c_struct(vt):
     s = ffi.new("xcb_visualtype_t *")

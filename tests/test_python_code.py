@@ -11,7 +11,7 @@ class TestPythonCode(object):
         ints = struct.pack("=IIII", *range(4))
 
         # Unpacker wants a cffi.cdata
-        cffi_ints = xcffib.bytes_to_cdata(ints)
+        cffi_ints = xcffib.ffi.new('char[]', ints)
 
         l = xcffib.List(xcffib.Unpacker(cffi_ints), "I", count=4)
         ints2 = struct.pack("=IIII", *l)
@@ -21,7 +21,7 @@ class TestPythonCode(object):
 
     def test_union_pack(self):
         data = struct.pack("=" + ("b" * 20), *range(20))
-        cffi_data = xcffib.bytes_to_cdata(data)
+        cffi_data = xcffib.ffi.new('char[]', data)
 
         cm = xcffib.xproto.ClientMessageData(xcffib.Unpacker(cffi_data))
 

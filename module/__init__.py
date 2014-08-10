@@ -4,7 +4,7 @@ import functools
 import six
 import struct
 
-from .ffi import ffi, C, bytes_to_cdata, visualtype_to_c_struct
+from .ffi import ffi, C, visualtype_to_c_struct
 
 X_PROTOCOL = C.X_PROTOCOL
 X_PROTOCOL_REVISION = C.X_PROTOCOL_REVISION
@@ -246,7 +246,7 @@ class Extension(object):
 
         if self.ext_name is not None:
             key = ffi.new("struct xcb_extension_t *")
-            key.name = bytes_to_cdata(self.ext_name.encode())
+            key.name = ffi.new('char[]', self.ext_name.encode())
             # xpyb doesn't ever set global_id, which seems wrong, but whatever.
             key.global_id = 0
             xcb_req.ext = key
@@ -257,7 +257,7 @@ class Extension(object):
         xcb_req.isvoid = issubclass(cookie, VoidCookie)
 
         xcb_parts = ffi.new("struct iovec[2]")
-        xcb_parts[0].iov_base = bytes_to_cdata(data)
+        xcb_parts[0].iov_base = ffi.new('char[]', data)
         xcb_parts[0].iov_len = len(data)
         xcb_parts[1].iov_base = ffi.NULL
         xcb_parts[1].iov_len = -len(data) & 3  # is this really necessary?
