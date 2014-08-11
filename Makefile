@@ -1,9 +1,13 @@
 GEN=./dist/build/xcffibgen/xcffibgen
 
+XCBVER=$(shell pkg-config --modversion xcb-proto)
+XCBDIR=$(shell pkg-config --variable=xcbincludedir xcb-proto)
+
 # you should have xcb-proto installed to run this
 xcffib: $(GEN) module/*.py
-	$(GEN) --input /usr/share/xcb --output ./xcffib
+	$(GEN) --input $(XCBDIR) --output ./xcffib
 	cp ./module/*py ./xcffib/
+	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
 
 dist:
 	cabal configure --enable-tests

@@ -1,5 +1,7 @@
 from __future__ import division, absolute_import
 
+__xcb_proto_version__ = 'placeholder'
+
 import functools
 import six
 import struct
