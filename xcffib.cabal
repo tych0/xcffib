@@ -6,7 +6,7 @@ license:             MIT
 license-file:        LICENSE
 author:              Tycho Andersen
 maintainer:          Tycho Andersen <tycho@tycho.ws>
-category:            Apple
+category:            X11
 build-type:          Simple
 cabal-version:       >=1.8
 bug-reports:         https://github.com/tych0/xcffib/issues
