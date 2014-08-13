@@ -8,10 +8,13 @@ import subprocess
 
 from . import Connection, ConnectionException
 
+
 def lock_path(display):
     return '/tmp/.X%d-lock' % display
 
+
 class XvfbTest(object):
+
     """ A helper class for testing things with nosetests. This class will run
     each test in its own fresh xvfb, leaving you with an xcffib connection to
     that X session as `self.conn` for use in testing. """

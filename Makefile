@@ -8,6 +8,7 @@ xcffib: $(GEN) module/*.py
 	$(GEN) --input $(XCBDIR) --output ./xcffib
 	cp ./module/*py ./xcffib/
 	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
+	autopep8 --in-place --aggressive --aggressive ./xcffib/*.py
 
 dist:
 	cabal configure --enable-tests
@@ -38,9 +39,16 @@ newtests: $(GEN)
 	$(GEN) --input ./tests/generator/ --output ./tests/generator/
 	git diff tests
 
-check: xcffib
+# These are all split out so make -j3 check goes as fast as possible.
+.PHONY: lint
+lint:
+	flake8 --config=./tests/flake8.cfg ./module
+
+.PHONY: htests
+htests: $(GEN)
 	cabal test
-	flake8 --config=./tests/flake8.cfg ./xcffib
+
+check: xcffib lint htests
 	nosetests -d
 
 # make release ver=v0.99.99

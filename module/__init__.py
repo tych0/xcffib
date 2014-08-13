@@ -7,7 +7,7 @@ import six
 import struct
 import weakref
 
-from .ffi import ffi, C, visualtype_to_c_struct
+from .ffi import ffi, C, visualtype_to_c_struct  # noqa
 
 X_PROTOCOL = C.X_PROTOCOL
 X_PROTOCOL_REVISION = C.X_PROTOCOL_REVISION
@@ -56,7 +56,8 @@ class Unpacker(object):
             self.buf = ffi.buffer(self.cdata, self.size)
 
     def pad(self, thing):
-        if isinstance(thing, type) and any([issubclass(thing, c) for c in [Struct, Union]]):
+        if isinstance(thing, type) and any(
+                [issubclass(thing, c) for c in [Struct, Union]]):
             if hasattr(thing, "fixed_size"):
                 size = thing.fixed_size
             else:
@@ -84,11 +85,13 @@ class Unpacker(object):
         new.offset = self.offset
         return new
 
+
 def popcount(n):
     return bin(n).count('1')
 
 
 class XcffibException(Exception):
+
     """ Generic XcbException; replaces xcb.Exception. """
     pass
 
@@ -108,11 +111,11 @@ class ConnectionException(XcffibException):
             'accepts.'),
         C.XCB_CONN_CLOSED_PARSE_ERR: (
             'Connection closed, error during parsing display string.'),
-#        C.XCB_CONN_CLOSED_INVALID_SCREEN: (
-#            'Connection closed because the server does not have a screen '
-#            'matching the display.'),
-#        C.XCB_CONN_CLOSED_FDPASSING_FAILED: (
-#            'Connection closed because some FD passing operation failed'),
+        #        C.XCB_CONN_CLOSED_INVALID_SCREEN: (
+        #            'Connection closed because the server does not have a screen '
+        #            'matching the display.'),
+        #        C.XCB_CONN_CLOSED_FDPASSING_FAILED: (
+        #            'Connection closed because some FD passing operation failed'),
     }
 
     def __init__(self, err):
@@ -133,9 +136,12 @@ extensions = {}
 
 # This seems a bit over engineered to me; it seems unlikely there will ever be
 # a core besides xproto, so why not just hardcode that?
+
+
 def _add_core(value, _setup, events, errors):
     if not issubclass(value, Extension):
-        raise XcffibException("Extension type not derived from xcffib.Extension")
+        raise XcffibException(
+            "Extension type not derived from xcffib.Extension")
     if not issubclass(_setup, Struct):
         raise XcffibException("Setup type not derived from xcffib.Struct")
 
@@ -152,14 +158,17 @@ def _add_core(value, _setup, events, errors):
 
 def _add_ext(key, value, events, errors):
     if not issubclass(value, Extension):
-        raise XcffibException("Extension type not derived from xcffib.Extension")
+        raise XcffibException(
+            "Extension type not derived from xcffib.Extension")
     extensions[key] = (value, events, errors)
 
 
 class ExtensionKey(object):
+
     """ This definitely isn't needed, but we keep it around for compatibilty
     with xpyb.
     """
+
     def __init__(self, name):
         self.name = name
 
@@ -181,6 +190,7 @@ class ExtensionKey(object):
         c_key.global_id = 0
 
         return c_key
+
 
 class Protobj(object):
 
@@ -210,6 +220,7 @@ class Protobj(object):
             setattr(self, k, v)
         return self
 
+
 class Struct(Protobj):
     pass
 
@@ -220,6 +231,7 @@ class Union(Protobj):
 
 class Cookie(object):
     reply_type = None
+
     def __init__(self, conn, sequence, is_checked):
         self.conn = conn
         self.sequence = sequence
@@ -237,11 +249,13 @@ class Cookie(object):
 
 
 class VoidCookie(Cookie):
+
     def reply(self):
         raise XcffibException("No reply for this message type")
 
 
 class Extension(object):
+
     def __init__(self, conn, key=None):
         self.conn = conn
 
@@ -290,6 +304,7 @@ class Extension(object):
 
 
 class List(Protobj):
+
     def __init__(self, unpacker, typ, count=None):
         Protobj.__init__(self, unpacker)
 
@@ -345,6 +360,7 @@ class List(Protobj):
 
 
 class OffsetMap(object):
+
     def __init__(self, core):
         self.offsets = [(0, core)]
 
@@ -361,6 +377,7 @@ class OffsetMap(object):
 
 
 class Connection(object):
+
     def __init__(self, display=None, fd=-1, auth=None):
         if auth is not None:
             c_auth = ffi.new("xcb_auth_info_t *")
@@ -543,6 +560,7 @@ connect = Connection
 
 
 class Response(Protobj):
+
     def __init__(self, unpacker):
         Protobj.__init__(self, unpacker)
 
@@ -555,6 +573,7 @@ class Response(Protobj):
 
 
 class Reply(Response):
+
     def __init__(self, unpacker):
         Response.__init__(self, unpacker)
 
@@ -568,6 +587,7 @@ class Event(Response):
 
 
 class Error(Response, XcffibException):
+
     def __init__(self, unpacker):
         Response.__init__(self, unpacker)
         XcffibException.__init__(self)

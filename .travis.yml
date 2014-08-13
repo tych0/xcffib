@@ -22,4 +22,4 @@ install:
   - cabal configure --enable-tests
   - pip install -r requirements.txt
 
-script: "make check"
+script: "make -j3 check"

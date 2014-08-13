@@ -1,5 +1,4 @@
 from cffi import FFI
-from six.moves import range as srange
 
 ffi = FFI()
 
@@ -18,8 +17,8 @@ CONSTANTS = [
     "XCB_CONN_CLOSED_MEM_INSUFFICIENT",
     "XCB_CONN_CLOSED_REQ_LEN_EXCEED",
     "XCB_CONN_CLOSED_PARSE_ERR",
-#    "XCB_CONN_CLOSED_INVALID_SCREEN",
-#    "XCB_CONN_CLOSED_FDPASSING_FAILED",
+    #    "XCB_CONN_CLOSED_INVALID_SCREEN",
+    #    "XCB_CONN_CLOSED_FDPASSING_FAILED",
 
     "XCB_REQUEST_CHECKED",
 ]
@@ -223,8 +222,9 @@ C = ffi.verify("""
     #include <xcb/render.h>
 """, libraries=['xcb'])
 
-# cfficairo needs an xcb_visualtype_t
+
 def visualtype_to_c_struct(vt):
+    # cfficairo needs an xcb_visualtype_t
     s = ffi.new("xcb_visualtype_t *")
 
     s.visual_id = vt.visual_id
