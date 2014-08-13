@@ -183,9 +183,8 @@ class ExtensionKey(object):
 
     def to_cffi(self):
         c_key = ffi.new("struct xcb_extension_t *")
-        name = ffi.new('char[]', self.name.encode())
+        c_key.name = name = ffi.new('char[]', self.name.encode())
         cffi_explicit_lifetimes[c_key] = name
-        c_key.name = name
         # xpyb doesn't ever set global_id, which seems wrong, but whatever.
         c_key.global_id = 0
 
@@ -277,10 +276,11 @@ class Extension(object):
         xcb_req.isvoid = issubclass(cookie, VoidCookie)
 
         xcb_parts = ffi.new("struct iovec[2]")
-        xcb_parts[0].iov_base = ffi.new('char[]', data)
+        xcb_parts[0].iov_base = iov_base = ffi.new('char[]', data)
         xcb_parts[0].iov_len = len(data)
         xcb_parts[1].iov_base = ffi.NULL
         xcb_parts[1].iov_len = -len(data) & 3  # is this really necessary?
+        cffi_explicit_lifetimes[xcb_parts] = iov_base
 
         flags = C.XCB_REQUEST_CHECKED if is_checked else 0
 
@@ -392,7 +392,6 @@ class Connection(object):
             display = display.encode('latin1')
 
         i = ffi.new("int *")
-        i[0] = 0
 
         if fd > 0:
             self._conn = C.xcb_connect_to_fd(fd, c_auth)
