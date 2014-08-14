@@ -2,13 +2,14 @@ GEN=./dist/build/xcffibgen/xcffibgen
 
 XCBVER=$(shell pkg-config --modversion xcb-proto)
 XCBDIR=$(shell pkg-config --variable=xcbincludedir xcb-proto)
+NCPUS=$(shell grep -c processor /proc/cpuinfo)
 
 # you should have xcb-proto installed to run this
 xcffib: $(GEN) module/*.py
 	$(GEN) --input $(XCBDIR) --output ./xcffib
 	cp ./module/*py ./xcffib/
 	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
-	autopep8 --in-place --aggressive --aggressive ./xcffib/*.py
+	find ./xcffib/*.py | parallel -j $(NCPUS) autopep8 --in-place --aggressive --aggressive '{}'
 
 dist:
 	cabal configure --enable-tests
