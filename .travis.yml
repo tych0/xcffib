@@ -12,7 +12,7 @@ before_install:
   - sudo apt-get update
 
 install:
-  - sudo apt-get install ghc cabal-install git xcb-proto happy alex xvfb libxcb1-dev x11-apps
+  - sudo apt-get install ghc cabal-install git xcb-proto happy alex xvfb libxcb1-dev x11-apps parallel
   - cabal update
   - git clone https://github.com/tych0/xcb-types.git
   - cd xcb-types
