@@ -23,6 +23,7 @@ import Data.XCB.Python.PyHelpers
 
 import Language.Python.Common as P
 
+import System.FilePath
 import System.FilePath.Glob
 
 import Text.Format
@@ -55,7 +56,7 @@ collectBindings = foldr collectR ([], [])
 
 parseXHeaders :: FilePath -> IO [XHeader]
 parseXHeaders fp = do
-  files <- globDir1 (compile "*.xml") fp
+  files <- namesMatching $ fp </> "*.xml"
   fromFiles files
 
 renderPy :: Suite () -> String
