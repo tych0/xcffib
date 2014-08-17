@@ -26,7 +26,7 @@ import Language.Python.Common as P
 import System.FilePath
 import System.FilePath.Glob
 
-import Text.Format
+import Text.Printf
 
 data TypeInfo =
   -- | A "base" X type, i.e. one described in baseTypeInfo; first arg is the
@@ -243,17 +243,19 @@ xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] [1..]
       in conv els acc' is'
     conv [] acc _ = acc
 
-
 -- Add the xcb_generic_{request,reply}_t structure data to the beginning of a
 -- pack string. This is a little weird because both structs contain a one byte
 -- pad which isn't at the end. If the first element of the request or reply is
 -- a byte long, it takes that spot instead, and there is one less offset
 addStructData :: String -> String -> String
 addStructData prefix (c : cs) | c `elem` "Bbx" =
-  let result = (format prefix [[c]])
+  let result = maybePrintChar prefix c
   in if result == prefix then result ++ (c : cs) else result ++ cs
-addStructData prefix s = (format prefix ["x"]) ++ s
+addStructData prefix s = (maybePrintChar prefix 'x') ++ s
 
+maybePrintChar :: String -> Char -> String
+maybePrintChar s c | "%c" `isInfixOf` s = printf s c
+maybePrintChar s _ = s
 
 -- Don't prefix a single pad byte with a '1'. This is simpler to parse
 -- visually, and also simplifies addStructData above.
@@ -419,7 +421,7 @@ data StructUnpackState = StructUnpackState {
   -- The list of names the struct.pack accumulator has, and the
   stNames :: [String],
 
-  -- The list of pack directives (potentially with a "{0}" in it for
+  -- The list of pack directives (potentially with a "%c" in it for
   -- the prefix byte).
   stPacks :: String
 }
@@ -453,7 +455,7 @@ mkStructStyleUnpack prefix ext m membs =
 
       mkUnpackStmtsR (Left (name, pack) : xs) = do
         st <- get
-        let packs = if "{0}" `isInfixOf` (stPacks st)
+        let packs = if "%c" `isInfixOf` (stPacks st)
                     then addStructData (stPacks st) pack
                     else (stPacks st) ++ pack
         put $ st { stNames = stNames st ++ maybeToList name
@@ -527,7 +529,7 @@ processXDecl ext (XEvent name opcode membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       pack = mkPackMethod ext name m membs
-      prefix = if fromMaybe False noSequence then "x" else "x{0}2x"
+      prefix = if fromMaybe False noSequence then "x" else "x%c2x"
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" opcode cname
   return $ Declaration [ mkXClass cname "xcffib.Event" statements [pack]
@@ -546,11 +548,11 @@ processXDecl ext (XError name opcode membs) = do
                        ]
 processXDecl ext (XRequest name opcode membs reply) = do
   m <- get
-  let (args, packStmts) = mkPackStmts ext name m id "x{0}2x" membs
+  let (args, packStmts) = mkPackStmts ext name m id "x%c2x" membs
       cookieName = (name ++ "Cookie")
       replyDecl = concat $ maybeToList $ do
         reply' <- reply
-        let (replyStmts, _) = mkStructStyleUnpack "x{0}2x4x" ext m reply'
+        let (replyStmts, _) = mkStructStyleUnpack "x%c2x4x" ext m reply'
             replyName = name ++ "Reply"
             theReply = mkXClass replyName "xcffib.Reply" replyStmts []
             replyType = mkAssign "reply_type" $ mkName replyName
