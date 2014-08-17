@@ -58,7 +58,7 @@ htests: $(GEN)
 check: xcffib lint htests
 	nosetests -d
 
-# make release ver=v0.99.99
+# make release ver=0.99.99
 release: xcffib
 ifeq (${ver},)
 	@echo "no version (ver=) specified, not releasing."
@@ -66,8 +66,10 @@ else ifneq ($(wildcard ./xcffib.egg-info*),)
 	@echo "xcffib.egg-info exists, not releasing."
 else
 	sed -i "s/version = .*/version = \"${ver}\"/" setup.py
-	git commit -a -m "Release ${ver}"
-	git tag ${ver}
+	sed -r -i -e "s/(^version = \s*)[\"0-9\.]*/\1\"${ver}\"/" setup.py
+	sed -r -i -e "s/(^version:\s*)[0-9\.]*/\1${ver}/" xcffib.cabal
+	git commit -a -m "Release v${ver}"
+	git tag v${ver}
 	python setup.py sdist
 	python setup.py sdist upload
 endif
