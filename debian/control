@@ -1,0 +1,64 @@
+Source: xcffib
+Section: universe/x11
+Priority: optional
+Maintainer: Tycho Andersen <tycho@tycho.ws>
+Build-Depends: debhelper (>= 9)
+  , cdbs
+  , pkg-config
+  , haskell-devscripts (>= 0.8.15)
+  , ghc
+  , xcb-proto
+  , libxcb-render0-dev
+  , libxcb1-dev
+  , cabal-install
+  , libghc-xcb-types-dev (>= 0.7.0)
+  , libghc-language-python-dev (>= 0.4.0)
+  , libghc-split-dev
+  , libghc-optparse-applicative-dev (>= 0.5)
+  , libghc-filemanip-dev
+  , libghc-mtl-dev (>= 2.1)
+  , libghc-test-framework-hunit-dev
+  , libghc-attoparsec-dev
+  , python-setuptools
+  , python3-setuptools
+  , python-autopep8
+  , python-dev
+  , python3-dev
+# testing
+  , python-nose
+  , xvfb
+  , x11-apps
+  , python-flake8
+# Because xcffib imports itself in setup.py to do the cffi extension magic, all
+# Depends: are also Build-depends:
+  , python-six
+  , python-cffi (>= 0.8.2)
+  , python3-cffi (>= 0.8.2)
+  , libxcb1
+X-Python-Version: >= 2.6
+X-Python3-Version: >= 3.2
+Standards-Version: 3.9.5
+Homepage: https://github.com/tych0/xcffib
+Vcs-Git: https://github.com/tych0/xcffib
+Vcs-Browser: https://github.com/tych0/xcffib
+X-Description: xcffib is a python binding for XCB
+  xcffib is intended to be a (mostly) drop-in replacement for xpyb. xpyb has an
+  inactive upstream, several memory leaks, is python2 only and doesn't have
+  pypy support. xcffib is a binding which uses python-cffi, which mitigates
+  some of the issues described above. xcffib also builds bindings for 27 of the
+  29 (xprint and xkb are missing) X extensions in 1.10.
+
+Package: python-xcffib
+Architecture: all
+Depends: python-six
+  , python-cffi (>= 0.8.2)
+  , libxcb1
+  , ${python:Depends}
+
+Package: python3-xcffib
+Architecture: all
+Depends: python3-six,
+  , python3-cffi (>= 0.8.2)
+  , libxcb1
+  , ${misc:Depends}
+  , ${python3:Depends}

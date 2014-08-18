@@ -1,0 +1,7 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: xcffib
+Source: http://github.com/tych0/xcffib
+
+Files: *
+Copyright: 2014 Tycho Andersen
+License: Expat

@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+
+DEB_ENABLE_TESTS = yes
+
+override_dh_auto_build:
+	dh_auto_build
+	make xcffib
+
+override_dh_auto_install:
+	dh $@ --with python2,python3 --buildsystem=python_distutils
+
+%:
+	dh $@

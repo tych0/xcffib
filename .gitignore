@@ -8,3 +8,5 @@ dist
 xcffib
 build/
 *egg*
+*deb
+debian/*.log
