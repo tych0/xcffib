@@ -14,10 +14,6 @@ before_install:
 install:
   - sudo apt-get install ghc cabal-install git xcb-proto happy alex xvfb libxcb1-dev x11-apps parallel
   - cabal update
-  - git clone https://github.com/tych0/xcb-types.git
-  - cd xcb-types
-  - cabal install
-  - cd ..
   - cabal install --only-dependencies --enable-tests
   - cabal configure --enable-tests
   - pip install -r requirements.txt

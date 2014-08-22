@@ -15,11 +15,7 @@ you're interested in doing development, read on...
 
 ## Development dependencies
 
-Currently `xcb-types` (any tagged version, not just the old one on Hackage)
-doesn't run against `xcb-proto` 1.10; there is a hacked branch available at
-[tych0/xcb-types](http://github.com/tych0/xcb-types) that allows you to parse
-xcb-proto 1.10 mostly correctly. Other than that, you should be able to install
-all the deps from hackage or pip. The
+You should be able to install all the language deps from hackage or pip. The
 [.travis.yaml](https://github.com/tych0/xcffib/blob/master/.travis.yml) has an
 example of how to install the dependencies on Ubuntu flavors.
 

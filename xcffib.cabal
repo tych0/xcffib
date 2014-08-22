@@ -18,7 +18,7 @@ source-repository head
 
 library
   build-depends: base ==4.*,
-                 xcb-types >= 0.7.1,
+                 xcb-types >= 0.7.0,
                  language-python >= 0.4.0,
                  filepath,
                  filemanip,
@@ -39,7 +39,7 @@ executable xcffibgen
                  xcffib >= 0.1.0,
                  language-python >= 0.4.0,
                  split,
-                 xcb-types >= 0.7.1,
+                 xcb-types >= 0.7.0,
                  optparse-applicative >= 0.5,
                  filepath,
                  filemanip,
@@ -67,7 +67,7 @@ test-suite GeneratorTests.hs
   type: exitcode-stdio-1.0
   build-depends: base ==4.*,
                  xcffib >= 0.1.0,
-                 xcb-types >= 0.7.1,
+                 xcb-types >= 0.7.0,
                  language-python >= 0.4.0,
                  HUnit,
                  test-framework,
