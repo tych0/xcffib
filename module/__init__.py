@@ -378,11 +378,17 @@ class OffsetMap(object):
 
 class Connection(object):
 
+    """ `auth` here should be '<name>:<data>', a format bequeathed to us from
+    xpyb. """
     def __init__(self, display=None, fd=-1, auth=None):
         if auth is not None:
+            [name, data] = auth.split(six.b(':'))
+
             c_auth = ffi.new("xcb_auth_info_t *")
-            if C.xpyb_parse_auth(auth, len(auth), c_auth) < 0:
-                raise XcffibException("invalid xauth")
+            c_auth.name = ffi.new('char[]', name)
+            c_auth.namelen = len(name)
+            c_auth.data = ffi.new('char[]', data)
+            c_auth.datalen = len(data)
         else:
             c_auth = ffi.NULL
 
@@ -396,7 +402,7 @@ class Connection(object):
         if fd > 0:
             self._conn = C.xcb_connect_to_fd(fd, c_auth)
         elif c_auth != ffi.NULL:
-            self._conn = C.xcb_connect_to_display_with_auth(display, c_auth, i)
+            self._conn = C.xcb_connect_to_display_with_auth_info(display, c_auth, i)
         else:
             self._conn = C.xcb_connect(display, i)
         self.pref_screen = i[0]

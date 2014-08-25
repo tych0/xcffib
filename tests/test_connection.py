@@ -260,3 +260,13 @@ class TestConnection(XvfbTest):
         c = xcffib.connect()
         c.invalid()
         c.disconnect()
+
+    def test_auth_connect(self):
+        authname = six.b("MIT-MAGIC-COOKIE-1")
+        authdata = six.b("\xa5\xcf\x95\xfa\x19\x49\x03\x60\xaf\xe4\x1e\xcd\xa3\xe2\xad\x47")
+
+        authstr = authname + six.b(':') + authdata
+
+        conn = xcffib.connect(display=os.environ['DISPLAY'], auth=authstr)
+
+        assert conn.get_setup().roots[0].root > 0
