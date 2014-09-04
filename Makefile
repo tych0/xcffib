@@ -7,18 +7,18 @@ NCPUS=$(shell grep -c processor /proc/cpuinfo)
 PARALLEL=$(shell which parallel)
 
 # you should have xcb-proto installed to run this
-xcffib: $(GEN) module/*.py xcffib-nofmt
+xcffib: $(GEN) module/*.py
+	$(GEN) --input $(XCBDIR) --output ./xcffib
+	cp ./module/*py ./xcffib/
+	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
+
+.PHONY: xcffib-fmt
+xcffib-fmt: $(GEN) module/*.py
 ifeq (${PARALLEL},)
 	$(AUTOPEP8) ./xcffib/*.py
 else
 	find ./xcffib/*.py | parallel -j $(NCPUS) $(AUTOPEP8) '{}'
 endif
-
-.PHONY: xcffib-nofmt
-xcffib-nofmt: $(GEN) module/*.py
-	$(GEN) --input $(XCBDIR) --output ./xcffib
-	cp ./module/*py ./xcffib/
-	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
 
 dist:
 	cabal configure --enable-tests
@@ -38,11 +38,11 @@ clean:
 # A target for just running nosetests. Travis will run 'check', which does
 # everything. (Additionally, travis uses separate environments where nosetests
 # points to The Right Thing for each, so we don't need to do nosetests3.)
-pycheck: xcffib-nofmt
+pycheck: xcffib
 	nosetests -d
 	nosetests3 -d
 
-valgrind: xcffib-nofmt
+valgrind: xcffib
 	valgrind --leak-check=full --show-leak-kinds=definite nosetests -d
 
 newtests: $(GEN)
@@ -58,7 +58,7 @@ lint:
 htests: $(GEN)
 	cabal test
 
-check: xcffib-nofmt lint htests
+check: xcffib lint htests
 	nosetests -d
 
 # make release ver=0.99.99
