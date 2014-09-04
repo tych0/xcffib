@@ -12,7 +12,7 @@ are missing) X extensions in 1.10.
 For most end users of software that depends on xcffib or developers writing
 code against xcffib, you can use the version of xcffib on pypi. To install it,
 you'll need libxcb's headers and libxcb-render's headers (these are available
-via `sudo apt-get install x11proto-render-dev` on Ubuntu). Once you have the C
+via `sudo apt-get install libxcb-render0-dev` on Ubuntu). Once you have the C
 headers installed, you can just `pip install xcffib`.
 
 If you're interested in doing development, read on...
