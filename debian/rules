@@ -3,11 +3,12 @@
 DEB_ENABLE_TESTS = yes
 
 override_dh_auto_build:
-	dh_auto_build
 	make xcffib
+	dh_auto_build
 
-override_dh_auto_install:
-	dh $@ --with python2,python3 --buildsystem=python_distutils
+# we can't use setup.py clean here, since it checks for the existence of xcffib/
+override_dh_auto_clean:
+	make clean
 
 %:
-	dh $@
+	dh $@ --with python2,python3 --buildsystem=python_distutils

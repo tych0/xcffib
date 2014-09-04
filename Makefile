@@ -33,7 +33,7 @@ clean:
 	-rm -rf xcffib
 	-rm -rf module/*pyc module/__pycache__
 	-rm -rf tests/*pyc tests/__pycache__
-	-rm -rf build *egg* *deb
+	-rm -rf build *egg* *deb .pybuild
 
 # A target for just running nosetests. Travis will run 'check', which does
 # everything. (Additionally, travis uses separate environments where nosetests
@@ -63,6 +63,7 @@ check: xcffib lint htests
 
 deb:
 	git buildpackage --git-upstream-tree=master
+	lintian
 
 deb-src:
 	git buildpackage --git-upstream-tree=master -S

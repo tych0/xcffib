@@ -10,3 +10,8 @@ build/
 *egg*
 *deb
 debian/*.log
+debian/files
+debian/tmp
+debian/python-xcffib*
+debian/python3-xcffib*
+.pybuild
