@@ -7,11 +7,6 @@ import subprocess
 from setuptools import setup, find_packages
 from distutils.command.build import build
 
-if not os.path.exists('./xcffib'):
-    print("It looks like you need to generate the binding.")
-    print("please run 'make xcffib' or 'make check'.")
-    sys.exit(1)
-
 # Stolen from http://github.com/xattr/xattr, which is also MIT licensed.
 class cffi_build(build):
     """This is a shameful hack to ensure that cffi is present when
@@ -19,6 +14,11 @@ class cffi_build(build):
     setup_requires hasn't run yet.
     """
     def finalize_options(self):
+        if not os.path.exists('./xcffib'):
+            print("It looks like you need to generate the binding.")
+            print("please run 'make xcffib' or 'make check'.")
+            sys.exit(1)
+
         import xcffib
         self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
         build.finalize_options(self)
