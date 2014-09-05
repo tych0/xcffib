@@ -4,4 +4,5 @@ Source: http://github.com/tych0/xcffib
 
 Files: *
 Copyright: 2014 Tycho Andersen
-License: Expat
+License: Apache-2.0
+  The Apache 2.0 license is available in /usr/share/common-licenses/Apache-2.0.
