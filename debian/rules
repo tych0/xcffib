@@ -11,4 +11,4 @@ override_dh_auto_clean:
 	make clean
 
 %:
-	dh $@ --with python2,python3 --buildsystem=python_distutils
+	dh $@ --with python2,python3 --buildsystem=pybuild

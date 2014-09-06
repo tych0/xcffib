@@ -50,17 +50,21 @@ XB-Description: xcffib is a python binding for XCB
   29 (xprint and xkb are missing) X extensions in 1.10.
 
 Package: python-xcffib
-Architecture: all
+Architecture: any
 Depends: python-six
   , python-cffi (>= 0.8.2)
   , libxcb1
   , ${misc:Depends}
+  , ${shlibs:Depends}
   , ${python:Depends}
+Provides: ${python:Provides}
 
 Package: python3-xcffib
-Architecture: all
+Architecture: any
 Depends: python3-six,
   , python3-cffi (>= 0.8.2)
   , libxcb1
   , ${misc:Depends}
+  , ${shlibs:Depends}
   , ${python3:Depends}
+Provides: ${python3:Provides}
