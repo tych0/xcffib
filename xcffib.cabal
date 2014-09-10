@@ -2,7 +2,7 @@ name:                xcffib
 version:             0.1.5
 synopsis:            A cffi-based python binding for X
 homepage:            http://github.com/tych0/xcffib
-license:             Apache-2.0
+license:             OtherLicense
 license-file:        LICENSE
 author:              Tycho Andersen
 maintainer:          Tycho Andersen <tycho@tycho.ws>
