@@ -285,3 +285,29 @@ class TestConnection(XvfbTest):
         conn = xcffib.connect(display=os.environ['DISPLAY'], auth=authstr)
 
         assert conn.get_setup().roots[0].root > 0
+
+    # This is an adaptation of the test from #27
+    def test_build_atom_cache(self):
+        # This will hold the forward *and* reverse lookups for any given atom
+        atoms = {}
+        cookies = []
+        # Batch the replies by creating a list of cookies first:
+        for i in xrange(1, 10000):
+            c = self.conn.core.GetAtomName(i)
+            cookies.append((i, c))
+        for i, c in cookies:
+            try:
+                name = ''.join(c.reply().name)
+            except xcffib.xproto.BadAtom:
+                continue
+            atoms.update({i: name}) # Lookup by number
+            atoms.update({name: i}) # Lookup by name
+
+        # Make sure we've got *all* the atoms we need
+        for name in _ewmh_atoms + _icccm_atoms:
+            if name not in atoms:
+                atom = self.conn.core.InternAtomUnchecked(False, len(name), name)
+                r = atom.reply()
+                if r:
+                    atoms.update({r.atom: name})
+                    atoms.update({name: r.atom})
