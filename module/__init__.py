@@ -276,7 +276,9 @@ class Extension(object):
         if key is None:
             self.c_key = ffi.NULL
         else:
-            self.c_key = key.to_cffi()
+            c_key = key.to_cffi()
+            cffi_explicit_lifetimes[self] = c_key
+            self.c_key = c_key
 
     def send_request(self, opcode, data, cookie=VoidCookie, reply=None,
                      is_checked=False):
