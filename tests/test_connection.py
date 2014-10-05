@@ -292,7 +292,7 @@ class TestConnection(XvfbTest):
         atoms = {}
         cookies = []
         # Batch the replies by creating a list of cookies first:
-        for i in xrange(1, 10000):
+        for i in range(1, 10000):
             c = self.conn.core.GetAtomName(i)
             cookies.append((i, c))
         for i, c in cookies:
