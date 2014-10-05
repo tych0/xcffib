@@ -302,12 +302,3 @@ class TestConnection(XvfbTest):
                 continue
             atoms.update({i: name}) # Lookup by number
             atoms.update({name: i}) # Lookup by name
-
-        # Make sure we've got *all* the atoms we need
-        for name in _ewmh_atoms + _icccm_atoms:
-            if name not in atoms:
-                atom = self.conn.core.InternAtomUnchecked(False, len(name), name)
-                r = atom.reply()
-                if r:
-                    atoms.update({r.atom: name})
-                    atoms.update({name: r.atom})
