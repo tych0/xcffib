@@ -292,17 +292,23 @@ class Extension(object):
         xcb_req.opcode = opcode
         xcb_req.isvoid = issubclass(cookie, VoidCookie)
 
-        xcb_parts = ffi.new("struct iovec[2]")
+        # XXX: send_request here will use the memory *before* the passed in
+        # xcb_parts pointer in some cases, so we need to allocate some for it
+        # to use, although we don't use it ourselves.
+        #
+        # http://lists.freedesktop.org/archives/xcb/2014-February/009307.html
+        xcb_parts = ffi.new("struct iovec[4]")
+
         # Here we need this iov_base to keep this memory alive until the end of
         # the function.
-        xcb_parts[0].iov_base = iov_base = ffi.new('char[]', data)  # noqa
-        xcb_parts[0].iov_len = len(data)
-        xcb_parts[1].iov_base = ffi.NULL
-        xcb_parts[1].iov_len = -len(data) & 3  # is this really necessary?
+        xcb_parts[2].iov_base = iov_base = ffi.new('char[]', data)  # noqa
+        xcb_parts[2].iov_len = len(data)
+        xcb_parts[3].iov_base = ffi.NULL
+        xcb_parts[3].iov_len = -len(data) & 3  # is this really necessary?
 
         flags = C.XCB_REQUEST_CHECKED if is_checked else 0
 
-        seq = self.conn.send_request(flags, xcb_parts, xcb_req)
+        seq = self.conn.send_request(flags, xcb_parts + 2, xcb_req)
 
         return cookie(self.conn, seq, is_checked)
 
