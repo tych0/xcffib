@@ -59,7 +59,7 @@ htests: $(GEN)
 	cabal test
 
 check: xcffib lint htests
-	nosetests -d
+	nosetests -d -v
 
 deb:
 	git buildpackage --git-upstream-tree=master
