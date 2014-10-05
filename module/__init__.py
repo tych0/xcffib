@@ -293,11 +293,12 @@ class Extension(object):
         xcb_req.isvoid = issubclass(cookie, VoidCookie)
 
         xcb_parts = ffi.new("struct iovec[2]")
-        xcb_parts[0].iov_base = iov_base = ffi.new('char[]', data)
+        # Here we need this iov_base to keep this memory alive until the end of
+        # the function.
+        xcb_parts[0].iov_base = iov_base = ffi.new('char[]', data)  # noqa
         xcb_parts[0].iov_len = len(data)
         xcb_parts[1].iov_base = ffi.NULL
         xcb_parts[1].iov_len = -len(data) & 3  # is this really necessary?
-        cffi_explicit_lifetimes[xcb_parts] = iov_base
 
         flags = C.XCB_REQUEST_CHECKED if is_checked else 0
 
