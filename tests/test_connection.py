@@ -297,7 +297,7 @@ class TestConnection(XvfbTest):
             cookies.append((i, c))
         for i, c in cookies:
             try:
-                name = ''.join(c.reply().name)
+                name = c.reply().name.to_string()
             except xcffib.xproto.BadAtom:
                 continue
             atoms.update({i: name}) # Lookup by number
