@@ -17,7 +17,7 @@ import xcffib
 import xcffib.xproto
 import struct
 
-from testing import XcffibTest
+from .testing import XcffibTest
 
 class TestPythonCode(XcffibTest):
 

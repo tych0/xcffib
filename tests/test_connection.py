@@ -19,7 +19,7 @@ import xcffib
 from xcffib.ffi import ffi, C
 import xcffib.xproto
 from xcffib.testing import XvfbTest
-from testing import XcffibTest
+from .testing import XcffibTest
 
 from nose.tools import raises
 
