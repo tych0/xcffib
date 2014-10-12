@@ -26,7 +26,7 @@ class TestPythonCode(object):
         # Unpacker wants a cffi.cdata
         cffi_ints = xcffib.ffi.new('char[]', ints)
 
-        l = xcffib.List(xcffib.Unpacker(cffi_ints), "I", count=4)
+        l = xcffib.List(xcffib.CffiUnpacker(cffi_ints), "I", count=4)
         ints2 = struct.pack("=IIII", *l)
 
         # after packing and unpacking, we should still have those ints
@@ -36,7 +36,7 @@ class TestPythonCode(object):
         data = struct.pack("=" + ("b" * 20), *range(20))
         cffi_data = xcffib.ffi.new('char[]', data)
 
-        cm = xcffib.xproto.ClientMessageData(xcffib.Unpacker(cffi_data))
+        cm = xcffib.xproto.ClientMessageData(xcffib.CffiUnpacker(cffi_data))
 
         for actual, expected in zip(range(20), cm.data8):
             assert actual == expected, actual

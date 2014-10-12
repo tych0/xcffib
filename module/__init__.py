@@ -55,20 +55,12 @@ def type_pad(t, i):
 
 class Unpacker(object):
 
-    def __init__(self, cdata, known_max=None):
-        self.cdata = cdata
+    def __init__(self, known_max=None):
         self.size = 0
         self.offset = 0
         self.known_max = known_max
         if self.known_max is not None:
             self._resize(known_max)
-
-    def _resize(self, increment):
-        if self.offset + increment > self.size:
-            if self.known_max is not None:
-                assert self.size + increment <= self.known_max
-            self.size = self.offset + increment
-            self.buf = ffi.buffer(self.cdata, self.size)
 
     def pad(self, thing):
         if isinstance(thing, type) and any(
@@ -96,8 +88,55 @@ class Unpacker(object):
         return ffi.cast(typ, self.cdata)
 
     def copy(self):
-        new = Unpacker(self.cdata, self.known_max)
+        raise NotImplementedError
+
+    @classmethod
+    def synthetic(cls, data, format):
+        self = cls.__new__(cls)
+        self.buf = data
+        self.offset = 0
+        self.size = len(data)
+        self.size
+
+
+class CffiUnpacker(Unpacker):
+
+    def __init__(self, cdata, known_max=None):
+        self.cdata = cdata
+        Unpacker.__init__(self, known_max)
+
+    def _resize(self, increment):
+        if self.offset + increment > self.size:
+            if self.known_max is not None:
+                assert self.size + increment <= self.known_max
+            self.size = self.offset + increment
+            self.buf = ffi.buffer(self.cdata, self.size)
+
+    def copy(self):
+        new = CffiUnpacker(self.cdata, self.known_max)
         new.offset = self.offset
+        new.size = self.size
+        return new
+
+
+class MemoryUnpacker(Unpacker):
+
+    def __init__(self, data, fmt):
+        self.buf = struct.pack(fmt, data)
+        self.offset = 0
+        Unpacker.__init__(self, struct.calcsize(fmt))
+
+    def _resize(self, increment):
+        if self.size + increment > self.known_max:
+            raise XcffibException("resizing memory buffer to be too big")
+        self.size += increment
+
+    def copy(self):
+        new = MemoryUnpacker.__new__(MemoryUnpacker)
+        new.buf = self.buf
+        new.offset = self.offset
+        new.size = self.size
+        new.known
         return new
 
 
@@ -479,7 +518,7 @@ class Connection(object):
 
         # No idea where this 8 comes from either, similar complate to the
         # sizeof(xcb_generic_reply_t) below.
-        buf = Unpacker(s, known_max=8 + s.length * 4)
+        buf = CffiUnpacker(s, known_max=8 + s.length * 4)
 
         return setup(buf)
 
@@ -531,7 +570,7 @@ class Connection(object):
         self.invalid()
         if c_error != ffi.NULL:
             error = self._error_offsets[c_error.error_code]
-            buf = Unpacker(c_error)
+            buf = CffiUnpacker(c_error)
             raise error(buf)
 
     @ensure_connected
@@ -553,7 +592,7 @@ class Connection(object):
         reply = ffi.cast("xcb_generic_reply_t *", data)
 
         # why is this 32 and not sizeof(xcb_generic_reply_t) == 8?
-        return Unpacker(data, known_max=32 + reply.length * 4)
+        return CffiUnpacker(data, known_max=32 + reply.length * 4)
 
     @ensure_connected
     def request_check(self, sequence):
@@ -574,7 +613,7 @@ class Connection(object):
         # cares about it.
         event = self._event_offsets[e.response_type & 0x7f]
 
-        buf = Unpacker(e)
+        buf = CffiUnpacker(e)
         return event(buf)
 
     @ensure_connected
