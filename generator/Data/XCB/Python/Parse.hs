@@ -598,7 +598,10 @@ processXDecl ext (XUnion name membs) = do
       (names, exprs, _, _) = unzip4 listInfo
       lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
       initMethod = lists ++ toUnpack
-      decl = [mkXClass name "xcffib.Union" initMethod []]
+      -- Here, we only want to pack the first member of the union, since every
+      -- member is the same data and we don't want to repeatedly pack it.
+      pack = mkPackMethod ext name m [head membs]
+      decl = [mkXClass name "xcffib.Union" initMethod [pack]]
   modify $ mkModify ext name (CompositeType ext name)
   return $ Declaration decl
   where
