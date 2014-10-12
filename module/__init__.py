@@ -76,7 +76,8 @@ class Unpacker(object):
 
     def unpack(self, fmt, increment=True):
         size = struct.calcsize(fmt)
-        self._resize(size)
+        if size > self.size - self.offset:
+            self._resize(size)
         ret = struct.unpack_from("=" + fmt, self.buf, self.offset)
 
         if increment:
