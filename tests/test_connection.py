@@ -18,15 +18,15 @@ import six
 import xcffib
 from xcffib.ffi import ffi, C
 import xcffib.xproto
-from xcffib.xproto import EventMask
 from xcffib.testing import XvfbTest
+from testing import XcffibTest
 
 from nose.tools import raises
 
 import struct
 import subprocess
 
-class TestConnection(XvfbTest):
+class TestConnection(XcffibTest):
 
     def setUp(self):
         XvfbTest.setUp(self)
@@ -35,42 +35,6 @@ class TestConnection(XvfbTest):
     def tearDown(self):
         self.xproto = None
         XvfbTest.tearDown(self)
-
-    @property
-    def default_screen(self):
-        return self.conn.setup.roots[self.conn.pref_screen]
-
-    def create_window(self, wid=None, x=0, y=0, w=1, h=1, is_checked=False):
-        if wid is None:
-            wid = self.conn.generate_id()
-        return self.xproto.CreateWindow(
-            self.default_screen.root_depth,
-            wid,
-            self.default_screen.root,
-            x, y, w, h,
-            0,
-            xcffib.xproto.WindowClass.InputOutput,
-            self.default_screen.root_visual,
-            xcffib.xproto.CW.BackPixel | xcffib.xproto.CW.EventMask,
-            [
-                self.default_screen.black_pixel,
-                xcffib.xproto.EventMask.StructureNotify
-            ],
-            is_checked=is_checked
-        )
-
-    def xeyes(self):
-        # Enable CreateNotify
-        self.xproto.ChangeWindowAttributes(
-            self.default_screen.root,
-            xcffib.xproto.CW.EventMask,
-            [ EventMask.SubstructureNotify |
-              EventMask.StructureNotify |
-              EventMask.SubstructureRedirect
-            ]
-        )
-
-        self.spawn(['xeyes'])
 
     def test_connect(self):
         assert self.conn.has_error() == 0
@@ -201,11 +165,9 @@ class TestConnection(XvfbTest):
 
         title = "test\xc2\xb7"
 
-        net_wm_name = "_NET_WM_NAME"
-        net_wm_name = self.xproto.InternAtom(0, len(net_wm_name), net_wm_name).reply().atom
+        net_wm_name = self.intern("_NET_WM_NAME")
 
-        utf8_string = "UTF8_STRING"
-        utf8_string = self.xproto.InternAtom(0, len(utf8_string), utf8_string).reply().atom
+        utf8_string = self.intern("UTF8_STRING")
 
         self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
                 net_wm_name, utf8_string, 8,
@@ -221,11 +183,9 @@ class TestConnection(XvfbTest):
         wid = self.conn.generate_id()
         self.create_window(wid=wid)
 
-        wm_protocols = "WM_PROTOCOLS"
-        wm_protocols = self.xproto.InternAtom(0, len(wm_protocols), wm_protocols).reply().atom
+        wm_protocols = self.intern("WM_PROTOCOLS")
 
-        wm_delete_window = "WM_DELETE_WINDOW"
-        wm_delete_window = self.xproto.InternAtom(0, len(wm_delete_window), wm_delete_window).reply().atom
+        wm_delete_window = self.intern("WM_DELETE_WINDOW")
 
         self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
                 wm_protocols, xcffib.xproto.Atom.ATOM, 32,
@@ -235,8 +195,7 @@ class TestConnection(XvfbTest):
 
         assert reply.value.to_atoms() == (wm_delete_window,)
 
-        wm_take_focus = "WM_TAKE_FOCUS"
-        wm_take_focus = self.xproto.InternAtom(0, len(wm_take_focus), wm_take_focus).reply().atom
+        wm_take_focus = self.intern("WM_TAKE_FOCUS")
 
         self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
                 wm_protocols, xcffib.xproto.Atom.ATOM, 32,
@@ -248,7 +207,7 @@ class TestConnection(XvfbTest):
 
     def test_GetAtomName(self):
         wm_protocols = "WM_PROTOCOLS"
-        atom = self.xproto.InternAtom(0, len(wm_protocols), wm_protocols).reply().atom
+        atom = self.intern(wm_protocols)
         atom_name = self.xproto.GetAtomName(atom).reply().name
 
         assert atom_name.to_string() == wm_protocols
