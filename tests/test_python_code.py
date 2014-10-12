@@ -17,7 +17,9 @@ import xcffib
 import xcffib.xproto
 import struct
 
-class TestPythonCode(object):
+from testing import XcffibTest
+
+class TestPythonCode(XcffibTest):
 
     def test_struct_pack_uses_List(self):
         # suppose we have a list of ints...
@@ -52,3 +54,19 @@ class TestPythonCode(object):
         assert om[0] == "Event0,0"
         assert om[1] == "Event1,0"
         assert om[2] == "Event1,1"
+
+    def test_create_synthetic_union(self):
+        wm_protocols = self.intern("WM_PROTOCOLS")
+        wm_delete_window = self.intern("WM_DELETE_WINDOW")
+
+        # should be exactly 20 bytes
+        data = [
+            wm_protocols,
+            wm_delete_window,
+            xcffib.xproto.Time.CurrentTime,
+            0,
+            0,
+        ]
+
+        union = xcffib.xproto.ClientMessageData.synthetic(data, "I" * 5)
+        assert list(union.data32) == data

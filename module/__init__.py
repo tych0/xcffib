@@ -123,8 +123,7 @@ class CffiUnpacker(Unpacker):
 class MemoryUnpacker(Unpacker):
 
     def __init__(self, data, fmt):
-        self.buf = struct.pack(fmt, data)
-        self.offset = 0
+        self.buf = struct.pack(fmt, *data)
         Unpacker.__init__(self, struct.calcsize(fmt))
 
     def _resize(self, increment):
@@ -137,7 +136,7 @@ class MemoryUnpacker(Unpacker):
         new.buf = self.buf
         new.offset = self.offset
         new.size = self.size
-        new.known
+        new.known_max = self.known_max
         return new
 
 
@@ -280,7 +279,11 @@ class Struct(Protobj):
 
 
 class Union(Protobj):
-    pass
+    @classmethod
+    def synthetic(cls, data=[], fmt=""):
+        self = cls.__new__(cls)
+        self.__init__(MemoryUnpacker(data, fmt))
+        return self
 
 
 class Cookie(object):
