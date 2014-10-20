@@ -16,6 +16,7 @@
 import xcffib
 import xcffib.xproto
 import struct
+from xcffib.xproto import EventMask
 
 from .testing import XcffibTest
 
@@ -55,7 +56,7 @@ class TestPythonCode(XcffibTest):
         assert om[1] == "Event1,0"
         assert om[2] == "Event1,1"
 
-    def test_create_synthetic_union(self):
+    def test_create_ClientMessageEvent(self):
         wm_protocols = self.intern("WM_PROTOCOLS")
         wm_delete_window = self.intern("WM_DELETE_WINDOW")
 
@@ -70,3 +71,27 @@ class TestPythonCode(XcffibTest):
 
         union = xcffib.xproto.ClientMessageData.synthetic(data, "I" * 5)
         assert list(union.data32) == data
+
+        wid = self.conn.generate_id()
+        self.create_window(wid=wid)
+
+        wm_protocols = self.intern("WM_PROTOCOLS")
+        wm_delete_window = self.intern("WM_DELETE_WINDOW")
+
+        e = xcffib.xproto.ClientMessageEvent.synthetic(
+            format=32,
+            window=wid,
+            type=0,
+            data=union
+        )
+
+        buf = e.pack()
+        struct_buf = struct.pack("=BB2x", 33, 32) + buf[1:]
+
+        self.xproto.SendEvent(False, wid, EventMask.NoEvent, struct_buf)
+        self.conn.flush()
+
+        e = self.conn.wait_for_event()
+        assert isinstance(e, xcffib.xproto.ClientMessageEvent)
+        assert e.window == wid
+        assert list(e.data.data32) == data
