@@ -33,6 +33,10 @@ class XvfbTest(object):
     each test in its own fresh xvfb, leaving you with an xcffib connection to
     that X session as `self.conn` for use in testing. """
 
+    # Set this to true if you'd like to get xtrace output to stdout of each
+    # test.
+    xtrace = False
+
     def spawn(self, cmd):
         """ Spawn a command but swallow its output. """
         discard = open(os.devnull)
@@ -42,6 +46,11 @@ class XvfbTest(object):
         self._old_display = os.environ.get('DISPLAY')
         os.environ['DISPLAY'] = ':%d' % self._find_display()
         self._xvfb = self.spawn(self._xvfb_command())
+
+        if self.xtrace:
+            subprocess.Popen(['xtrace', '-n'])
+            # xtrace's default display is :9
+            os.environ['DISPLAY'] = ':9'
         self.conn = self._connect_to_xvfb()
 
     def tearDown(self):
