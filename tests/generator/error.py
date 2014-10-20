@@ -14,7 +14,8 @@ class RequestError(xcffib.Error):
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = six.BytesIO()
-        buf.write(struct.pack("=IHBx", self.bad_value, self.minor_opcode, self.major_opcode))
+        buf.write(struct.pack("=B", 1))
+        buf.write(struct.pack("=x2xIHBx", self.bad_value, self.minor_opcode, self.major_opcode))
         return buf.getvalue()
 BadRequest = RequestError
 _errors[1] = RequestError

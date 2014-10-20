@@ -377,6 +377,8 @@ structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
     CompositeType _ _ -> error (
       "ValueParams other than CARD{16,32} not allowed.")
 
+buf :: Suite ()
+buf = [mkAssign "buf" (mkCall "six.BytesIO" noArgs)]
 
 mkPackStmts :: String
             -> String
@@ -386,8 +388,7 @@ mkPackStmts :: String
             -> [GenStructElem Type]
             -> ([String], Suite ())
 mkPackStmts ext name m accessor prefix membs =
-  let buf = [mkAssign "buf" (mkCall "six.BytesIO" noArgs)]
-      packF = structElemToPyPack ext m accessor
+  let packF = structElemToPyPack ext m accessor
       (toPack, stmts) = partitionEithers $ map packF membs
       listWrites = map (flip StmtExpr () . mkCall "buf.write" . (: [])) lists
       (args, keys) = let (as, ks) = unzip toPack in (catMaybes as, ks)
@@ -411,18 +412,26 @@ mkPackStmts ext name m accessor prefix membs =
       write = mkCall "buf.write" [mkCall "struct.pack"
                                          (mkStr ('=' : packStr) : (map mkName args))]
       writeStmt = if length packStr > 0 then [StmtExpr write ()] else []
-  in (args ++ listNames', buf ++ writeStmt ++ listWrites)
+  in (args ++ listNames', writeStmt ++ listWrites)
 
 mkPackMethod :: String
              -> String
              -> TypeInfoMap
+             -> Maybe (String, Int)
              -> [GenStructElem Type]
              -> Statement ()
-mkPackMethod ext name m structElems =
+mkPackMethod ext name m prefixAndOp structElems =
   let accessor = ((++) "self.")
-      (_, packStmts) = mkPackStmts ext name m accessor "" structElems
+      (prefix, op) = case prefixAndOp of
+                        Just ('x' : rest, i) ->
+                          let packOpcode = mkCall "struct.pack" [mkStr "=B", mkInt i]
+                              write = mkCall "buf.write" [packOpcode]
+                          in (rest, [StmtExpr write ()])
+                        Just (rest, _) -> error ("internal API error: " ++ show rest)
+                        Nothing -> ("", [])
+      (_, packStmts) = mkPackStmts ext name m accessor prefix structElems
       ret = [mkReturn $ mkCall "buf.getvalue" noArgs]
-  in mkMethod "pack" (mkParams ["self"]) $ packStmts ++ ret
+  in mkMethod "pack" (mkParams ["self"]) $ buf ++ op ++ packStmts ++ ret
 
 data StructUnpackState = StructUnpackState {
   -- | stNeedsPad is whether or not a type_pad() is needed. As near
@@ -533,7 +542,7 @@ processXDecl _ (XEnum name membs) =
 processXDecl ext (XStruct n membs) = do
   m <- get
   let (statements, len) = mkStructStyleUnpack "" ext m membs
-      pack = mkPackMethod ext n m membs
+      pack = mkPackMethod ext n m Nothing membs
       fixedLength = maybeToList $ do
         theLen <- len
         let rhs = mkInt theLen
@@ -543,8 +552,8 @@ processXDecl ext (XStruct n membs) = do
 processXDecl ext (XEvent name opcode membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
-      pack = mkPackMethod ext name m membs
       prefix = if fromMaybe False noSequence then "x" else "x%c2x"
+      pack = mkPackMethod ext name m (Just (prefix, opcode)) membs
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" opcode cname
   return $ Declaration [ mkXClass cname "xcffib.Event" statements [pack]
@@ -553,8 +562,9 @@ processXDecl ext (XEvent name opcode membs noSequence) = do
 processXDecl ext (XError name opcode membs) = do
   m <- get
   let cname = name ++ "Error"
-      pack = mkPackMethod ext name m membs
-      (statements, _) = mkStructStyleUnpack "xx2x" ext m membs
+      prefix = "xx2x"
+      pack = mkPackMethod ext name m (Just (prefix, opcode)) membs
+      (statements, _) = mkStructStyleUnpack prefix ext m membs
       errorsUpd = mkDictUpdate "_errors" opcode cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
   return $ Declaration [ mkXClass cname "xcffib.Error" statements [pack]
@@ -587,7 +597,7 @@ processXDecl ext (XRequest name opcode membs reply) = do
                                                               ])
                                                               ++ hasReply
                                                               ++ [argChecked])
-      requestBody = packStmts ++ [ret]
+      requestBody = buf ++ packStmts ++ [ret]
       request = mkMethod name allArgs requestBody
   return $ Request request replyDecl
 processXDecl ext (XUnion name membs) = do
@@ -600,7 +610,7 @@ processXDecl ext (XUnion name membs) = do
       initMethod = lists ++ toUnpack
       -- Here, we only want to pack the first member of the union, since every
       -- member is the same data and we don't want to repeatedly pack it.
-      pack = mkPackMethod ext name m [head membs]
+      pack = mkPackMethod ext name m Nothing [head membs]
       decl = [mkXClass name "xcffib.Union" initMethod [pack]]
   modify $ mkModify ext name (CompositeType ext name)
   return $ Declaration decl

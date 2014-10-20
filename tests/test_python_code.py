@@ -85,10 +85,7 @@ class TestPythonCode(XcffibTest):
             data=union
         )
 
-        buf = e.pack()
-        struct_buf = struct.pack("=BB2x", 33, 32) + buf[1:]
-
-        self.xproto.SendEvent(False, wid, EventMask.NoEvent, struct_buf)
+        self.xproto.SendEvent(False, wid, EventMask.NoEvent, e.pack())
         self.conn.flush()
 
         e = self.conn.wait_for_event()

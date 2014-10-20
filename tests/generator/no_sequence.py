@@ -12,6 +12,7 @@ class KeymapNotifyEvent(xcffib.Event):
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = six.BytesIO()
+        buf.write(struct.pack("=B", 11))
         buf.write(xcffib.pack_list(self.keys, "B"))
         return buf.getvalue()
 _events[11] = KeymapNotifyEvent
