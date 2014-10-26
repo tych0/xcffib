@@ -62,9 +62,9 @@ class TestPythonCode(XcffibTest):
 
         # should be exactly 20 bytes
         data = [
-            wm_protocols,
             wm_delete_window,
             xcffib.xproto.Time.CurrentTime,
+            0,
             0,
             0,
         ]
@@ -81,7 +81,7 @@ class TestPythonCode(XcffibTest):
         e = xcffib.xproto.ClientMessageEvent.synthetic(
             format=32,
             window=wid,
-            type=0,
+            type=wm_protocols,
             data=union
         )
 
