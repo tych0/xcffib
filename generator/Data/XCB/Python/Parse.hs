@@ -247,7 +247,7 @@ getConst (PopCount e) = fmap popCount $ getConst e
 getConst _ = Nothing
 
 xEnumElemsToPyEnum :: (String -> String) -> [XEnumElem] -> [(String, Expr ())]
-xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] [1..]
+xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] [0..]
   where
     exprConv = xExpressionToPyExpr accessor
     conv :: [XEnumElem] -> [(String, Expr ())] -> [Int] -> [(String, Expr ())]
