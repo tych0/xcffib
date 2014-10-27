@@ -1,0 +1,69 @@
+<!-- rendering of this enum in xcb-proto 1.7 is vastly more complicated than in
+     more modern versions of xcb-proto, but for completness we should render
+     this correctly as well -->
+<?xml version="1.0" encoding="utf-8"?>
+<xcb header="render_1.7" extension-xname="RENDER" extension-name="Render"
+    major-version="0" minor-version="11">
+
+  <!-- Disjoint* and Conjoint* are new in version 0.2 -->
+  <!-- PDF blend modes are new in version 0.11 -->
+  <enum name="PictOp">
+    <item name="Clear" />
+    <item name="Src" />
+    <item name="Dst" />
+    <item name="Over" />
+    <item name="OverReverse" />
+    <item name="In" />
+    <item name="InReverse" />
+    <item name="Out" />
+    <item name="OutReverse" />
+    <item name="Atop" />
+    <item name="AtopReverse" />
+    <item name="Xor" />
+    <item name="Add" />
+    <item name="Saturate" />
+    
+    <item name="DisjointClear"><value>16</value></item>
+    <item name="DisjointSrc" />
+    <item name="DisjointDst" />
+    <item name="DisjointOver" />
+    <item name="DisjointOverReverse" />
+    <item name="DisjointIn" />
+    <item name="DisjointInReverse" />
+    <item name="DisjointOut" />
+    <item name="DisjointOutReverse" />
+    <item name="DisjointAtop" />
+    <item name="DisjointAtopReverse" />
+    <item name="DisjointXor" />
+    
+    <item name="ConjointClear"><value>32</value></item>
+    <item name="ConjointSrc" />
+    <item name="ConjointDst" />
+    <item name="ConjointOver" />
+    <item name="ConjointOverReverse" />
+    <item name="ConjointIn" />
+    <item name="ConjointInReverse" />
+    <item name="ConjointOut" />
+    <item name="ConjointOutReverse" />
+    <item name="ConjointAtop" />
+    <item name="ConjointAtopReverse" />
+    <item name="ConjointXor" />
+
+    <!-- PDF blend modes are new in version 0.11 -->
+    <item name="Multiply"><value>48</value></item>
+    <item name="Screen" />
+    <item name="Overlay" />
+    <item name="Darken" />
+    <item name="Lighten" />
+    <item name="ColorDodge" />
+    <item name="ColorBurn" />
+    <item name="HardLight" />
+    <item name="SoftLight" />
+    <item name="Difference" />
+    <item name="Exclusion" />
+    <item name="HSLHue" />
+    <item name="HSLSaturation" />
+    <item name="HSLColor" />
+    <item name="HSLLuminosity" />
+  </enum>
+</xcb>

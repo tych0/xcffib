@@ -37,6 +37,7 @@ pyTests = [ "event"
           , "request_reply"
           , "no_sequence"
           , "type_pad"
+          , "render_1.7"
           ]
 
 mkFname :: String -> FilePath

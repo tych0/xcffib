@@ -253,7 +253,7 @@ xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] [0..]
     conv :: [XEnumElem] -> [(String, Expr ())] -> [Int] -> [(String, Expr ())]
     conv ((EnumElem name expr) : els) acc is =
       let expr' = fromMaybe (mkInt (head is)) $ fmap exprConv expr
-          is' = tail is
+          is' = dropWhile (<= (fromIntegral (int_value expr'))) is
           acc' = (name, expr') : acc
       in conv els acc' is'
     conv [] acc _ = acc
