@@ -12,6 +12,9 @@ class AxisInfo(xcffib.Struct):
     def pack(self):
         buf = six.BytesIO()
         buf.write(struct.pack("=Iii", self.resolution, self.minimum, self.maximum))
+        buf_len = len(buf.getValue())
+        if buf_len < 32:
+            buf.write(struct.pack("x" * buf_len))
         return buf.getvalue()
     fixed_size = 12
 class ValuatorInfo(xcffib.Struct):
@@ -25,5 +28,8 @@ class ValuatorInfo(xcffib.Struct):
         buf = six.BytesIO()
         buf.write(struct.pack("=BBBBI", self.class_id, self.len, self.axes_len, self.mode, self.motion_size))
         buf.write(xcffib.pack_list(self.axes, AxisInfo))
+        buf_len = len(buf.getValue())
+        if buf_len < 32:
+            buf.write(struct.pack("x" * buf_len))
         return buf.getvalue()
 xcffib._add_ext(key, structExtension, _events, _errors)

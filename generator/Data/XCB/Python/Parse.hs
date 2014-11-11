@@ -419,8 +419,9 @@ mkPackMethod :: String
              -> TypeInfoMap
              -> Maybe (String, Int)
              -> [GenStructElem Type]
+             -> Maybe Int
              -> Statement ()
-mkPackMethod ext name m prefixAndOp structElems =
+mkPackMethod ext name m prefixAndOp structElems minLen =
   let accessor = ((++) "self.")
       (prefix, op) = case prefixAndOp of
                         Just ('x' : rest, i) ->
@@ -430,8 +431,16 @@ mkPackMethod ext name m prefixAndOp structElems =
                         Just (rest, _) -> error ("internal API error: " ++ show rest)
                         Nothing -> ("", [])
       (_, packStmts) = mkPackStmts ext name m accessor prefix structElems
+      extend = concat $ do
+        len <- maybeToList minLen
+        let bufLen = mkName "buf_len"
+            bufLenAssign = mkAssign bufLen $ mkCall "len" [mkCall "buf.getValue" noArgs]
+            test = (BinaryOp (LessThan ()) bufLen (mkInt len)) ()
+            extra = mkCall "struct.pack" [repeatStr "x" bufLen]
+            writeExtra = [StmtExpr (mkCall "buf.write" [extra]) ()]
+        return $ [bufLenAssign, mkIf test writeExtra]
       ret = [mkReturn $ mkCall "buf.getvalue" noArgs]
-  in mkMethod "pack" (mkParams ["self"]) $ buf ++ op ++ packStmts ++ ret
+  in mkMethod "pack" (mkParams ["self"]) $ buf ++ op ++ packStmts ++ extend ++ ret
 
 data StructUnpackState = StructUnpackState {
   -- | stNeedsPad is whether or not a type_pad() is needed. As near
@@ -542,7 +551,7 @@ processXDecl _ (XEnum name membs) =
 processXDecl ext (XStruct n membs) = do
   m <- get
   let (statements, len) = mkStructStyleUnpack "" ext m membs
-      pack = mkPackMethod ext n m Nothing membs
+      pack = mkPackMethod ext n m Nothing membs (Just 32)
       fixedLength = maybeToList $ do
         theLen <- len
         let rhs = mkInt theLen
@@ -553,7 +562,7 @@ processXDecl ext (XEvent name opcode membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       prefix = if fromMaybe False noSequence then "x" else "x%c2x"
-      pack = mkPackMethod ext name m (Just (prefix, opcode)) membs
+      pack = mkPackMethod ext name m (Just (prefix, opcode)) membs Nothing
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" opcode cname
   return $ Declaration [ mkXClass cname "xcffib.Event" statements [pack]
@@ -563,7 +572,7 @@ processXDecl ext (XError name opcode membs) = do
   m <- get
   let cname = name ++ "Error"
       prefix = "xx2x"
-      pack = mkPackMethod ext name m (Just (prefix, opcode)) membs
+      pack = mkPackMethod ext name m (Just (prefix, opcode)) membs Nothing
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       errorsUpd = mkDictUpdate "_errors" opcode cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
@@ -610,7 +619,7 @@ processXDecl ext (XUnion name membs) = do
       initMethod = lists ++ toUnpack
       -- Here, we only want to pack the first member of the union, since every
       -- member is the same data and we don't want to repeatedly pack it.
-      pack = mkPackMethod ext name m Nothing [head membs]
+      pack = mkPackMethod ext name m Nothing [head membs] Nothing
       decl = [mkXClass name "xcffib.Union" initMethod [pack]]
   modify $ mkModify ext name (CompositeType ext name)
   return $ Declaration decl

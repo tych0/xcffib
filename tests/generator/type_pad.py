@@ -12,6 +12,9 @@ class CHARINFO(xcffib.Struct):
     def pack(self):
         buf = six.BytesIO()
         buf.write(struct.pack("=hhhhhH", self.left_side_bearing, self.right_side_bearing, self.character_width, self.ascent, self.descent, self.attributes))
+        buf_len = len(buf.getValue())
+        if buf_len < 32:
+            buf.write(struct.pack("x" * buf_len))
         return buf.getvalue()
     fixed_size = 12
 class FONTPROP(xcffib.Struct):
@@ -23,6 +26,9 @@ class FONTPROP(xcffib.Struct):
     def pack(self):
         buf = six.BytesIO()
         buf.write(struct.pack("=II", self.name, self.value))
+        buf_len = len(buf.getValue())
+        if buf_len < 32:
+            buf.write(struct.pack("x" * buf_len))
         return buf.getvalue()
     fixed_size = 8
 class ListFontsWithInfoReply(xcffib.Reply):

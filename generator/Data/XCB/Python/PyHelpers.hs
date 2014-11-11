@@ -38,7 +38,9 @@ module Data.XCB.Python.PyHelpers (
   pyTruth,
   mkParams,
   ident,
-  pyNone
+  pyNone,
+  mkIf,
+  repeatStr
   ) where
 
 import Data.List.Split
@@ -180,3 +182,9 @@ pyTruth = flip Bool ()
 
 pyNone :: Expr ()
 pyNone = None ()
+
+mkIf :: Expr () -> Suite () -> Statement ()
+mkIf e s = Conditional [(e, s)] [] ()
+
+repeatStr :: String -> Expr () -> Expr ()
+repeatStr s i = BinaryOp (Multiply ()) (mkStr s) i ()
