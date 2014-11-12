@@ -434,9 +434,10 @@ mkPackMethod ext name m prefixAndOp structElems minLen =
       extend = concat $ do
         len <- maybeToList minLen
         let bufLen = mkName "buf_len"
-            bufLenAssign = mkAssign bufLen $ mkCall "len" [mkCall "buf.getValue" noArgs]
+            bufLenAssign = mkAssign bufLen $ mkCall "len" [mkCall "buf.getvalue" noArgs]
             test = (BinaryOp (LessThan ()) bufLen (mkInt len)) ()
-            extra = mkCall "struct.pack" [repeatStr "x" bufLen]
+            bufWriteLen = Paren (BinaryOp (Minus ()) (mkInt 32) bufLen ()) ()
+            extra = mkCall "struct.pack" [repeatStr "x" bufWriteLen]
             writeExtra = [StmtExpr (mkCall "buf.write" [extra]) ()]
         return $ [bufLenAssign, mkIf test writeExtra]
       ret = [mkReturn $ mkCall "buf.getvalue" noArgs]
@@ -551,7 +552,7 @@ processXDecl _ (XEnum name membs) =
 processXDecl ext (XStruct n membs) = do
   m <- get
   let (statements, len) = mkStructStyleUnpack "" ext m membs
-      pack = mkPackMethod ext n m Nothing membs (Just 32)
+      pack = mkPackMethod ext n m Nothing membs Nothing
       fixedLength = maybeToList $ do
         theLen <- len
         let rhs = mkInt theLen
@@ -562,7 +563,7 @@ processXDecl ext (XEvent name opcode membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       prefix = if fromMaybe False noSequence then "x" else "x%c2x"
-      pack = mkPackMethod ext name m (Just (prefix, opcode)) membs Nothing
+      pack = mkPackMethod ext name m (Just (prefix, opcode)) membs (Just 32)
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" opcode cname
   return $ Declaration [ mkXClass cname "xcffib.Event" statements [pack]

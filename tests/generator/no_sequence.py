@@ -14,6 +14,9 @@ class KeymapNotifyEvent(xcffib.Event):
         buf = six.BytesIO()
         buf.write(struct.pack("=B", 11))
         buf.write(xcffib.pack_list(self.keys, "B"))
+        buf_len = len(buf.getvalue())
+        if buf_len < 32:
+            buf.write(struct.pack("x" * (32 - buf_len)))
         return buf.getvalue()
 _events[11] = KeymapNotifyEvent
 xcffib._add_ext(key, no_sequenceExtension, _events, _errors)

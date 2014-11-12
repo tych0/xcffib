@@ -14,9 +14,6 @@ class STR(xcffib.Struct):
         buf = six.BytesIO()
         buf.write(struct.pack("=B", self.name_len))
         buf.write(xcffib.pack_list(self.name, "c"))
-        buf_len = len(buf.getValue())
-        if buf_len < 32:
-            buf.write(struct.pack("x" * buf_len))
         return buf.getvalue()
 class ListExtensionsReply(xcffib.Reply):
     def __init__(self, unpacker):
