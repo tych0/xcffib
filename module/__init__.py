@@ -683,7 +683,7 @@ def pack_list(from_, pack_type):
             # Only run in Python 3, where bytes are different than strings
             # Here we create the tuple of bytes by encoding each character
             from_ = [b.encode('latin-1') for b in from_]
-        elif isinstance(from_[0], int):
+        elif isinstance(from_[0], six.integer_types):
             # Pack from_ as char array, where from_ may be an array of ints
             # possibly greater than 256
             def to_bytes(v):

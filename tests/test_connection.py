@@ -190,6 +190,11 @@ class TestConnection(XcffibTest):
         self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
                 wm_protocols, xcffib.xproto.Atom.ATOM, 32,
                 1, (wm_delete_window,))
+        # For Python 2 only, make sure packing can handle both ints and longs
+        if six.PY2:
+            self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
+                    wm_protocols, xcffib.xproto.Atom.ATOM, 32,
+                    1, (long(wm_delete_window),))
 
         reply = self.xproto.GetProperty(False, wid, wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
 
