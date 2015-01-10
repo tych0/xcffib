@@ -418,6 +418,9 @@ class List(Protobj):
         to a string. """
         return ''.join(chr(six.byte2int(i)) for i in self)
 
+    def to_utf8(self):
+        return six.b('').join(self).decode('utf-8')
+
     def to_atoms(self):
         """ A helper for converting a List of chars to an array of atoms """
         return struct.unpack("=" + "I" * (len(self) // 4), b''.join(self))
