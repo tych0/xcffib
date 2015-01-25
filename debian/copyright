@@ -11,7 +11,7 @@ Files: tests/test_crazy_window_script.py
 Copyright: 2012 Florian Mounier
            2014 Sean Vig
            2014 Tycho Andersen
-License: Expat (MIT)
+License: Expat
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
   in the Software without restriction, including without limitation the rights
