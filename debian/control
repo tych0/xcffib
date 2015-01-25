@@ -38,7 +38,7 @@ Build-Depends: debhelper (>= 9)
   , libxcb1
 X-Python-Version: >= 2.6
 X-Python3-Version: >= 3.2
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Homepage: https://github.com/tych0/xcffib
 Vcs-Git: https://github.com/tych0/xcffib
 Vcs-Browser: https://github.com/tych0/xcffib
