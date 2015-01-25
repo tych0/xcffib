@@ -1,5 +1,6 @@
 xcffib (0.1.10-1) UNRELEASED; urgency=low
 
   * Initial release.
+  * Closes: #776178
 
  -- Tycho Andersen <tycho@tycho.ws>  Thu, 15 Jan 2015 15:53:40 +1300
