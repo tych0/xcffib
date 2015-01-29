@@ -167,7 +167,7 @@ class TestConnection(XcffibTest):
         utf8_string = self.intern("UTF8_STRING")
 
         title_bytes = b"test\xc2\xb7"
-        title_string = u"test\u00B7"
+        title_string = six.u("test\u00B7")
 
         # First check with an object already encoded as bytes
         self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
