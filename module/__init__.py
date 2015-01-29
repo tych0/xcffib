@@ -678,14 +678,16 @@ def pack_list(from_, pack_type):
 
     if pack_type == 'c':
         if isinstance(from_, bytes):
+            # Catch Python 3 bytes and Python 2 strings
             # PY3 is "helpful" in that when you do tuple(b'foo') you get
             # (102, 111, 111) instead of something more reasonable like
             # (b'f', b'o', b'o'), so we rebuild from_ as a tuple of bytes
             from_ = [six.int2byte(b) for b in six.iterbytes(from_)]
-        elif isinstance(from_, str):
-            # Only run in Python 3, where bytes are different than strings
-            # Here we create the tuple of bytes by encoding each character
-            from_ = [b.encode('latin-1') for b in from_]
+        elif isinstance(from_, six.string_types):
+            # Catch Python 3 strings and Python 2 unicode strings, both of
+            # which we encode to bytes as utf-8
+            # Here we create the tuple of bytes from the encoded string
+            from_ = [six.int2byte(b) for b in bytearray(from_, 'utf-8')]
         elif isinstance(from_[0], six.integer_types):
             # Pack from_ as char array, where from_ may be an array of ints
             # possibly greater than 256

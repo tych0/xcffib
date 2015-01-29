@@ -163,21 +163,33 @@ class TestConnection(XcffibTest):
         wid = self.conn.generate_id()
         self.create_window(wid=wid)
 
-        title = "test\xc2\xb7"
-
         net_wm_name = self.intern("_NET_WM_NAME")
-
         utf8_string = self.intern("UTF8_STRING")
 
+        title_bytes = b"test\xc2\xb7"
+        title_string = u"test\u00B7"
+
+        # First check with an object already encoded as bytes
         self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
                 net_wm_name, utf8_string, 8,
-                len(title), title)
+                len(title_bytes), title_bytes)
 
         reply = self.xproto.GetProperty(False, wid,
                 net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, (2 ** 32) - 1).reply()
 
-        assert reply.value.buf() == six.b("test\xc2\xb7")
-        assert reply.value.to_string() == title
+        assert reply.value.buf() == title_bytes
+        assert reply.value.to_utf8() == title_string
+
+        # Also check with a unicode string
+        self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
+                net_wm_name, utf8_string, 8,
+                len(title_string.encode('utf-8')), title_string)
+
+        reply = self.xproto.GetProperty(False, wid,
+                net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, (2 ** 32) - 1).reply()
+
+        assert reply.value.buf() == title_bytes
+        assert reply.value.to_utf8() == title_string
 
     def test_ChangeProperty_WM_PROTOCOLS(self):
         wid = self.conn.generate_id()
