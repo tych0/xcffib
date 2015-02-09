@@ -5,6 +5,7 @@ XCBVER=$(shell pkg-config --modversion xcb-proto)
 XCBDIR=$(shell pkg-config --variable=xcbincludedir xcb-proto)
 NCPUS=$(shell grep -c processor /proc/cpuinfo)
 PARALLEL=$(shell which parallel)
+CABAL=cabal --config-file=/dev/null
 
 # you should have xcb-proto installed to run this
 xcffib: $(GEN) module/*.py
@@ -21,15 +22,15 @@ else
 endif
 
 dist:
-	cabal configure --enable-tests
+	$(CABAL) configure --enable-tests
 
 .PHONY: $(GEN)
 $(GEN): dist
-	cabal build
+	$(CABAL) build
 
 .PHONY: clean
 clean:
-	-cabal clean
+	-$(CABAL) clean
 	-rm -rf xcffib
 	-rm -rf module/*pyc module/__pycache__
 	-rm -rf tests/*pyc tests/__pycache__
@@ -56,7 +57,7 @@ lint:
 
 .PHONY: htests
 htests: $(GEN)
-	cabal test
+	$(CABAL) test
 
 check: xcffib lint htests
 	nosetests -d -v

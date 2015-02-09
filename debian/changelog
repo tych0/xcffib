@@ -1,4 +1,4 @@
-xcffib (0.1.10-2) unstable; urgency=medium
+xcffib (0.1.11-1) unstable; urgency=medium
 
   * Fix several debian packaging nits.
 
