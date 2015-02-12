@@ -53,12 +53,14 @@ Depends: python-six
   , ${shlibs:Depends}
   , ${python:Depends}
 Provides: ${python:Provides}
-Description: xcffib is a python binding for XCB
- xcffib is intended to be a (mostly) drop-in replacement for xpyb. xpyb has an
- inactive upstream, several memory leaks, is python2 only and doesn't have
- pypy support. xcffib is a binding which uses python-cffi, which mitigates
+Description: This package is a python binding for XCB (Python 2)
+ This package is intended to be a (mostly) drop-in replacement for xpyb. xpyb
+ has an inactive upstream, several memory leaks, is python2 only and doesn't
+ have pypy support. xcffib is a binding which uses python-cffi, which mitigates
  some of the issues described above. xcffib also builds bindings for 27 of the
  29 (xprint and xkb are missing) X extensions in 1.10.
+ .
+ This package installs the library for Python 2.
 
 Package: python3-xcffib
 Architecture: any
@@ -69,9 +71,11 @@ Depends: python3-six,
   , ${shlibs:Depends}
   , ${python3:Depends}
 Provides: ${python3:Provides}
-Description: xcffib is a python binding for XCB
- xcffib is intended to be a (mostly) drop-in replacement for xpyb. xpyb has an
- inactive upstream, several memory leaks, is python2 only and doesn't have
- pypy support. xcffib is a binding which uses python-cffi, which mitigates
+Description: This package is a python binding for XCB (Python 3)
+ This package is intended to be a (mostly) drop-in replacement for xpyb. xpyb
+ has an inactive upstream, several memory leaks, is python2 only and doesn't
+ have pypy support. xcffib is a binding which uses python-cffi, which mitigates
  some of the issues described above. xcffib also builds bindings for 27 of the
  29 (xprint and xkb are missing) X extensions in 1.10.
+ .
+ This package installs the library for Python 3.
