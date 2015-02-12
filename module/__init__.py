@@ -15,14 +15,15 @@
 
 from __future__ import division, absolute_import
 
-__xcb_proto_version__ = 'placeholder'
-
 import functools
 import six
 import struct
 import weakref
 
+# We're just re-exporting visualtype_to_c_struct, hence the noqa.
 from .ffi import ffi, C, visualtype_to_c_struct  # noqa
+
+__xcb_proto_version__ = 'placeholder'
 
 X_PROTOCOL = C.X_PROTOCOL
 X_PROTOCOL_REVISION = C.X_PROTOCOL_REVISION
