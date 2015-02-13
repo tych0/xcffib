@@ -235,7 +235,7 @@ C = ffi.verify("""
     #include <xcb/xcb.h>
     #include <xcb/xcbext.h>
     #include <xcb/render.h>
-""", libraries=['xcb'])
+""", libraries=['xcb'], modulename='_xcffib')
 
 
 def visualtype_to_c_struct(vt):
