@@ -1,12 +1,6 @@
-xcffib (0.1.11-1) unstable; urgency=medium
-
-  * Fix several debian packaging nits.
-
- -- Tycho Andersen <tycho@tycho.ws>  Sun, 25 Jan 2015 18:34:30 +0000
-
-xcffib (0.1.10-1) unstable; urgency=low
+xcffib (0.2.0-1) unstable; urgency=low
 
   * Initial release.
   * Closes: #776178
 
- -- Tycho Andersen <tycho@tycho.ws>  Thu, 15 Jan 2015 15:53:40 +1300
+ -- Tycho Andersen <tycho@tycho.ws>  Sun, 15 Feb 2015 07:41:13 -0700
