@@ -29,13 +29,9 @@ mkTest name t1 t2 = testCase name (assertEqual name t1 t2)
 testMkName :: Test
 testMkName =
   let result = mkName "self.foo.bar"
-      expected = BinaryOp (Dot ())
-                          (Var (Ident "self" ()) ())
-                          (BinaryOp (Dot ())
-                                    (Var (Ident "foo" ()) ())
-                                    (Var (Ident "bar" ()) ())
-                                    ())
-                          ()
+      expected = (Dot (Dot (Var (Ident "self" ()) ())
+                           (Ident "foo" ()) ())
+                      (Ident "bar" ()) ())
   in mkTest "testMkName" expected result
 
 testReserves :: Test
