@@ -84,7 +84,7 @@ mkVar name = Var (ident name) ()
 mkName :: String -> Expr ()
 mkName s =
   let strings = splitOn "." s
-  in foldl mkDot (mkVar $ head strings) (reverse $ tail strings)
+  in foldl mkDot (mkVar $ head strings) (tail strings)
 
 mkDot :: PseudoExpr a => a -> String -> Expr ()
 mkDot e1 attr = Dot (getExpr e1) (ident attr) ()
