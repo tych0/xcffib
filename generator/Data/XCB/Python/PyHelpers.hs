@@ -83,11 +83,11 @@ mkVar name = Var (ident name) ()
 -- | Make an Expr out of a string like "foo.bar" describing the name.
 mkName :: String -> Expr ()
 mkName s =
-  let strings = map mkVar $ reverse $ splitOn "." s
-  in foldr mkDot (head strings) (reverse $ tail strings)
+  let strings = splitOn "." s
+  in foldl mkDot (mkVar $ head strings) (reverse $ tail strings)
 
-mkDot :: (PseudoExpr a, PseudoExpr b) => a -> b -> Expr ()
-mkDot e1 e2 = BinaryOp (Dot ()) (getExpr e1) (getExpr e2) ()
+mkDot :: PseudoExpr a => a -> String -> Expr ()
+mkDot e1 attr = Dot (getExpr e1) (ident attr) ()
 
 -- | Make an attribute access, i.e. self.<string>.
 mkAttr :: String -> Expr ()

@@ -363,7 +363,7 @@ structElemToPyPack _ m accessor (ExprField name typ expr) =
                                                            , e
                                                            ])]
        CompositeType _ _ -> Right $ [(name',
-                                      mkCall (mkDot e (mkName "pack")) noArgs)]
+                                      mkCall (mkDot e "pack") noArgs)]
 
 -- As near as I can tell here the padding param is unused.
 structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
