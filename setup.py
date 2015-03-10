@@ -37,7 +37,7 @@ class cffi_build(build):
         self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
         build.finalize_options(self)
 
-version = "0.2.0"
+version = "0.2.1"
 dependencies = ['six', 'cffi>=0.8.2']
 
 setup(
