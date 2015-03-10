@@ -83,4 +83,6 @@ else
 	git tag v${ver}
 	python setup.py sdist
 	python setup.py sdist upload
+	cabal sdist
+	cabal upload dist/xcffib-${ver}.tar.gz
 endif
