@@ -478,7 +478,9 @@ class Connection(object):
             self._conn = C.xcb_connect(display, i)
         self.pref_screen = i[0]
         self.invalid()
+        self._init_x()
 
+    def _init_x(self):
         self.core = core(self)
         self.setup = self.get_setup()
 
@@ -709,3 +711,12 @@ def pack_list(from_, pack_type):
             else:
                 buf.write(item)
         return buf.getvalue()
+
+
+def wrap(ptr):
+    c_conn = C.wrap(ptr)
+    conn = Connection.__new__(Connection)
+    conn._conn = c_conn
+    conn._init_x()
+    conn.invalid()
+    return conn

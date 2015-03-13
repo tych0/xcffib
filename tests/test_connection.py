@@ -278,3 +278,10 @@ class TestConnection(XcffibTest):
                 continue
             atoms.update({i: name}) # Lookup by number
             atoms.update({name: i}) # Lookup by name
+
+    def test_wrap(self):
+        c = xcffib.connect()
+        c.invalid()
+        c2 = xcffib.wrap(xcffib.ffi.cast("long", c._conn))
+        c2.invalid()
+        c2.disconnect()
