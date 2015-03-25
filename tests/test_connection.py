@@ -58,8 +58,17 @@ class TestConnection(XcffibTest):
         assert screen.root_depth == self.depth
 
     def test_seq_increases(self):
-        assert self.xproto.GetInputFocus().sequence == 1
+        # If this test starts failing because the sequence numbers don't mach,
+        # that's probably because you added a new test that imports a new X
+        # extension. When that happens, every new connection automatically does
+        # a QueryExtention for each new ext that has been imported, so the
+        # squence numbers go up by one.
+        #
+        # i.e:
+        # xproto setup query = seqno 0
+        # xtest setup query = seqno 1
         assert self.xproto.GetInputFocus().sequence == 2
+        assert self.xproto.GetInputFocus().sequence == 3
 
     @raises(xcffib.ConnectionException)
     def test_invalid(self):
@@ -74,10 +83,8 @@ class TestConnection(XcffibTest):
     def test_create_window(self):
         wid = self.conn.generate_id()
         cookie = self.create_window(wid=wid)
-        assert cookie.sequence == 1
 
         cookie = self.xproto.GetGeometry(wid)
-        assert cookie.sequence == 2
 
         reply = cookie.reply()
         assert reply.x == 0
