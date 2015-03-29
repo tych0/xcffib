@@ -50,6 +50,16 @@ class TestConnection(XcffibTest):
         assert setup.protocol_major_version == 11
         assert setup.protocol_minor_version == 0
 
+    def test_get_screen_pointers(self):
+        screens = self.conn.get_screen_pointers()
+        assert len(screens) == 1
+        screen = screens[0]
+        assert ffi.typeof(screen) is ffi.typeof("xcb_screen_t *")
+        assert screen.root == self.default_screen.root
+        assert screen.width_in_pixels == self.width
+        assert screen.height_in_pixels == self.height
+        assert screen.root_depth == self.depth
+
     def test_seq_increases(self):
         assert self.xproto.GetInputFocus().sequence == 1
         assert self.xproto.GetInputFocus().sequence == 2

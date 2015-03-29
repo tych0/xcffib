@@ -43,6 +43,10 @@ class XvfbTest(object):
         return subprocess.Popen(cmd, stdout=discard, stderr=discard)
 
     def setUp(self):
+        self.width = 800
+        self.height = 600
+        self.depth = 16
+
         self._old_display = os.environ.get('DISPLAY')
         os.environ['DISPLAY'] = ':%d' % self._find_display()
         self._xvfb = self.spawn(self._xvfb_command())
@@ -86,7 +90,8 @@ class XvfbTest(object):
         """ You can override this if you have some extra args for Xvfb or
         whatever. At this point, os.environ['DISPLAY'] is set to something Xvfb
         can use. """
-        return ['Xvfb', os.environ['DISPLAY'], '-screen', '0', '800x600x16']
+        screen = '%sx%sx%s' % (self.width, self.height, self.depth)
+        return ['Xvfb', os.environ['DISPLAY'], '-screen', '0', screen]
 
     def _connect_to_xvfb(self):
         # sometimes it takes a while for Xvfb to start
