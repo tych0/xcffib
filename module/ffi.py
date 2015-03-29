@@ -156,6 +156,18 @@ ffi.cdef("""
         uint8_t        allowed_depths_len; /**<  */
     } xcb_screen_t;
 
+    typedef struct xcb_screen_iterator_t {
+        xcb_screen_t *data; /**<  */
+        int           rem; /**<  */
+        int           index; /**<  */
+    } xcb_screen_iterator_t;
+
+    xcb_screen_iterator_t
+    xcb_setup_roots_iterator (const xcb_setup_t *R  /**< */);
+
+    void
+    xcb_screen_next (xcb_screen_iterator_t *i  /**< */);
+
     // render.h
     typedef uint32_t xcb_render_pictformat_t;
 

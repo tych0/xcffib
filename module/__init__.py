@@ -524,13 +524,27 @@ class Connection(object):
 
     @ensure_connected
     def get_setup(self):
-        s = C.xcb_get_setup(self._conn)
+        self._setup = C.xcb_get_setup(self._conn)
 
         # No idea where this 8 comes from either, similar complate to the
         # sizeof(xcb_generic_reply_t) below.
-        buf = CffiUnpacker(s, known_max=8 + s.length * 4)
+        buf = CffiUnpacker(self._setup, known_max=8 + self._setup.length * 4)
 
         return setup(buf)
+
+    @ensure_connected
+    def get_screen_pointers(self):
+        """
+        Returns the xcb_screen_t for every screen
+        useful for other bindings
+        """
+        root_iter = C.xcb_setup_roots_iterator(self._setup)
+
+        screens = [root_iter.data]
+        for i in range(self._setup.roots_len - 1):
+            C.xcb_screen_next(ffi.addressof((root_iter)))
+            screens.append(root_iter.data)
+        return screens
 
     @ensure_connected
     def wait_for_event(self):
