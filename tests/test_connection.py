@@ -36,9 +36,6 @@ class TestConnection(XcffibTest):
         self.xproto = None
         XvfbTest.tearDown(self)
 
-    def test_connect(self):
-        assert self.conn.has_error() == 0
-
     @raises(xcffib.ConnectionException)
     def test_invalid_display(self):
         self.conn = xcffib.Connection('notvalid')
@@ -260,6 +257,7 @@ class TestConnection(XcffibTest):
     def test_connect(self):
         c = xcffib.connect()
         c.invalid()
+        assert c.has_error() == 0
         c.disconnect()
 
     def test_auth_connect(self):
