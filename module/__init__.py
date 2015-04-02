@@ -562,7 +562,6 @@ class Connection(object):
         else:
             return None
 
-    @ensure_connected
     def has_error(self):
         return C.xcb_connection_has_error(self._conn)
 
