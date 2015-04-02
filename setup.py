@@ -33,7 +33,13 @@ class cffi_build(build):
             print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
 
-        import xcffib
+        try:
+            import xcffib
+        except AttributeError as e:
+            print("You have an older version of xcffib installed. Please")
+            print("uninstall it and re-run the setup.")
+            sys.exit(1)
+
         self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
         build.finalize_options(self)
 
