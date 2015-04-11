@@ -20,6 +20,7 @@ import subprocess
 
 from setuptools import setup, find_packages
 from distutils.command.build import build
+from distutils.command.install import install
 
 # Stolen from http://github.com/xattr/xattr, which is also MIT licensed.
 class cffi_build(build):
@@ -33,15 +34,18 @@ class cffi_build(build):
             print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
 
-        try:
-            import xcffib
-        except AttributeError as e:
-            print("You have an older version of xcffib installed. Please")
-            print("uninstall it and re-run the setup.")
+        self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
+        build.finalize_options(self)
+
+class cffi_install(install):
+    def finalize_options(self):
+        if not os.path.exists('./xcffib'):
+            print("It looks like you need to generate the binding.")
+            print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
 
         self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
-        build.finalize_options(self)
+        install.finalize_options(self)
 
 version = "0.2.2"
 dependencies = ['six', 'cffi>=0.8.2']
@@ -59,5 +63,8 @@ setup(
     setup_requires=dependencies,
     packages=['xcffib'],
     zip_safe=False,
-    cmdclass={'build': cffi_build},
+    cmdclass={
+        'build': cffi_build,
+        'install': cffi_install
+    },
 )

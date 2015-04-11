@@ -13,9 +13,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cffi import FFI
+import binascii
+import sys
+import threading
 
-ffi = FFI()
+from cffi import FFI
+from cffi.verifier import Verifier
+
+
+# This is taken from https://caremad.io/2014/11/distributing-a-cffi-project/,
+# which gives examples from cryptography
+def _create_modulename(cdef_sources, source, sys_version):
+    """
+    This is the same as CFFI's create modulename except we don't include the
+    CFFI version.
+    """
+    key = '\x00'.join([sys_version[:3], source, cdef_sources])
+    key = key.encode('utf-8')
+    k1 = hex(binascii.crc32(key[0::2]) & 0xffffffff)
+    k1 = k1.lstrip('0x').rstrip('L')
+    k2 = hex(binascii.crc32(key[1::2]) & 0xffffffff)
+    k2 = k2.lstrip('0').rstrip('L')
+    return '_xcffib_cffi_{0}{1}'.format(k1, k2)
+
+
+class LazyCFFILibrary(object):
+    def __init__(self, ffi):
+        self._ffi = ffi
+        self._lib = None
+        self._lock = threading.Lock()
+
+    def __getattr__(self, name):
+        if self._lib is None:
+            with self._lock:
+                if self._lib is None:
+                    self._lib = self._ffi.verifier.load_library()
+
+        return getattr(self._lib, name)
+
 
 CONSTANTS = [
     "X_PROTOCOL",
@@ -40,10 +75,10 @@ CONSTANTS = [
 
 
 # constants
-ffi.cdef('\n'.join("#define %s ..." % c for c in CONSTANTS))
+CDEF = '\n'.join("#define %s ..." % c for c in CONSTANTS)
 
 # types
-ffi.cdef("""
+CDEF += """
     // xcb.h
     typedef struct {
         uint8_t  response_type;  /**< Type of the response */
@@ -213,11 +248,11 @@ ffi.cdef("""
 
     // need to manually free some things that XCB allocates
     void free(void *ptr);
-""")
+"""
 
 # connection manipulation, mostly generated with:
 # grep -v '^[ \/\}#]' xcb.h | grep -v '^typedef' | grep -v '^extern'
-ffi.cdef("""
+CDEF += """
     int xcb_flush(xcb_connection_t *c);
     uint32_t xcb_get_maximum_request_length(xcb_connection_t *c);
     void xcb_prefetch_maximum_request_length(xcb_connection_t *c);
@@ -234,26 +269,39 @@ ffi.cdef("""
     xcb_connection_t *xcb_connect_to_display_with_auth_info(const char *display, xcb_auth_info_t *auth, int *screen);
     uint32_t xcb_generate_id(xcb_connection_t *c);
     xcb_generic_error_t *xcb_request_check(xcb_connection_t *c, xcb_void_cookie_t cookie);
-""")
+"""
 
-ffi.cdef("""
+CDEF += """
     unsigned int xcb_send_request(xcb_connection_t *c, int flags, struct iovec *vector, const xcb_protocol_request_t *request);
     void *xcb_wait_for_reply(xcb_connection_t *c, unsigned int request, xcb_generic_error_t **e);
     int xcb_poll_for_reply(xcb_connection_t *c, unsigned int request, void **reply, xcb_generic_error_t **error);
 
     xcb_connection_t *wrap(long ptr);
-""")
+"""
 
-C = ffi.verify("""
-    #include <stdlib.h>
-    #include <xcb/xcb.h>
-    #include <xcb/xcbext.h>
-    #include <xcb/render.h>
 
-    xcb_connection_t *wrap(long ptr) {
-        return (xcb_connection_t *) ptr;
-    }
-""", libraries=['xcb'], modulename='_xcffib')
+SOURCE = """
+#include <stdlib.h>
+#include <xcb/xcb.h>
+#include <xcb/xcbext.h>
+#include <xcb/render.h>
+
+xcb_connection_t *wrap(long ptr) {
+    return (xcb_connection_t *) ptr;
+}
+"""
+
+
+ffi = FFI()
+ffi.cdef(CDEF)
+ffi.verifier = Verifier(
+    ffi,
+    SOURCE,
+    libraries=['xcb'],
+    modulename=_create_modulename(CDEF, SOURCE, sys.version)
+)
+
+C = LazyCFFILibrary(ffi)
 
 
 def visualtype_to_c_struct(vt):
