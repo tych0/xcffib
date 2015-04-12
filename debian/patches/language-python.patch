@@ -1,0 +1,95 @@
+A patch to be carried until debian updates to langauge-python 0.5.1 or so.
+Index: xcffib/xcffib.cabal
+===================================================================
+--- xcffib.orig/xcffib.cabal
++++ xcffib/xcffib.cabal
+@@ -26,7 +26,7 @@ source-repository head
+ library
+   build-depends: base ==4.*,
+                  xcb-types >= 0.7.0,
+-                 language-python >= 0.5.0,
++                 language-python >= 0.4.0,
+                  filepath,
+                  filemanip,
+                  split,
+@@ -44,7 +44,7 @@ executable xcffibgen
+   hs-source-dirs: generator
+   build-depends: base ==4.*,
+                  xcffib >= 0.1.0,
+-                 language-python >= 0.5.0,
++                 language-python >= 0.4.0,
+                  split,
+                  xcb-types >= 0.7.0,
+                  optparse-applicative >= 0.5,
+@@ -63,7 +63,7 @@ test-suite PyHelpersTests
+   type: exitcode-stdio-1.0
+   build-depends: base ==4.*,
+                  xcffib >= 0.1.0,
+-                 language-python >= 0.5.0,
++                 language-python >= 0.4.0,
+                  HUnit,
+                  test-framework,
+                  test-framework-hunit
+@@ -75,7 +75,7 @@ test-suite GeneratorTests.hs
+   build-depends: base ==4.*,
+                  xcffib >= 0.1.0,
+                  xcb-types >= 0.7.0,
+-                 language-python >= 0.5.0,
++                 language-python >= 0.4.0,
+                  HUnit,
+                  test-framework,
+                  test-framework-hunit,
+Index: xcffib/generator/Data/XCB/Python/Parse.hs
+===================================================================
+--- xcffib.orig/generator/Data/XCB/Python/Parse.hs
++++ xcffib/generator/Data/XCB/Python/Parse.hs
+@@ -363,7 +363,7 @@ structElemToPyPack _ m accessor (ExprFie
+                                                            , e
+                                                            ])]
+        CompositeType _ _ -> Right $ [(name',
+-                                      mkCall (mkDot e "pack") noArgs)]
++                                      mkCall (mkDot e (mkName "pack")) noArgs)]
+ 
+ -- As near as I can tell here the padding param is unused.
+ structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
+Index: xcffib/generator/Data/XCB/Python/PyHelpers.hs
+===================================================================
+--- xcffib.orig/generator/Data/XCB/Python/PyHelpers.hs
++++ xcffib/generator/Data/XCB/Python/PyHelpers.hs
+@@ -83,11 +83,11 @@ mkVar name = Var (ident name) ()
+ -- | Make an Expr out of a string like "foo.bar" describing the name.
+ mkName :: String -> Expr ()
+ mkName s =
+-  let strings = splitOn "." s
+-  in foldl mkDot (mkVar $ head strings) (tail strings)
++  let strings = map mkVar $ reverse $ splitOn "." s
++  in foldr mkDot (head strings) (reverse $ tail strings)
+ 
+-mkDot :: PseudoExpr a => a -> String -> Expr ()
+-mkDot e1 attr = Dot (getExpr e1) (ident attr) ()
++mkDot :: (PseudoExpr a, PseudoExpr b) => a -> b -> Expr ()
++mkDot e1 e2 = BinaryOp (Dot ()) (getExpr e1) (getExpr e2) ()
+ 
+ -- | Make an attribute access, i.e. self.<string>.
+ mkAttr :: String -> Expr ()
+Index: xcffib/tests/PyHelpersTests.hs
+===================================================================
+--- xcffib.orig/tests/PyHelpersTests.hs
++++ xcffib/tests/PyHelpersTests.hs
+@@ -29,9 +29,13 @@ mkTest name t1 t2 = testCase name (asser
+ testMkName :: Test
+ testMkName =
+   let result = mkName "self.foo.bar"
+-      expected = (Dot (Dot (Var (Ident "self" ()) ())
+-                           (Ident "foo" ()) ())
+-                      (Ident "bar" ()) ())
++      expected = BinaryOp (Dot ())
++                          (Var (Ident "self" ()) ())
++                          (BinaryOp (Dot ())
++                                    (Var (Ident "foo" ()) ())
++                                    (Var (Ident "bar" ()) ())
++                                    ())
++                          ()
+   in mkTest "testMkName" expected result
+ 
+ testReserves :: Test
