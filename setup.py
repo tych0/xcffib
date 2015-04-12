@@ -34,6 +34,8 @@ class cffi_build(build):
             print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
 
+        import xcffib
+
         self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
         build.finalize_options(self)
 
@@ -43,6 +45,8 @@ class cffi_install(install):
             print("It looks like you need to generate the binding.")
             print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
+
+        import xcffib
 
         self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
         install.finalize_options(self)
