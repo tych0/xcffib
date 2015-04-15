@@ -481,6 +481,10 @@ class Connection(object):
         self._init_x()
 
     def _init_x(self):
+        if core is None:
+            raise XcffibException("No core protocol object has been set.  "
+                                  "Did you import xcffib.xproto?")
+
         self.core = core(self)
         self.setup = self.get_setup()
 
