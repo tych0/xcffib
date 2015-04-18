@@ -5,6 +5,8 @@ _events = {}
 _errors = {}
 class CHARINFO(xcffib.Struct):
     def __init__(self, unpacker):
+        if isinstance(unpacker, xcffib.Protobj):
+            unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
         self.left_side_bearing, self.right_side_bearing, self.character_width, self.ascent, self.descent, self.attributes = unpacker.unpack("hhhhhH")
@@ -16,6 +18,8 @@ class CHARINFO(xcffib.Struct):
     fixed_size = 12
 class FONTPROP(xcffib.Struct):
     def __init__(self, unpacker):
+        if isinstance(unpacker, xcffib.Protobj):
+            unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
         self.name, self.value = unpacker.unpack("II")
@@ -27,6 +31,8 @@ class FONTPROP(xcffib.Struct):
     fixed_size = 8
 class ListFontsWithInfoReply(xcffib.Reply):
     def __init__(self, unpacker):
+        if isinstance(unpacker, xcffib.Protobj):
+            unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Reply.__init__(self, unpacker)
         base = unpacker.offset
         self.name_len, = unpacker.unpack("xB2x4x")

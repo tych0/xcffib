@@ -5,6 +5,8 @@ _events = {}
 _errors = {}
 class ClientMessageData(xcffib.Union):
     def __init__(self, unpacker):
+        if isinstance(unpacker, xcffib.Protobj):
+            unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Union.__init__(self, unpacker)
         self.data8 = xcffib.List(unpacker.copy(), "B", 20)
         self.data16 = xcffib.List(unpacker.copy(), "H", 10)

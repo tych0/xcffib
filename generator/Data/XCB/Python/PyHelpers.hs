@@ -138,10 +138,23 @@ mkXClass clazz superclazz [] [] = mkEmptyClass clazz superclazz
 mkXClass clazz superclazz constructor methods =
   let args = [ "self", "unpacker" ]
       super = mkCall (superclazz ++ ".__init__") $ map mkName args
-      body = [(StmtExpr super ())] ++ constructor
+      body = eventToUnpacker : (StmtExpr super ()) : constructor
       initParams = mkParams args
       initMethod = Fun (ident "__init__") initParams Nothing body ()
   in mkClass clazz superclazz $ initMethod : methods
+
+    where
+
+      -- In some cases (e.g. when creating ClientMessageEvents), our events are
+      -- passed directly to __init__. Since we don't keep track of the
+      -- underlying buffers after the event is created, we have to re-pack
+      -- things so they can be unpacked again.
+      eventToUnpacker :: Statement ()
+      eventToUnpacker = let newUnpacker = mkAssign "unpacker" (mkCall "xcffib.MemoryUnpacker"
+                                                              [mkCall "unpacker.pack" noArgs])
+                            cond = mkCall "isinstance" [mkName "unpacker", mkName "xcffib.Protobj"]
+                        in mkIf cond [newUnpacker]
+
 
 mkEmptyClass :: String -> String -> Statement ()
 mkEmptyClass clazz superclazz = mkClass clazz superclazz [Pass ()]

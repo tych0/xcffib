@@ -92,3 +92,27 @@ class TestPythonCode(XcffibTest):
         assert isinstance(e, xcffib.xproto.ClientMessageEvent)
         assert e.window == wid
         assert list(e.data.data32) == data
+
+    def test_pack_from_event(self):
+        wm_protocols = self.intern("WM_PROTOCOLS")
+        wm_delete_window = self.intern("WM_DELETE_WINDOW")
+        wid = self.conn.generate_id()
+
+        # should be exactly 20 bytes
+        data = [
+            wm_delete_window,
+            xcffib.xproto.Time.CurrentTime,
+            0,
+            0,
+            0,
+        ]
+
+        union = xcffib.xproto.ClientMessageData.synthetic(data, "I" * 5)
+        e = xcffib.xproto.ClientMessageEvent.synthetic(
+            format=32,
+            window=wid,
+            type=wm_protocols,
+            data=union
+        )
+
+        e2 = xcffib.xproto.ClientMessageEvent(e)

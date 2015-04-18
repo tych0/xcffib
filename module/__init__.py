@@ -123,9 +123,9 @@ class CffiUnpacker(Unpacker):
 
 class MemoryUnpacker(Unpacker):
 
-    def __init__(self, data, fmt):
-        self.buf = struct.pack(fmt, *data)
-        Unpacker.__init__(self, struct.calcsize(fmt))
+    def __init__(self, buf):
+        self.buf = buf
+        Unpacker.__init__(self, len(self.buf))
 
     def _resize(self, increment):
         if self.size + increment > self.known_max:
@@ -133,11 +133,9 @@ class MemoryUnpacker(Unpacker):
         self.size += increment
 
     def copy(self):
-        new = MemoryUnpacker.__new__(MemoryUnpacker)
-        new.buf = self.buf
+        new = MemoryUnpacker(self.buf)
         new.offset = self.offset
         new.size = self.size
-        new.known_max = self.known_max
         return new
 
 
@@ -251,9 +249,11 @@ class Protobj(object):
     """ Note: Unlike xcb.Protobj, this does NOT implement the sequence
     protocol. I found this behavior confusing: Protobj would implement the
     sequence protocol on self.buf, and then List would go and implement it on
-    List. Additionally, as near as I can tell internally we only need the size
-    of the buffer for cases when the size of things is unspecified. Thus,
-    that's all we save.
+    List.
+
+    Instead, when we need to create a new event from an existing event, we
+    repack that event into a MemoryUnpacker and use that instead (see
+    eventToUnpacker in the generator for more info.)
     """
 
     def __init__(self, unpacker):
@@ -283,7 +283,7 @@ class Union(Protobj):
     @classmethod
     def synthetic(cls, data=[], fmt=""):
         self = cls.__new__(cls)
-        self.__init__(MemoryUnpacker(data, fmt))
+        self.__init__(MemoryUnpacker(struct.pack(fmt, *data)))
         return self
 
 
@@ -660,9 +660,17 @@ class Response(Protobj):
         # These (and the ones in Reply) aren't used internally and I suspect
         # they're not used by anyone else, but they're here for xpyb
         # compatibility.
-        resp = unpacker.cast("xcb_generic_event_t *")
-        self.response_type = resp.response_type
-        self.sequence = resp.sequence
+        #
+        # In some cases (e.g. creating synthetic events from memory), we don't
+        # have the sequence number (since the event was fake), so only try to
+        # get these attributes if we are really using a cffi buffer.
+        if isinstance(unpacker, CffiUnpacker):
+            resp = unpacker.cast("xcb_generic_event_t *")
+            self.response_type = resp.response_type
+            self.sequence = resp.sequence
+        else:
+            self.response_type = None
+            self.sequence = None
 
 
 class Reply(Response):

@@ -5,6 +5,8 @@ _events = {}
 _errors = {}
 class STR(xcffib.Struct):
     def __init__(self, unpacker):
+        if isinstance(unpacker, xcffib.Protobj):
+            unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
         self.name_len, = unpacker.unpack("B")
@@ -17,6 +19,8 @@ class STR(xcffib.Struct):
         return buf.getvalue()
 class ListExtensionsReply(xcffib.Reply):
     def __init__(self, unpacker):
+        if isinstance(unpacker, xcffib.Protobj):
+            unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Reply.__init__(self, unpacker)
         base = unpacker.offset
         self.names_len, = unpacker.unpack("xB2x4x24x")

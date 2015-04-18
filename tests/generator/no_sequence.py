@@ -5,6 +5,8 @@ _events = {}
 _errors = {}
 class KeymapNotifyEvent(xcffib.Event):
     def __init__(self, unpacker):
+        if isinstance(unpacker, xcffib.Protobj):
+            unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Event.__init__(self, unpacker)
         base = unpacker.offset
         unpacker.unpack("x")

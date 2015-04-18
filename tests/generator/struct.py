@@ -5,6 +5,8 @@ _events = {}
 _errors = {}
 class AxisInfo(xcffib.Struct):
     def __init__(self, unpacker):
+        if isinstance(unpacker, xcffib.Protobj):
+            unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
         self.resolution, self.minimum, self.maximum = unpacker.unpack("Iii")
@@ -16,6 +18,8 @@ class AxisInfo(xcffib.Struct):
     fixed_size = 12
 class ValuatorInfo(xcffib.Struct):
     def __init__(self, unpacker):
+        if isinstance(unpacker, xcffib.Protobj):
+            unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
         self.class_id, self.len, self.axes_len, self.mode, self.motion_size = unpacker.unpack("BBBBI")
