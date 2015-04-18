@@ -42,7 +42,6 @@ class TestConnection(XcffibTest):
                 0)
             self.conn.flush()
         test(50, 10)
-        while True:
-            ev = self.conn.poll_for_event()
-            if ev is None:
-                break
+
+        # we shouldn't get any errors
+        self.conn.poll_for_event()
