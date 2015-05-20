@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import xcffib
-from xcffib.ffi import ffi, C
 from xcffib.testing import XvfbTest
 from xcffib.xproto import EventMask
+
 
 class XcffibTest(XvfbTest):
     """ A home for common functions needed for xcffib testing. """
@@ -56,9 +56,10 @@ class XcffibTest(XvfbTest):
         self.xproto.ChangeWindowAttributes(
             self.default_screen.root,
             xcffib.xproto.CW.EventMask,
-            [ EventMask.SubstructureNotify |
-              EventMask.StructureNotify |
-              EventMask.SubstructureRedirect
+            [
+                EventMask.SubstructureNotify |
+                EventMask.StructureNotify |
+                EventMask.SubstructureRedirect
             ]
         )
 

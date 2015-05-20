@@ -16,43 +16,35 @@
 
 import os
 import sys
-import subprocess
 
-from setuptools import setup, find_packages
+from setuptools import setup
 from distutils.command.build import build
 from distutils.command.install import install
 
-# Stolen from http://github.com/xattr/xattr, which is also MIT licensed.
-class cffi_build(build):
-    """This is a shameful hack to ensure that cffi is present when
-    we specify ext_modules. We can't do this eagerly because
-    setup_requires hasn't run yet.
+
+class binding_build(build):
+    """This is a check to ensure that the bindings have been generated, and
+    print a helpful message if they have not been generated yet.  We only need
+    to check this when we are actually building or installing.
     """
     def finalize_options(self):
         if not os.path.exists('./xcffib'):
             print("It looks like you need to generate the binding.")
             print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
-
-        import xcffib
-
-        self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
         build.finalize_options(self)
 
-class cffi_install(install):
+
+class binding_install(install):
     def finalize_options(self):
         if not os.path.exists('./xcffib'):
             print("It looks like you need to generate the binding.")
             print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
-
-        import xcffib
-
-        self.distribution.ext_modules = [xcffib.ffi.verifier.get_extension()]
         install.finalize_options(self)
 
 version = "0.2.3"
-dependencies = ['six', 'cffi>=0.8.2']
+dependencies = ['six', 'cffi>=1.0.0']
 
 setup(
     name="xcffib",
@@ -66,9 +58,10 @@ setup(
     install_requires=dependencies,
     setup_requires=dependencies,
     packages=['xcffib'],
+    cffi_modules=["xcffib/ffi_build.py:ffi"],
     zip_safe=False,
     cmdclass={
-        'build': cffi_build,
-        'install': cffi_install
+        'build': binding_build,
+        'install': binding_install
     },
 )

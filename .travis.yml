@@ -9,6 +9,11 @@ python:
   - pypy
   - pypy3
 
+matrix:
+  allow_failures:
+    - python: pypy
+    - python: pypy3
+
 before_install:
   - sudo apt-get update
 
