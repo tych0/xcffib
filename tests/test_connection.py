@@ -16,15 +16,15 @@
 import os
 import six
 import xcffib
-from xcffib.ffi import ffi, C
 import xcffib.xproto
+
+from xcffib import ffi
 from xcffib.testing import XvfbTest
 from .testing import XcffibTest
 
 from nose.tools import raises
 
 import struct
-import subprocess
 
 class TestConnection(XcffibTest):
 

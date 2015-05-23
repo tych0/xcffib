@@ -20,18 +20,23 @@ import six
 import struct
 import weakref
 
+try:
+    from xcffib._ffi import ffi, lib
+except ImportError:
+    from xcffib.ffi_build import ffi, SOURCE
+    lib = ffi.verify(SOURCE, libraries=['xcb'], ext_package='xcffib')
 # We're just re-exporting visualtype_to_c_struct, hence the noqa.
-from .ffi import ffi, C, visualtype_to_c_struct  # noqa
+from xcffib.ffi_build import visualtype_to_c_struct  # noqa
 
 __xcb_proto_version__ = 'placeholder'
 
-X_PROTOCOL = C.X_PROTOCOL
-X_PROTOCOL_REVISION = C.X_PROTOCOL_REVISION
+X_PROTOCOL = lib.X_PROTOCOL
+X_PROTOCOL_REVISION = lib.X_PROTOCOL_REVISION
 
-XCB_NONE = C.XCB_NONE
-XCB_COPY_FROM_PARENT = C.XCB_COPY_FROM_PARENT
-XCB_CURRENT_TIME = C.XCB_CURRENT_TIME
-XCB_NO_SYMBOL = C.XCB_NO_SYMBOL
+XCB_NONE = lib.XCB_NONE
+XCB_COPY_FROM_PARENT = lib.XCB_COPY_FROM_PARENT
+XCB_CURRENT_TIME = lib.XCB_CURRENT_TIME
+XCB_NO_SYMBOL = lib.XCB_NO_SYMBOL
 
 # For xpyb compatibility
 NONE = XCB_NONE
@@ -39,13 +44,13 @@ CopyFromParent = XCB_COPY_FROM_PARENT
 CurrentTime = XCB_CURRENT_TIME
 NoSymbol = XCB_NO_SYMBOL
 
-XCB_CONN_ERROR = C.XCB_CONN_ERROR
-XCB_CONN_CLOSED_EXT_NOTSUPPORTED = C.XCB_CONN_CLOSED_EXT_NOTSUPPORTED
-XCB_CONN_CLOSED_MEM_INSUFFICIENT = C.XCB_CONN_CLOSED_MEM_INSUFFICIENT
-XCB_CONN_CLOSED_REQ_LEN_EXCEED = C.XCB_CONN_CLOSED_REQ_LEN_EXCEED
-XCB_CONN_CLOSED_PARSE_ERR = C.XCB_CONN_CLOSED_PARSE_ERR
-# XCB_CONN_CLOSED_INVALID_SCREEN = C.XCB_CONN_CLOSED_INVALID_SCREEN
-# XCB_CONN_CLOSED_FDPASSING_FAILED = C.XCB_CONN_CLOSED_FDPASSING_FAILED
+XCB_CONN_ERROR = lib.XCB_CONN_ERROR
+XCB_CONN_CLOSED_EXT_NOTSUPPORTED = lib.XCB_CONN_CLOSED_EXT_NOTSUPPORTED
+XCB_CONN_CLOSED_MEM_INSUFFICIENT = lib.XCB_CONN_CLOSED_MEM_INSUFFICIENT
+XCB_CONN_CLOSED_REQ_LEN_EXCEED = lib.XCB_CONN_CLOSED_REQ_LEN_EXCEED
+XCB_CONN_CLOSED_PARSE_ERR = lib.XCB_CONN_CLOSED_PARSE_ERR
+# XCB_CONN_CLOSED_INVALID_SCREEN = lib.XCB_CONN_CLOSED_INVALID_SCREEN
+# XCB_CONN_CLOSED_FDPASSING_FAILED = lib.XCB_CONN_CLOSED_FDPASSING_FAILED
 
 cffi_explicit_lifetimes = weakref.WeakKeyDictionary()
 
@@ -151,23 +156,23 @@ class XcffibException(Exception):
 
 class ConnectionException(XcffibException):
     REASONS = {
-        C.XCB_CONN_ERROR: (
+        lib.XCB_CONN_ERROR: (
             'xcb connection errors because of socket, '
             'pipe and other stream errors.'),
-        C.XCB_CONN_CLOSED_EXT_NOTSUPPORTED: (
+        lib.XCB_CONN_CLOSED_EXT_NOTSUPPORTED: (
             'xcb connection shutdown because extension not supported'),
-        C.XCB_CONN_CLOSED_MEM_INSUFFICIENT: (
+        lib.XCB_CONN_CLOSED_MEM_INSUFFICIENT: (
             'malloc(), calloc() and realloc() error upon failure, '
             'for eg ENOMEM'),
-        C.XCB_CONN_CLOSED_REQ_LEN_EXCEED: (
+        lib.XCB_CONN_CLOSED_REQ_LEN_EXCEED: (
             'Connection closed, exceeding request length that server '
             'accepts.'),
-        C.XCB_CONN_CLOSED_PARSE_ERR: (
+        lib.XCB_CONN_CLOSED_PARSE_ERR: (
             'Connection closed, error during parsing display string.'),
-        #        C.XCB_CONN_CLOSED_INVALID_SCREEN: (
+        #        lib.XCB_CONN_CLOSED_INVALID_SCREEN: (
         #            'Connection closed because the server does not have a screen '
         #            'matching the display.'),
-        #        C.XCB_CONN_CLOSED_FDPASSING_FAILED: (
+        #        lib.XCB_CONN_CLOSED_FDPASSING_FAILED: (
         #            'Connection closed because some FD passing operation failed'),
     }
 
@@ -350,7 +355,7 @@ class Extension(object):
         xcb_parts[3].iov_base = ffi.NULL
         xcb_parts[3].iov_len = -len(data) & 3  # is this really necessary?
 
-        flags = C.XCB_REQUEST_CHECKED if is_checked else 0
+        flags = lib.XCB_REQUEST_CHECKED if is_checked else 0
 
         seq = self.conn.send_request(flags, xcb_parts + 2, xcb_req)
 
@@ -471,11 +476,11 @@ class Connection(object):
         i = ffi.new("int *")
 
         if fd > 0:
-            self._conn = C.xcb_connect_to_fd(fd, c_auth)
+            self._conn = lib.xcb_connect_to_fd(fd, c_auth)
         elif c_auth != ffi.NULL:
-            self._conn = C.xcb_connect_to_display_with_auth_info(display, c_auth, i)
+            self._conn = lib.xcb_connect_to_display_with_auth_info(display, c_auth, i)
         else:
-            self._conn = C.xcb_connect(display, i)
+            self._conn = lib.xcb_connect(display, i)
         self.pref_screen = i[0]
         self.invalid()
         self._init_x()
@@ -497,7 +502,7 @@ class Connection(object):
             # We're explicitly not putting this as an argument to the next call
             # as a hack for lifetime management.
             c_ext = key.to_cffi()
-            reply = C.xcb_get_extension_data(self._conn, c_ext)
+            reply = lib.xcb_get_extension_data(self._conn, c_ext)
             self._event_offsets.add(reply.first_event, events)
             self._error_offsets.add(reply.first_error, errors)
 
@@ -507,7 +512,7 @@ class Connection(object):
     def invalid(self):
         if self._conn is None:
             raise XcffibException("Invalid connection.")
-        err = C.xcb_connection_has_error(self._conn)
+        err = lib.xcb_connection_has_error(self._conn)
         if err > 0:
             raise ConnectionException(err)
 
@@ -528,7 +533,7 @@ class Connection(object):
 
     @ensure_connected
     def get_setup(self):
-        self._setup = C.xcb_get_setup(self._conn)
+        self._setup = lib.xcb_get_setup(self._conn)
 
         # No idea where this 8 comes from either, similar complate to the
         # sizeof(xcb_generic_reply_t) below.
@@ -542,24 +547,24 @@ class Connection(object):
         Returns the xcb_screen_t for every screen
         useful for other bindings
         """
-        root_iter = C.xcb_setup_roots_iterator(self._setup)
+        root_iter = lib.xcb_setup_roots_iterator(self._setup)
 
         screens = [root_iter.data]
         for i in range(self._setup.roots_len - 1):
-            C.xcb_screen_next(ffi.addressof((root_iter)))
+            lib.xcb_screen_next(ffi.addressof((root_iter)))
             screens.append(root_iter.data)
         return screens
 
     @ensure_connected
     def wait_for_event(self):
-        e = C.xcb_wait_for_event(self._conn)
-        e = ffi.gc(e, C.free)
+        e = lib.xcb_wait_for_event(self._conn)
+        e = ffi.gc(e, lib.free)
         self.invalid()
         return self.hoist_event(e)
 
     @ensure_connected
     def poll_for_event(self):
-        e = C.xcb_poll_for_event(self._conn)
+        e = lib.xcb_poll_for_event(self._conn)
         self.invalid()
         if e != ffi.NULL:
             return self.hoist_event(e)
@@ -567,31 +572,31 @@ class Connection(object):
             return None
 
     def has_error(self):
-        return C.xcb_connection_has_error(self._conn)
+        return lib.xcb_connection_has_error(self._conn)
 
     @ensure_connected
     def get_file_descriptor(self):
-        return C.xcb_get_file_descriptor(self._conn)
+        return lib.xcb_get_file_descriptor(self._conn)
 
     @ensure_connected
     def get_maximum_request_length(self):
-        return C.xcb_get_maximum_request_length(self._conn)
+        return lib.xcb_get_maximum_request_length(self._conn)
 
     @ensure_connected
     def prefetch_maximum_request_length(self):
-        return C.xcb_prefetch_maximum_request_length(self._conn)
+        return lib.xcb_prefetch_maximum_request_length(self._conn)
 
     @ensure_connected
     def flush(self):
-        return C.xcb_flush(self._conn)
+        return lib.xcb_flush(self._conn)
 
     @ensure_connected
     def generate_id(self):
-        return C.xcb_generate_id(self._conn)
+        return lib.xcb_generate_id(self._conn)
 
     def disconnect(self):
         self.invalid()
-        return C.xcb_disconnect(self._conn)
+        return lib.xcb_disconnect(self._conn)
 
     def _process_error(self, c_error):
         self.invalid()
@@ -603,14 +608,14 @@ class Connection(object):
     @ensure_connected
     def wait_for_reply(self, sequence):
         error_p = ffi.new("xcb_generic_error_t **")
-        data = C.xcb_wait_for_reply(self._conn, sequence, error_p)
-        data = ffi.gc(data, C.free)
+        data = lib.xcb_wait_for_reply(self._conn, sequence, error_p)
+        data = ffi.gc(data, lib.free)
 
         try:
             self._process_error(error_p[0])
         finally:
             if error_p[0] != ffi.NULL:
-                C.free(error_p[0])
+                lib.free(error_p[0])
 
         if data == ffi.NULL:
             # No data and no error => bad sequence number
@@ -626,7 +631,7 @@ class Connection(object):
         cookie = ffi.new("xcb_void_cookie_t [1]")
         cookie[0].sequence = sequence
 
-        err = C.xcb_request_check(self._conn, cookie[0])
+        err = lib.xcb_request_check(self._conn, cookie[0])
         self._process_error(err)
 
     def hoist_event(self, e):
@@ -645,7 +650,7 @@ class Connection(object):
 
     @ensure_connected
     def send_request(self, flags, xcb_parts, xcb_req):
-        return C.xcb_send_request(self._conn, flags, xcb_parts, xcb_req)
+        return lib.xcb_send_request(self._conn, flags, xcb_parts, xcb_req)
 
 
 # More backwards compatibility
@@ -739,7 +744,7 @@ def pack_list(from_, pack_type):
 
 
 def wrap(ptr):
-    c_conn = C.wrap(ptr)
+    c_conn = lib.wrap(ptr)
     conn = Connection.__new__(Connection)
     conn._conn = c_conn
     conn._init_x()

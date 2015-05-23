@@ -13,43 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import binascii
-import sys
-import threading
-
 from cffi import FFI
-from cffi.verifier import Verifier
-
-
-# This is taken from https://caremad.io/2014/11/distributing-a-cffi-project/,
-# which gives examples from cryptography
-def _create_modulename(cdef_sources, source, sys_version):
-    """
-    This is the same as CFFI's create modulename except we don't include the
-    CFFI version.
-    """
-    key = '\x00'.join([sys_version[:3], source, cdef_sources])
-    key = key.encode('utf-8')
-    k1 = hex(binascii.crc32(key[0::2]) & 0xffffffff)
-    k1 = k1.lstrip('0x').rstrip('L')
-    k2 = hex(binascii.crc32(key[1::2]) & 0xffffffff)
-    k2 = k2.lstrip('0').rstrip('L')
-    return '_xcffib_cffi_{0}{1}'.format(k1, k2)
-
-
-class LazyCFFILibrary(object):
-    def __init__(self, ffi):
-        self._ffi = ffi
-        self._lib = None
-        self._lock = threading.Lock()
-
-    def __getattr__(self, name):
-        if self._lib is None:
-            with self._lock:
-                if self._lib is None:
-                    self._lib = self._ffi.verifier.load_library()
-
-        return getattr(self._lib, name)
 
 
 CONSTANTS = [
@@ -293,15 +257,9 @@ xcb_connection_t *wrap(long ptr) {
 
 
 ffi = FFI()
+if hasattr(ffi, 'set_source'):  # PyPy < 2.6 compatibility hack
+    ffi.set_source("xcffib._ffi", SOURCE, libraries=['xcb'])
 ffi.cdef(CDEF)
-ffi.verifier = Verifier(
-    ffi,
-    SOURCE,
-    libraries=['xcb'],
-    modulename=_create_modulename(CDEF, SOURCE, sys.version)
-)
-
-C = LazyCFFILibrary(ffi)
 
 
 def visualtype_to_c_struct(vt):
@@ -317,3 +275,7 @@ def visualtype_to_c_struct(vt):
     s.blue_mask = vt.blue_mask
 
     return s
+
+
+if __name__ == "__main__":
+    ffi.compile()
