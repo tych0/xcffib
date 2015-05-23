@@ -257,7 +257,8 @@ xcb_connection_t *wrap(long ptr) {
 
 
 ffi = FFI()
-ffi.set_source("xcffib._ffi", SOURCE, libraries=['xcb'])
+if hasattr(ffi, 'set_source'):  # PyPy < 2.6 compatibility hack
+    ffi.set_source("xcffib._ffi", SOURCE, libraries=['xcb'])
 ffi.cdef(CDEF)
 
 

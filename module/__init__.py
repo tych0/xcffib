@@ -23,8 +23,8 @@ import weakref
 try:
     from xcffib._ffi import ffi, lib
 except ImportError:
-    raise ImportError("Unable to import ffi module, re-generate xcffib "
-                      "by running `make xcffib`")
+    from xcffib.ffi_build import ffi, SOURCE
+    lib = ffi.verify(SOURCE, libraries=['xcb'], ext_package='xcffib')
 # We're just re-exporting visualtype_to_c_struct, hence the noqa.
 from xcffib.ffi_build import visualtype_to_c_struct  # noqa
 
