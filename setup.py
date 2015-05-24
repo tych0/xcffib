@@ -52,7 +52,7 @@ class cffi_install(install):
         install.finalize_options(self)
 
 version = "0.2.3"
-dependencies = ['six', 'cffi>=0.8.2']
+dependencies = ['six', 'cffi>=0.8.2,<1']
 
 setup(
     name="xcffib",
