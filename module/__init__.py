@@ -21,12 +21,11 @@ import struct
 import weakref
 
 try:
-    from xcffib._ffi import ffi, lib
+    from xcffib._ffi import ffi
 except ImportError:
-    from xcffib.ffi_build import ffi, SOURCE
-    lib = ffi.verify(SOURCE, libraries=['xcb'], ext_package='xcffib')
-# We're just re-exporting visualtype_to_c_struct, hence the noqa.
-from xcffib.ffi_build import visualtype_to_c_struct  # noqa
+    from xcffib.ffi_build import ffi
+
+lib = ffi.dlopen('libxcb.so')
 
 __xcb_proto_version__ = 'placeholder'
 
@@ -57,6 +56,22 @@ cffi_explicit_lifetimes = weakref.WeakKeyDictionary()
 
 def type_pad(t, i):
     return -i & (3 if t > 4 else t - 1)
+
+
+def visualtype_to_c_struct(vt):
+    # let ffi be a kwarg so cairocffi can pass in its ffi
+    # cfficairo needs an xcb_visualtype_t
+    s = ffi.new("struct xcb_visualtype_t *")
+
+    s.visual_id = vt.visual_id
+    s._class = vt._class
+    s.bits_per_rgb_value = vt.bits_per_rgb_value
+    s.colormap_entries = vt.colormap_entries
+    s.red_mask = vt.red_mask
+    s.green_mask = vt.green_mask
+    s.blue_mask = vt.blue_mask
+
+    return s
 
 
 class Unpacker(object):

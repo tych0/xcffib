@@ -43,58 +43,25 @@ class binding_install(install):
             sys.exit(1)
         install.finalize_options(self)
 
-# PyPy < 2.6 hack
+# Check if we're running PyPy, cffi can't be updated
 if '_cffi_backend' in sys.builtin_module_names:
     import _cffi_backend
     requires_cffi = "cffi==" + _cffi_backend.__version__
 else:
-    requires_cffi = "cffi>=1.0.0"
+    requires_cffi = "cffi>=1.1.0"
 
-version = "0.2.3"
-dependencies = ['six', requires_cffi]
-
-# PyPy < 2.6 hack
+# PyPy < 2.6 hack, can be dropped when PyPy3 2.6 is released
 if requires_cffi.startswith("cffi==0."):
-    # Have to use old methods to ensure cffi is installed and xcffib is generated
-    class cffi_build(build):
-        def finalize_options(self):
-            if not os.path.exists('./xcffib'):
-                print("It looks like you need to generate the binding.")
-                print("please run 'make xcffib' or 'make check'.")
-                sys.exit(1)
-
-            from xcffib.ffi_build import ffi
-
-            self.distribution.ext_modules = [ffi.verifier.get_extension()]
-            build.finalize_options(self)
-
-    class cffi_install(install):
-        def finalize_options(self):
-            if not os.path.exists('./xcffib'):
-                print("It looks like you need to generate the binding.")
-                print("please run 'make xcffib' or 'make check'.")
-                sys.exit(1)
-
-            from xcffib.ffi_build import ffi
-
-            self.distribution.ext_modules = [ffi.verifier.get_extension()]
-            install.finalize_options(self)
-
     cffi_args = dict(
-        ext_package="xcffib",
-        cmdclass={
-            'build': cffi_build,
-            'install': cffi_install
-        }
+        ext_package="xcffib"
     )
 else:
     cffi_args = dict(
-        cffi_modules=["xcffib/ffi_build.py:ffi"],
-        cmdclass={
-            'build': binding_build,
-            'install': binding_install
-        }
+        cffi_modules=["xcffib/ffi_build.py:ffi"]
     )
+
+version = "0.2.3"
+dependencies = ['six', requires_cffi]
 
 setup(
     name="xcffib",
@@ -109,5 +76,9 @@ setup(
     setup_requires=dependencies,
     packages=['xcffib'],
     zip_safe=False,
+    cmdclass={
+        'build': binding_build,
+        'install': binding_install
+    },
     **cffi_args
 )

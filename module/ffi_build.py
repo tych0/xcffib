@@ -17,29 +17,29 @@ from cffi import FFI
 
 
 CONSTANTS = [
-    "X_PROTOCOL",
-    "X_PROTOCOL_REVISION",
-    "X_TCP_PORT",
+    ("X_PROTOCOL", 11),
+    ("X_PROTOCOL_REVISION", 0),
+    ("X_TCP_PORT", 6000),
 
-    "XCB_NONE",
-    "XCB_COPY_FROM_PARENT",
-    "XCB_CURRENT_TIME",
-    "XCB_NO_SYMBOL",
+    ("XCB_NONE", 0),
+    ("XCB_COPY_FROM_PARENT", 0),
+    ("XCB_CURRENT_TIME", 0),
+    ("XCB_NO_SYMBOL", 0),
 
-    "XCB_CONN_ERROR",
-    "XCB_CONN_CLOSED_EXT_NOTSUPPORTED",
-    "XCB_CONN_CLOSED_MEM_INSUFFICIENT",
-    "XCB_CONN_CLOSED_REQ_LEN_EXCEED",
-    "XCB_CONN_CLOSED_PARSE_ERR",
-    #    "XCB_CONN_CLOSED_INVALID_SCREEN",
-    #    "XCB_CONN_CLOSED_FDPASSING_FAILED",
+    ("XCB_CONN_ERROR", 1),
+    ("XCB_CONN_CLOSED_EXT_NOTSUPPORTED", 2),
+    ("XCB_CONN_CLOSED_MEM_INSUFFICIENT", 3),
+    ("XCB_CONN_CLOSED_REQ_LEN_EXCEED", 4),
+    ("XCB_CONN_CLOSED_PARSE_ERR", 5),
+    ("XCB_CONN_CLOSED_INVALID_SCREEN", 6),
+    ("XCB_CONN_CLOSED_FDPASSING_FAILED", 7),
 
-    "XCB_REQUEST_CHECKED",
+    ("XCB_REQUEST_CHECKED", 1 << 0)
 ]
 
 
 # constants
-CDEF = '\n'.join("#define %s ..." % c for c in CONSTANTS)
+CDEF = '\n'.join("#define %s %d" % (c, v) for c, v in CONSTANTS)
 
 # types
 CDEF += """
@@ -242,34 +242,14 @@ CDEF += """
 """
 
 
-SOURCE = """
-#include <stdlib.h>
-#include <xcb/xcb.h>
-#include <xcb/xcbext.h>
-#include <xcb/render.h>
-"""
-
-
 ffi = FFI()
 if hasattr(ffi, 'set_source'):  # PyPy < 2.6 compatibility hack
-    ffi.set_source("xcffib._ffi", SOURCE, libraries=['xcb'])
+    ffi.set_source("xcffib._ffi", None, libraries=['xcb'])
+    do_compile = True
+else:
+    do_compile = False
 ffi.cdef(CDEF)
 
 
-def visualtype_to_c_struct(vt):
-    # cfficairo needs an xcb_visualtype_t
-    s = ffi.new("xcb_visualtype_t *")
-
-    s.visual_id = vt.visual_id
-    s._class = vt._class
-    s.bits_per_rgb_value = vt.bits_per_rgb_value
-    s.colormap_entries = vt.colormap_entries
-    s.red_mask = vt.red_mask
-    s.green_mask = vt.green_mask
-    s.blue_mask = vt.blue_mask
-
-    return s
-
-
-if __name__ == "__main__":
+if __name__ == "__main__" and do_compile:
     ffi.compile()
