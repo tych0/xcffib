@@ -239,8 +239,6 @@ CDEF += """
     unsigned int xcb_send_request(xcb_connection_t *c, int flags, struct iovec *vector, const xcb_protocol_request_t *request);
     void *xcb_wait_for_reply(xcb_connection_t *c, unsigned int request, xcb_generic_error_t **e);
     int xcb_poll_for_reply(xcb_connection_t *c, unsigned int request, void **reply, xcb_generic_error_t **error);
-
-    xcb_connection_t *wrap(long ptr);
 """
 
 
@@ -249,10 +247,6 @@ SOURCE = """
 #include <xcb/xcb.h>
 #include <xcb/xcbext.h>
 #include <xcb/render.h>
-
-xcb_connection_t *wrap(long ptr) {
-    return (xcb_connection_t *) ptr;
-}
 """
 
 

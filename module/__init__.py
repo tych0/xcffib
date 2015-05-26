@@ -744,9 +744,14 @@ def pack_list(from_, pack_type):
 
 
 def wrap(ptr):
-    c_conn = lib.wrap(ptr)
+    c_conn = ffi.cast('xcb_connection_t *', ptr)
     conn = Connection.__new__(Connection)
     conn._conn = c_conn
     conn._init_x()
     conn.invalid()
+
+    # ptr owns the memory for c_conn, even after the cast
+    # we should keep it alive
+    cffi_explicit_lifetimes[conn] = ptr
+
     return conn
