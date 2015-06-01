@@ -19,8 +19,8 @@ import sys
 import subprocess
 
 from setuptools import setup, find_packages
+from setuptools.command.install import install
 from distutils.command.build import build
-from distutils.command.install import install
 
 # Stolen from http://github.com/xattr/xattr, which is also MIT licensed.
 class cffi_build(build):
