@@ -18,8 +18,8 @@ import os
 import sys
 
 from setuptools import setup
+from setuptools.command.install import install
 from distutils.command.build import build
-from distutils.command.install import install
 
 
 class binding_build(build):
