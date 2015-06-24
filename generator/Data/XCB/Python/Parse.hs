@@ -210,7 +210,9 @@ xExpressionToPyExpr :: (String -> String) -> XExpression -> Expr ()
 xExpressionToPyExpr _ (Value i) = mkInt i
 xExpressionToPyExpr _ (Bit i) = BinaryOp (ShiftLeft ()) (mkInt 1) (mkInt i) ()
 xExpressionToPyExpr acc (FieldRef n) = mkName $ acc n
-xExpressionToPyExpr _ (EnumRef _ n) = mkName n
+xExpressionToPyExpr _ (EnumRef (UnQualType enum) n) = mkName $ enum ++ "." ++ n
+-- Currently xcb only uses unqualified types, not sure how qualtype should behave, but just silence warning
+xExpressionToPyExpr _ (EnumRef (QualType _ _) n) = mkName n
 xExpressionToPyExpr acc (PopCount e) =
   mkCall "xcffib.popcount" [xExpressionToPyExpr acc e]
 -- http://cgit.freedesktop.org/xcb/proto/tree/doc/xml-xcb.txt#n290
@@ -282,14 +284,50 @@ structElemToPyUnpack :: Expr ()
                      -> TypeInfoMap
                      -> GenStructElem Type
                      -> Either (Maybe String, String)
-                               (String, Expr (), Expr (), Maybe Int)
+                               (String, [(Expr (), Expr (), Maybe (Expr ()))], Maybe Int)
 structElemToPyUnpack _ _ _ (Pad i) = Left (Nothing, mkPad i)
 
 -- XXX: This is a cheap hack for noop, we should really do better.
 structElemToPyUnpack _ _ _ (Doc _ _ _) = Left (Nothing, "")
--- XXX: What does fd/switch mean? we should implement it correctly
+-- XXX: What does fd mean? we should implement it correctly
 structElemToPyUnpack _ _ _ (Fd _) = Left (Nothing, "")
-structElemToPyUnpack _ _ _ (Switch _ _ _) = Left (Nothing, "")
+
+-- The switch fields pick the way to expression to pack based on the expression
+structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
+  let cmp = xExpressionToPyExpr ((++) "self.") expr
+      switch = map (mkSwitch cmp) bitcases
+      switch' = map (pkSwitch unpacker ext m) switch
+  in Right (name, switch', Nothing)
+    where
+      mkSwitch :: Expr ()
+               -> BitCase
+               -> (GenStructElem Type, Maybe (Expr ()))
+      mkSwitch cmp (BitCase _ bc_cmp elems) =
+        let cmp_val = xExpressionToPyExpr id bc_cmp
+            equality = BinaryOp (P.Equality ()) cmp cmp_val ()
+            elems' = case elems of
+                       [] -> error "Empty switch elements"
+                       [x] -> x
+                       (_:_) -> error "Only one switch element currently supported"
+        in (elems', Just equality)
+
+      pkSwitch :: Expr ()
+               -> String
+               -> TypeInfoMap
+               -> (GenStructElem Type, Maybe (Expr ()))
+               -> (Expr (), Expr (), Maybe (Expr ()))
+      pkSwitch unpacker' ext' m' (struct, cond) =
+        let unpacked = structElemToPyUnpack unpacker' ext' m' struct
+            (_, unpacked', _) = case unpacked of
+                                     Left _ -> error "Must unpack in switch"
+                                     Right x -> x
+            (elem', cons) = case unpacked' of
+                              [(x, x', Nothing)] -> (x, x')
+                              ((_, _, Just _):_) -> error "Nested switch statements"
+                              ((_, _, Nothing):_) -> error "Invalid switch cases"
+                              [] -> error "Empty switch statement"
+
+        in (elem', cons, cond)
 
 -- The enum field is mostly for user information, so we ignore it.
 structElemToPyUnpack unpacker ext m (X.List n typ len _) =
@@ -306,7 +344,7 @@ structElemToPyUnpack unpacker ext m (X.List n typ len _) =
       constLen = do
         l <- len
         getConst l
-  in Right (n, list, cons, constLen)
+  in Right (n, [(list, cons, Nothing)], constLen)
 
 -- The mask and enum fields are for user information, we can ignore them here.
 structElemToPyUnpack unpacker ext m (SField n typ _ _) =
@@ -317,7 +355,7 @@ structElemToPyUnpack unpacker ext m (SField n typ _ _) =
           field = mkCall c' [unpacker]
       -- TODO: Ugh. Nothing here is wrong. Do we really need to carry the
       -- length of these things around?
-      in Right (n, field, mkName c', Nothing)
+      in Right (n, [(field, mkName c', Nothing)], Nothing)
 structElemToPyUnpack _ _ _ (ExprField _ _ _) = error "Only valid for requests"
 structElemToPyUnpack _ _ _ (ValueParam _ _ _ _) = error "Only valid for requests"
 
@@ -473,7 +511,7 @@ mkStructStyleUnpack :: String
 mkStructStyleUnpack prefix ext m membs =
   let unpacked = map (structElemToPyUnpack (mkName "unpacker") ext m) membs
       initial = StructUnpackState False [] prefix
-      (_, unpackStmts, size) = evalState (mkUnpackStmtsR unpacked) initial
+      (_, unpackStmts, size) = evalState (mkUnpackStmts unpacked) initial
       base = [mkAssign "base" $ mkName "unpacker.offset"]
       bufsize =
         let rhs = BinaryOp (Minus ()) (mkName "unpacker.offset") (mkName "base") ()
@@ -482,16 +520,15 @@ mkStructStyleUnpack prefix ext m membs =
   in (statements, size)
 
     where
-
       -- Apparently you only type_pad before unpacking Structs or Lists, never
       -- base types.
-      mkUnpackStmtsR :: [Either (Maybe String, String)
-                                (String, Expr (), Expr (), Maybe Int)]
+      mkUnpackStmts :: [Either (Maybe String, String)
+                                (String, [(Expr (), Expr (), Maybe (Expr ()))], Maybe Int)]
                      -> State StructUnpackState ([String], Suite (), Maybe Int)
 
-      mkUnpackStmtsR [] = flushAcc
+      mkUnpackStmts [] = flushAcc
 
-      mkUnpackStmtsR (Left (name, pack) : xs) = do
+      mkUnpackStmts (Left (name, pack) : xs) = do
         st <- get
         let packs = if "%c" `isInfixOf` (stPacks st)
                     then addStructData (stPacks st) pack
@@ -499,26 +536,48 @@ mkStructStyleUnpack prefix ext m membs =
         put $ st { stNames = stNames st ++ maybeToList name
                  , stPacks = packs
                  }
-        mkUnpackStmtsR xs
+        mkUnpackStmts xs
 
-      mkUnpackStmtsR (Right (listName, list, cons, listSz) : xs) = do
+      mkUnpackStmts (Right (listName, lists, listSz) : xs) = do
         (packNames, packStmt, packSz) <- flushAcc
         st <- get
         put $ st { stNeedsPad = True }
-        let pad = if stNeedsPad st
-                  then [typePad cons]
-                  else []
-        (restNames, restStmts, restSz) <- mkUnpackStmtsR xs
+        let listStmts = case lists of
+                          [] -> error "List should not be empty"
+                          [(list, cons, Nothing)] -> mkList listName list (stNeedsPad st) cons
+                          _ -> [Conditional (map (mkConds (stNeedsPad st)) lists) [] ()]
+        (restNames, restStmts, restSz) <- mkUnpackStmts xs
         let totalSize = do
                           before <- packSz
                           rest <- restSz
                           listSz' <- listSz
                           return $ before + rest + listSz'
-            listStmt = mkAssign (mkAttr listName) list
         return ( packNames ++ [listName] ++ restNames
-               , packStmt ++ pad ++ listStmt : restStmts
+               , packStmt ++ listStmts ++ restStmts
                , totalSize
                )
+          where
+            mkList :: String
+                   -> Expr ()
+                   -> Bool
+                   -> Expr ()
+                   -> Suite ()
+            mkList name' list' needsPad cons' =
+              let pad' = if needsPad
+                        then [typePad cons']
+                        else []
+                  assign = [mkAssign (mkAttr name') list']
+              in pad' ++ assign
+            mkConds :: Bool
+                    -> (Expr (), Expr (), Maybe (Expr ()))
+                    -> (Expr (), Suite ())
+            mkConds needsPad (list', cons', Just cond) =
+              let pad' = if needsPad
+                        then [typePad cons']
+                        else []
+                  assign = [mkAssign (mkAttr listName) list']
+              in (cond, pad' ++ assign)
+            mkConds _ (_, _, Nothing) = error "Can't unpack switch"
 
       flushAcc :: State StructUnpackState ([String], Suite (), Maybe Int)
       flushAcc = do
@@ -649,8 +708,8 @@ processXDecl ext (XUnion name membs) = do
   let unpackF = structElemToPyUnpack unpackerCopy ext m
       (fields, listInfo) = partitionEithers $ map unpackF membs
       toUnpack = concat $ map mkUnionUnpack fields
-      (names, exprs, _, _) = unzip4 listInfo
-      lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
+      (names, exprs, _) = unzip3 listInfo
+      lists = concat $ map (uncurry mkListAssign) $ zip names exprs
       initMethod = lists ++ toUnpack
       -- Here, we only want to pack the first member of the union, since every
       -- member is the same data and we don't want to repeatedly pack it.
@@ -664,6 +723,13 @@ processXDecl ext (XUnion name membs) = do
                   -> Suite ()
     mkUnionUnpack (n, typ) =
       mkUnpackFrom unpackerCopy (maybeToList n) typ
+    mkListAssign :: Name
+                 -> [(Expr (), Expr (), Maybe (Expr()))]
+                 -> Suite ()
+    mkListAssign listName [(expr, _, Nothing)] = [flip mkAssign expr $ mkAttr listName]
+    mkListAssign _ ((_, _, Nothing):_) = error "Can't have multiple values with no condition"
+    mkListAssign _ ((_, _, Just _):_) = error "Switches not implemented for Union's"
+    mkListAssign _ [] = []
 
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.
