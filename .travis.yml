@@ -27,6 +27,7 @@ addons:
       - xvfb
 
 install:
+  - ls $HOME/.ghc/*
   - cabal update
   - cabal install --only-dependencies --enable-tests
   - cabal configure --enable-tests
