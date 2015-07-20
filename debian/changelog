@@ -1,3 +1,10 @@
+xcffib (0.3.2-1) unstable; urgency=medium
+
+  * Version bump for cffi 1.0 and upstream release.
+  * Closes: #790864
+
+ -- Tycho Andersen <tycho@tycho.ws>  Mon, 20 Jul 2015 00:28:04 +0000
+
 xcffib (0.2.0-1) unstable; urgency=low
 
   * Initial release.
