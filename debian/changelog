@@ -1,4 +1,4 @@
-xcffib (0.3.3-1) unstable; urgency=medium
+xcffib (0.3.4-1) unstable; urgency=medium
 
   * Version bump for cffi 1.0 and upstream release.
   * Closes: #790864
