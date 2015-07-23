@@ -34,8 +34,8 @@ Build-Depends: debhelper (>= 9)
 # Depends: are also Build-depends:
   , python-six
   , python3-six
-  , python-cffi (>= 0.8.2)
-  , python3-cffi (>= 0.8.2)
+  , python-cffi (>= 1.1.0)
+  , python3-cffi (>= 1.1.0)
   , libxcb1
 X-Python-Version: >= 2.6
 X-Python3-Version: >= 3.2
@@ -47,7 +47,7 @@ Vcs-Browser: https://github.com/tych0/xcffib
 Package: python-xcffib
 Architecture: any
 Depends: python-six
-  , python-cffi (>= 0.8.2)
+  , python-cffi (>= 1.1.0)
   , libxcb1
   , ${misc:Depends}
   , ${shlibs:Depends}
@@ -65,7 +65,7 @@ Description: This package is a python binding for XCB (Python 2)
 Package: python3-xcffib
 Architecture: any
 Depends: python3-six,
-  , python3-cffi (>= 0.8.2)
+  , python3-cffi (>= 1.1.0)
   , libxcb1
   , ${misc:Depends}
   , ${shlibs:Depends}
