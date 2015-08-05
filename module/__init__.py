@@ -25,7 +25,7 @@ try:
 except ImportError:
     from xcffib.ffi_build import ffi
 
-lib = ffi.dlopen('libxcb.so')
+lib = ffi.dlopen('libxcb.so.1')
 
 __xcb_proto_version__ = 'placeholder'
 
