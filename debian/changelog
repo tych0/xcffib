@@ -1,3 +1,10 @@
+xcffib (0.3.5-1) unstable; urgency=medium
+
+  * Fix cffi/cairocffi dependency versions
+  * Use a .so name that exists in the non-dev packages
+
+ -- Tycho Andersen <tycho@tycho.ws>  Sat, 08 Aug 2015 13:08:51 -0400
+
 xcffib (0.3.4-1) unstable; urgency=medium
 
   * Version bump for cffi 1.0 and upstream release.
