@@ -203,7 +203,10 @@ class ProtocolException(XcffibException):
 core = None
 core_events = None
 core_errors = None
-setup = None
+# we use _setup here instead of just setup because of a nose bug that triggers
+# when doing the packaging builds in debian:
+# https://code.google.com/p/python-nose/issues/detail?id=326
+_setup = None
 
 extensions = {}
 
@@ -211,22 +214,22 @@ extensions = {}
 # a core besides xproto, so why not just hardcode that?
 
 
-def _add_core(value, _setup, events, errors):
+def _add_core(value, __setup, events, errors):
     if not issubclass(value, Extension):
         raise XcffibException(
             "Extension type not derived from xcffib.Extension")
-    if not issubclass(_setup, Struct):
+    if not issubclass(__setup, Struct):
         raise XcffibException("Setup type not derived from xcffib.Struct")
 
     global core
     global core_events
     global core_errors
-    global setup
+    global _setup
 
     core = value
     core_events = events
     core_errors = errors
-    setup = _setup
+    _setup = __setup
 
 
 def _add_ext(key, value, events, errors):
@@ -554,7 +557,7 @@ class Connection(object):
         # sizeof(xcb_generic_reply_t) below.
         buf = CffiUnpacker(self._setup, known_max=8 + self._setup.length * 4)
 
-        return setup(buf)
+        return _setup(buf)
 
     @ensure_connected
     def get_screen_pointers(self):
