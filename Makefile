@@ -36,6 +36,7 @@ clean:
 	-rm -rf module/*pyc module/__pycache__
 	-rm -rf tests/*pyc tests/__pycache__
 	-rm -rf build *egg* *deb .pybuild
+	-rm -rf .pc
 
 # A target for just running nosetests. Travis will run 'check', which does
 # everything. (Additionally, travis uses separate environments where nosetests
