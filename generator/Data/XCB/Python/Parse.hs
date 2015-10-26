@@ -586,7 +586,7 @@ processXDecl ext (XRequest name opcode membs reply) = do
   let
       -- xtest doesn't seem to use the same packing strategy as everyone else,
       -- but there is no clear indication in the XML as to why that is. yay.
-      prefix = if ext == "xtest" then "xx2x" else "x%c2x"
+      prefix = if ext /= "xproto" then "xx2x" else "x%c2x"
       (args, packStmts) = mkPackStmts ext name m id prefix membs
       cookieName = (name ++ "Cookie")
       replyDecl = concat $ maybeToList $ do
