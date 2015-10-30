@@ -290,13 +290,6 @@ class Protobj(object):
         if unpacker.known_max is not None:
             self.bufsize = unpacker.known_max
 
-    @classmethod
-    def synthetic(cls, **kwargs):
-        self = cls.__new__(cls)
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-        return self
-
 
 class Struct(Protobj):
     pass

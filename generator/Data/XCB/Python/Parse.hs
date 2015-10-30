@@ -534,6 +534,26 @@ mkModify ext name ti m =
                       ]
   in M.union m m'
 
+mkSyntheticMethod :: [GenStructElem Type] -> Statement ()
+mkSyntheticMethod membs =
+  let names = catMaybes $ map getName membs
+      args = mkParams $ "self" : names
+      body = map assign names
+  in mkMethod "synthetic" args body
+    where
+      getName :: GenStructElem Type -> Maybe String
+      getName (Pad _) = Nothing
+      getName (X.List n _ _ _) = Just n
+      getName (SField n _ _ _) = Just n
+      getName (ExprField n _ _) = Just n
+      getName (ValueParam _ n _ _) = Just n
+      getName (Switch n _ _) = Just n
+      getName (Doc n _ _) = Nothing
+      getName (Fd n) = Just n
+
+      assign :: String -> Statement ()
+      assign n = mkAssign (mkDot "self" n) $ mkName n
+
 processXDecl :: String
              -> XDecl
              -> State TypeInfoMap BindingPart
@@ -552,20 +572,22 @@ processXDecl ext (XStruct n membs) = do
   m <- get
   let (statements, len) = mkStructStyleUnpack "" ext m membs
       pack = mkPackMethod ext n m Nothing membs Nothing
+      synthetic = mkSyntheticMethod membs
       fixedLength = maybeToList $ do
         theLen <- len
         let rhs = mkInt theLen
         return $ mkAssign "fixed_size" rhs
   modify $ mkModify ext n (CompositeType ext n)
-  return $ Declaration [mkXClass n "xcffib.Struct" statements (pack : fixedLength)]
+  return $ Declaration [mkXClass n "xcffib.Struct" statements (pack : synthetic : fixedLength)]
 processXDecl ext (XEvent name opcode membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       prefix = if fromMaybe False noSequence then "x" else "x%c2x"
       pack = mkPackMethod ext name m (Just (prefix, opcode)) membs (Just 32)
+      synthetic = mkSyntheticMethod membs
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" opcode cname
-  return $ Declaration [ mkXClass cname "xcffib.Event" statements [pack]
+  return $ Declaration [ mkXClass cname "xcffib.Event" statements [pack, synthetic]
                        , eventsUpd
                        ]
 processXDecl ext (XError name opcode membs) = do
