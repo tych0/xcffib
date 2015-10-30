@@ -48,8 +48,7 @@ data TypeInfo =
   -- struct.unpack string, second is the size.
   BaseType String |
   -- | A composite type, i.e. a Struct or Union created by XCB. First arg is
-  -- the extension that defined it, second is the name of the type, third arg
-  -- is the size if it is known.
+  -- the extension that defined it, second is the name of the type.
   CompositeType String String
   deriving (Eq, Ord, Show)
 
