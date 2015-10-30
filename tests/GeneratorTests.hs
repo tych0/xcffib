@@ -39,6 +39,7 @@ pyTests = [ "event"
           , "type_pad"
           , "render_1.7"
           , "xproto_1.7"
+          , "render"
           ]
 
 mkFname :: String -> FilePath

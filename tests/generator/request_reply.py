@@ -17,9 +17,12 @@ class STR(xcffib.Struct):
         buf.write(struct.pack("=B", self.name_len))
         buf.write(xcffib.pack_list(self.name, "c"))
         return buf.getvalue()
-    def synthetic(self, name_len, name):
+    @classmethod
+    def synthetic(cls, name_len, name):
+        self = cls.__new__(cls)
         self.name_len = name_len
         self.name = name
+        return self
 class ListExtensionsReply(xcffib.Reply):
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):

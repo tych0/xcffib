@@ -15,14 +15,17 @@ class CHARINFO(xcffib.Struct):
         buf = six.BytesIO()
         buf.write(struct.pack("=hhhhhH", self.left_side_bearing, self.right_side_bearing, self.character_width, self.ascent, self.descent, self.attributes))
         return buf.getvalue()
-    def synthetic(self, left_side_bearing, right_side_bearing, character_width, ascent, descent, attributes):
+    fixed_size = 12
+    @classmethod
+    def synthetic(cls, left_side_bearing, right_side_bearing, character_width, ascent, descent, attributes):
+        self = cls.__new__(cls)
         self.left_side_bearing = left_side_bearing
         self.right_side_bearing = right_side_bearing
         self.character_width = character_width
         self.ascent = ascent
         self.descent = descent
         self.attributes = attributes
-    fixed_size = 12
+        return self
 class FONTPROP(xcffib.Struct):
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
@@ -35,10 +38,13 @@ class FONTPROP(xcffib.Struct):
         buf = six.BytesIO()
         buf.write(struct.pack("=II", self.name, self.value))
         return buf.getvalue()
-    def synthetic(self, name, value):
+    fixed_size = 8
+    @classmethod
+    def synthetic(cls, name, value):
+        self = cls.__new__(cls)
         self.name = name
         self.value = value
-    fixed_size = 8
+        return self
 class ListFontsWithInfoReply(xcffib.Reply):
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):

@@ -15,11 +15,14 @@ class AxisInfo(xcffib.Struct):
         buf = six.BytesIO()
         buf.write(struct.pack("=Iii", self.resolution, self.minimum, self.maximum))
         return buf.getvalue()
-    def synthetic(self, resolution, minimum, maximum):
+    fixed_size = 12
+    @classmethod
+    def synthetic(cls, resolution, minimum, maximum):
+        self = cls.__new__(cls)
         self.resolution = resolution
         self.minimum = minimum
         self.maximum = maximum
-    fixed_size = 12
+        return self
 class ValuatorInfo(xcffib.Struct):
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
@@ -34,11 +37,14 @@ class ValuatorInfo(xcffib.Struct):
         buf.write(struct.pack("=BBBBI", self.class_id, self.len, self.axes_len, self.mode, self.motion_size))
         buf.write(xcffib.pack_list(self.axes, AxisInfo))
         return buf.getvalue()
-    def synthetic(self, class_id, len, axes_len, mode, motion_size, axes):
+    @classmethod
+    def synthetic(cls, class_id, len, axes_len, mode, motion_size, axes):
+        self = cls.__new__(cls)
         self.class_id = class_id
         self.len = len
         self.axes_len = axes_len
         self.mode = mode
         self.motion_size = motion_size
         self.axes = axes
+        return self
 xcffib._add_ext(key, structExtension, _events, _errors)

@@ -22,7 +22,9 @@ class ScreenChangeNotifyEvent(xcffib.Event):
         if buf_len < 32:
             buf.write(struct.pack("x" * (32 - buf_len)))
         return buf.getvalue()
-    def synthetic(self, rotation, timestamp, config_timestamp, root, request_window, sizeID, subpixel_order, width, height, mwidth, mheight):
+    @classmethod
+    def synthetic(cls, rotation, timestamp, config_timestamp, root, request_window, sizeID, subpixel_order, width, height, mwidth, mheight):
+        self = cls.__new__(cls)
         self.rotation = rotation
         self.timestamp = timestamp
         self.config_timestamp = config_timestamp
@@ -34,5 +36,6 @@ class ScreenChangeNotifyEvent(xcffib.Event):
         self.height = height
         self.mwidth = mwidth
         self.mheight = mheight
+        return self
 _events[0] = ScreenChangeNotifyEvent
 xcffib._add_ext(key, eventExtension, _events, _errors)

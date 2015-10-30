@@ -84,8 +84,7 @@ class Unpacker(object):
             self._resize(known_max)
 
     def pad(self, thing):
-        if isinstance(thing, type) and any(
-                [issubclass(thing, c) for c in [Struct, Union]]):
+        if isinstance(thing, type) and issubclass(thing, (Struct, Union)):
             if hasattr(thing, "fixed_size"):
                 size = thing.fixed_size
             else:

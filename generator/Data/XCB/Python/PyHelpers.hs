@@ -21,6 +21,7 @@ module Data.XCB.Python.PyHelpers (
   mkAssign,
   mkCall,
   noArgs,
+  mkArg,
   mkEnum,
   mkName,
   mkDot,

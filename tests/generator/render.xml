@@ -1,0 +1,27 @@
+<xcb header="render" extension-xname="RENDER" extension-name="Render"
+    major-version="0" minor-version="11">
+
+  <struct name="COLOR">
+    <field type="CARD16" name="red" />
+    <field type="CARD16" name="green" />
+    <field type="CARD16" name="blue" />
+    <field type="CARD16" name="alpha" />
+  </struct>
+
+  <xidtype name="PICTURE" />
+
+  <struct name="RECTANGLE">
+    <field type="INT16" name="x" />
+    <field type="INT16" name="y" />
+    <field type="CARD16" name="width" />
+    <field type="CARD16" name="height" />
+  </struct>
+
+  <request name="FillRectangles" opcode="26">
+    <field type="CARD8" name="op" enum="PictOp" />
+    <pad bytes="3" />
+    <field type="PICTURE" name="dst" />
+    <field type="COLOR" name="color" />
+    <list type="RECTANGLE" name="rects" />
+  </request>
+</xcb>

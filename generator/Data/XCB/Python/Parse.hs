@@ -335,13 +335,12 @@ structElemToPyPack _ m accessor (SField n typ _ _) =
   let name = accessor n
   in case m M.! typ of
        BaseType c -> Left (Just name, c)
-       -- XXX: be a little smarter here? we should really make sure that things
-       -- have a .pack(); if users are calling us via the old style api, we need
-       -- to support that as well. This isn't super necessary, though, because
-       -- currently (xcb-proto 1.10) there are no direct packs of raw structs, so
-       -- this is really only necessary if xpyb gets forward ported in the future if
-       -- there are actually calls of this type.
-       CompositeType _ _ -> Right $ [(name, mkCall (name ++ ".pack") noArgs)]
+       CompositeType _ typNam ->
+         let cond = mkCall "hasattr" [mkArg name, ArgExpr (mkStr "pack") ()]
+             trueB = mkCall (name ++ ".pack") noArgs
+             synthetic = mkCall (typNam ++ ".synthetic") [mkArg ("*" ++ name)]
+             falseB = mkCall (mkDot synthetic "pack") noArgs
+         in Right $ [(name, CondExpr trueB cond falseB ())]
 -- TODO: assert values are in enum?
 structElemToPyPack ext m accessor (X.List n typ _ _) =
   let name = accessor n
@@ -534,12 +533,16 @@ mkModify ext name ti m =
                       ]
   in M.union m m'
 
-mkSyntheticMethod :: [GenStructElem Type] -> Statement ()
-mkSyntheticMethod membs =
+mkSyntheticMethod :: [GenStructElem Type] -> [Statement ()]
+mkSyntheticMethod membs = do
   let names = catMaybes $ map getName membs
-      args = mkParams $ "self" : names
+      args = mkParams $ "cls" : names
+      self = mkAssign "self" $ mkCall (mkDot "cls" "__new__") [mkName "cls"]
       body = map assign names
-  in mkMethod "synthetic" args body
+      ret = mkReturn $ mkName "self"
+      synthetic = mkMethod "synthetic" args $ (self : body) ++ [ret]
+      classmethod = Decorator [ident "classmethod"] noArgs ()
+  if null names then [] else [Decorated [classmethod] synthetic ()]
     where
       getName :: GenStructElem Type -> Maybe String
       getName (Pad _) = Nothing
@@ -548,7 +551,7 @@ mkSyntheticMethod membs =
       getName (ExprField n _ _) = Just n
       getName (ValueParam _ n _ _) = Just n
       getName (Switch n _ _) = Just n
-      getName (Doc n _ _) = Nothing
+      getName (Doc _ _ _) = Nothing
       getName (Fd n) = Just n
 
       assign :: String -> Statement ()
@@ -578,7 +581,7 @@ processXDecl ext (XStruct n membs) = do
         let rhs = mkInt theLen
         return $ mkAssign "fixed_size" rhs
   modify $ mkModify ext n (CompositeType ext n)
-  return $ Declaration [mkXClass n "xcffib.Struct" statements (pack : synthetic : fixedLength)]
+  return $ Declaration [mkXClass n "xcffib.Struct" statements (pack : fixedLength ++ synthetic)]
 processXDecl ext (XEvent name opcode membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
@@ -587,7 +590,7 @@ processXDecl ext (XEvent name opcode membs noSequence) = do
       synthetic = mkSyntheticMethod membs
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" opcode cname
-  return $ Declaration [ mkXClass cname "xcffib.Event" statements [pack, synthetic]
+  return $ Declaration [ mkXClass cname "xcffib.Event" statements (pack : synthetic)
                        , eventsUpd
                        ]
 processXDecl ext (XError name opcode membs) = do
@@ -626,12 +629,12 @@ processXDecl ext (XRequest name opcode membs reply) = do
       argChecked = ArgKeyword (ident "is_checked") (mkName "is_checked") ()
       checkedParam = Param (ident "is_checked") Nothing (Just isChecked) ()
       allArgs = (mkParams $ "self" : args) ++ [checkedParam]
-      mkArg = flip ArgExpr ()
-      ret = mkReturn $ mkCall "self.send_request" ((map mkArg [ mkInt opcode
-                                                              , mkName "buf"
-                                                              ])
-                                                              ++ hasReply
-                                                              ++ [argChecked])
+      mkArg' = flip ArgExpr ()
+      ret = mkReturn $ mkCall "self.send_request" ((map mkArg' [ mkInt opcode
+                                                               , mkName "buf"
+                                                               ])
+                                                               ++ hasReply
+                                                               ++ [argChecked])
       requestBody = buf ++ packStmts ++ [ret]
       request = mkMethod name allArgs requestBody
   return $ Request request replyDecl
