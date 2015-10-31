@@ -342,17 +342,23 @@ structElemToPyPack _ m accessor (SField n typ _ _) =
              falseB = mkCall (mkDot synthetic "pack") noArgs
          in Right $ [(name, CondExpr trueB cond falseB ())]
 -- TODO: assert values are in enum?
-structElemToPyPack ext m accessor (X.List n typ _ _) =
+structElemToPyPack ext m accessor (X.List n typ expr _) =
   let name = accessor n
-  in case m M.! typ of
-        BaseType c -> Right $ [(name, mkCall "xcffib.pack_list" [ mkName $ name
-                                                                , mkStr c
-                                                                ])]
+      -- The convention seems to be either to have a <fieldref> nested in the
+      -- list, or use "%s_len" % name if there is no fieldref. We use a little
+      -- hack here and write an empty string, since we don't need to write this
+      -- length, but we have no way to indicate that right now.
+      list_len = if isNothing expr then [(name ++ "_len", mkStr "")] else []
+      list = case m M.! typ of
+        BaseType c -> [(name, mkCall "xcffib.pack_list" [ mkName $ name
+                                                        , mkStr c
+                                                        ])]
         CompositeType tExt c ->
           let c' = if tExt == ext then c else (tExt ++ "." ++ c)
-          in Right $ [(name, mkCall "xcffib.pack_list" ([ mkName $ name
-                                                        , mkName c'
-                                                        ]))]
+          in [(name, mkCall "xcffib.pack_list" ([ mkName $ name
+                                                , mkName c'
+                                                ]))]
+  in Right $ list_len ++ list
 structElemToPyPack _ m accessor (ExprField name typ expr) =
   let e = (xExpressionToPyExpr accessor) expr
       name' = accessor name
@@ -399,12 +405,12 @@ mkPackStmts ext name m accessor prefix membs =
       -- implicitly.
       (listNames, lists) = unzip $ filter (flip notElem args . fst) (concat stmts)
       listNames' = case (ext, name) of
-                     -- XXX: QueryTextExtents has a field named "odd_length" with a
-                     -- fieldref of "string_len", so we fix it up here to match.
+                     -- XXX: QueryTextExtents has a field named "odd_length"
+                     -- which is unused, let's just drop it.
                      ("xproto", "QueryTextExtents") ->
-                       let replacer "odd_length" = "string_len"
-                           replacer s = s
-                       in map replacer listNames
+                       let notOdd "odd_length" = False
+                           notOdd _ = True
+                       in filter notOdd listNames
                      _ -> listNames
       packStr = addStructData prefix $ intercalate "" keys
       write = mkCall "buf.write" [mkCall "struct.pack"

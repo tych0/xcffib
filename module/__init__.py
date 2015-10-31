@@ -742,6 +742,8 @@ def pack_list(from_, pack_type):
 
     if isinstance(pack_type, six.string_types):
         return struct.pack("=" + pack_type * len(from_), *from_)
+    elif hasattr(pack_type, "synthetic"):
+        return pack_type.synthetic(*from_).pack()
     else:
         buf = six.BytesIO()
         for item in from_:
