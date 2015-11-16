@@ -27,6 +27,7 @@ Build-Depends: debhelper (>= 9)
   , python3-all-dev
 # testing
   , python-nose
+  , python3-nose
   , xvfb
   , x11-apps
   , python-flake8
