@@ -1,3 +1,11 @@
+xcffib (0.4.0-1) unstable; urgency=medium
+
+  * include length parameter as required as xpyb does
+  * fix struct packing for various extensions
+  * Closes: #805234
+
+ -- Tycho Andersen <tycho@tycho.ws>  Sun, 15 Nov 2015 18:17:57 -0700
+
 xcffib (0.3.6-1) unstable; urgency=medium
 
   * Fix cffi/cairocffi dependency versions
