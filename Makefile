@@ -34,7 +34,7 @@ clean:
 	-$(CABAL) clean
 	-rm -rf xcffib
 	-rm -rf module/*pyc module/__pycache__
-	-rm -rf tests/*pyc tests/__pycache__
+	-rm -rf test/*pyc test/__pycache__
 	-rm -rf build *egg* *deb .pybuild
 	-rm -rf .pc
 
@@ -49,13 +49,13 @@ valgrind: xcffib
 	valgrind --leak-check=full --show-leak-kinds=definite nosetests -d
 
 newtests: $(GEN)
-	$(GEN) --input ./tests/generator/ --output ./tests/generator/
+	$(GEN) --input ./test/generator/ --output ./test/generator/
 	git diff tests
 
 # These are all split out so make -j3 check goes as fast as possible.
 .PHONY: lint
 lint:
-	flake8 --config=./tests/flake8.cfg ./module
+	flake8 --config=./test/flake8.cfg ./module
 
 .PHONY: htests
 htests: $(GEN)
