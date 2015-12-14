@@ -11,13 +11,13 @@ build-type:          Simple
 cabal-version:       >=1.8
 bug-reports:         https://github.com/tych0/xcffib/issues
 description: A cffi-based python binding for X, comparable to xpyb
-extra-source-files: tests/generator/*.py,
-                    tests/generator/*.xml,
+extra-source-files: test/generator/*.py,
+                    test/generator/*.xml,
                     -- cabal's wildcarding is broken if the filename contains
                     -- extra dots:
                     -- https://github.com/haskell/cabal/issues/784
-                    tests/generator/*.7.py,
-                    tests/generator/*.7.xml
+                    test/generator/*.7.py,
+                    test/generator/*.7.xml
 
 source-repository head
   type:              git
@@ -58,7 +58,7 @@ executable xcffibgen
   ghc-options: -Wall
 
 test-suite PyHelpersTests
-  hs-source-dirs: tests
+  hs-source-dirs: test
   main-is: PyHelpersTests.hs
   type: exitcode-stdio-1.0
   build-depends: base ==4.*,
@@ -69,7 +69,7 @@ test-suite PyHelpersTests
                  test-framework-hunit
 
 test-suite GeneratorTests.hs
-  hs-source-dirs: tests
+  hs-source-dirs: test
   main-is: GeneratorTests.hs
   type: exitcode-stdio-1.0
   build-depends: base ==4.*,

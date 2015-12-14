@@ -43,7 +43,7 @@ pyTests = [ "event"
           ]
 
 mkFname :: String -> FilePath
-mkFname = (</>) $ "tests" </> "generator"
+mkFname = (</>) $ "test" </> "generator"
 
 mkTest :: String -> IO Test
 mkTest name = do
