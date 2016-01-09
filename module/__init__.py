@@ -16,6 +16,7 @@
 from __future__ import division, absolute_import
 
 import functools
+import platform
 import six
 import struct
 import weakref
@@ -25,7 +26,15 @@ try:
 except ImportError:
     from xcffib.ffi_build import ffi
 
-lib = ffi.dlopen('libxcb.so.1')
+SONAMES = {
+    "Linux": "libxcb.so.1",
+    "Darwin": "libxcb.dylib",
+}
+
+try:
+    lib = ffi.dlopen(SONAMES[platform.system()])
+except KeyError:
+    raise NotImplementedError("unsupported platform %s" % platform.system())
 
 __xcb_proto_version__ = 'placeholder'
 
