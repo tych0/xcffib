@@ -53,7 +53,6 @@ class renderExtension(xcffib.Extension):
         buf = six.BytesIO()
         buf.write(struct.pack("=xx2xB3xI", op, dst))
         buf.write(color.pack() if hasattr(color, "pack") else COLOR.synthetic(*color).pack())
-        buf.write("")
         buf.write(xcffib.pack_list(rects, RECTANGLE))
         return self.send_request(26, buf, is_checked=is_checked)
 xcffib._add_ext(key, renderExtension, _events, _errors)

@@ -325,7 +325,7 @@ structElemToPyPack :: String
                    -> TypeInfoMap
                    -> (String -> String)
                    -> GenStructElem Type
-                   -> Either (Maybe String, String) [(String, Expr ())]
+                   -> Either (Maybe String, String) [(String, Maybe (Expr ()))]
 structElemToPyPack _ _ _ (Pad i) = Left (Nothing, mkPad i)
 -- TODO: implement doc, switch, and fd?
 structElemToPyPack _ _ _ (Doc _ _ _) = Left (Nothing, "")
@@ -340,34 +340,34 @@ structElemToPyPack _ m accessor (SField n typ _ _) =
              trueB = mkCall (name ++ ".pack") noArgs
              synthetic = mkCall (typNam ++ ".synthetic") [mkArg ("*" ++ name)]
              falseB = mkCall (mkDot synthetic "pack") noArgs
-         in Right $ [(name, CondExpr trueB cond falseB ())]
+         in Right $ [(name, Just (CondExpr trueB cond falseB ()))]
 -- TODO: assert values are in enum?
 structElemToPyPack ext m accessor (X.List n typ expr _) =
   let name = accessor n
       -- The convention seems to be either to have a <fieldref> nested in the
-      -- list, or use "%s_len" % name if there is no fieldref. We use a little
-      -- hack here and write an empty string, since we don't need to write this
-      -- length, but we have no way to indicate that right now.
-      list_len = if isNothing expr then [(name ++ "_len", mkStr "")] else []
+      -- list, or use "%s_len" % name if there is no fieldref. We need to add
+      -- the _len to the arguments of the function but we don't need to pack
+      -- anything, which we denote using Nothing
+      list_len = if isNothing expr then [(name ++ "_len", Nothing)] else []
       list = case m M.! typ of
-        BaseType c -> [(name, mkCall "xcffib.pack_list" [ mkName $ name
+        BaseType c -> [(name, Just (mkCall "xcffib.pack_list" [ mkName $ name
                                                         , mkStr c
-                                                        ])]
+                                                        ]))]
         CompositeType tExt c ->
           let c' = if tExt == ext then c else (tExt ++ "." ++ c)
-          in [(name, mkCall "xcffib.pack_list" ([ mkName $ name
+          in [(name, Just (mkCall "xcffib.pack_list" ([ mkName $ name
                                                 , mkName c'
-                                                ]))]
+                                                ])))]
   in Right $ list_len ++ list
 structElemToPyPack _ m accessor (ExprField name typ expr) =
   let e = (xExpressionToPyExpr accessor) expr
       name' = accessor name
   in case m M.! typ of
-       BaseType c -> Right $ [(name', mkCall "struct.pack" [ mkStr ('=' : c)
+       BaseType c -> Right $ [(name', Just (mkCall "struct.pack" [ mkStr ('=' : c)
                                                            , e
-                                                           ])]
+                                                           ]))]
        CompositeType _ _ -> Right $ [(name',
-                                      mkCall (mkDot e "pack") noArgs)]
+                                      Just (mkCall (mkDot e "pack") noArgs))]
 
 -- As near as I can tell here the padding param is unused.
 structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
@@ -377,7 +377,7 @@ structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
           list' = mkCall "xcffib.pack_list" [ mkName $ accessor list
                                             , mkStr "I"
                                             ]
-      in Right $ [(mask, mask'), (list, list')]
+      in Right $ [(mask, Just mask'), (list, Just list')]
     CompositeType _ _ -> error (
       "ValueParams other than CARD{16,32} not allowed.")
 
@@ -394,7 +394,7 @@ mkPackStmts :: String
 mkPackStmts ext name m accessor prefix membs =
   let packF = structElemToPyPack ext m accessor
       (toPack, stmts) = partitionEithers $ map packF membs
-      listWrites = map (flip StmtExpr () . mkCall "buf.write" . (: [])) lists
+      listWrites = map (flip StmtExpr () . mkCall "buf.write" . (: [])) $ catMaybes lists
       (args, keys) = let (as, ks) = unzip toPack in (catMaybes as, ks)
 
       -- In some cases (e.g. xproto.ConfigureWindow) there is padding after
