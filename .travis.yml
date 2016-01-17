@@ -10,11 +10,6 @@ python:
   - pypy
   - pypy3
 
-cache:
-  directories:
-    - $HOME/.cache/pip
-    - $HOME/.cabal/lib
-
 addons:
   apt:
     packages:
@@ -34,4 +29,5 @@ install:
 
 script: "make -j3 check"
 
-sudo: false
+sudo: required
+dist: trusty
