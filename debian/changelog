@@ -1,3 +1,9 @@
+xcffib (0.4.1-1) unstable; urgency=medium
+
+  * Upstream release.
+
+ -- Tycho Andersen <tycho@tycho.ws>  Wed, 10 Feb 2016 19:06:05 -0700
+
 xcffib (0.4.0-1) unstable; urgency=medium
 
   * include length parameter as required as xpyb does
