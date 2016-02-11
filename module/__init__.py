@@ -453,6 +453,14 @@ class List(Protobj):
     def buf(self):
         return b''.join(self.list)
 
+    @classmethod
+    def synthetic(cls, list=None):
+        if list is None:
+            list = []
+
+        self = cls.__new__(cls)
+        self.list = list[:]
+
 
 class OffsetMap(object):
 
