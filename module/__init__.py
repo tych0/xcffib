@@ -460,6 +460,7 @@ class List(Protobj):
 
         self = cls.__new__(cls)
         self.list = list[:]
+        return self
 
 
 class OffsetMap(object):
