@@ -1,3 +1,0 @@
-version=3
-opts=filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/xcffib-$1\.tar\.gz/ \
-  https://github.com/tych0/xcffib/tags .*/v?(\d\S*)\.tar\.gz
