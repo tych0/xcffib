@@ -766,18 +766,19 @@ def pack_list(from_, pack_type):
             and hasattr(pack_type, "pack")
             ):
         return b"".join(
-            f.pack() if isinstance(f, pack_type) else pack_type.synthetic(*f).pack()
+                f.pack()
+            if isinstance(f, pack_type) else
+                pack_type.synthetic(*f).pack()
             for f in from_
         )
     else:
-        buf = six.BytesIO()
-        for item in from_:
-            # If we can't pack it, you'd better have packed it yourself...
-            if isinstance(item, Protobj) and hasattr(item, "pack"):
-                buf.write(item.pack())
-            else:
-                buf.write(item)
-        return buf.getvalue()
+        # If we can't pack it, you'd better have packed it yourself...
+        return b"".join(
+                f.pack()
+            if isinstance(item, Protobj) and hasattr(item, "pack") else
+                f
+            for f in from_
+        )
 
 
 def wrap(ptr):
