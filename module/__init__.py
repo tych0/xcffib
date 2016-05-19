@@ -760,8 +760,15 @@ def pack_list(from_, pack_type):
 
     if isinstance(pack_type, six.string_types):
         return struct.pack("=" + pack_type * len(from_), *from_)
-    elif isinstance(pack_type, six.class_types) and issubclass(pack_type, Protobj) and hasattr(pack_type, "synthetic"):
-        return b"".join(pack_type.synthetic(*f).pack() for f in from_)
+    elif    (   isinstance(pack_type, six.class_types)
+            and issubclass(pack_type, Protobj)
+            and hasattr(pack_type, "synthetic")
+            and hasattr(pack_type, "pack")
+            ):
+        return b"".join(
+            f.pack() if isinstance(f, pack_type) else pack_type.synthetic(*f).pack()
+            for f in from_
+        )
     else:
         buf = six.BytesIO()
         for item in from_:
