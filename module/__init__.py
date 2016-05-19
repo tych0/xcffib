@@ -771,7 +771,7 @@ def pack_list(from_, pack_type):
                 f.pack()
             if isinstance(f, Protobj) and hasattr(f, "pack") else
                 pack_type.synthetic(*f).pack()
-            if synthesize else:
+            if synthesize else
                 # If we can't pack it, you'd better have packed it yourself...
                 # Otherwise, TypeError
                 f
