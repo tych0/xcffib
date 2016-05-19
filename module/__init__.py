@@ -760,22 +760,20 @@ def pack_list(from_, pack_type):
 
     if isinstance(pack_type, six.string_types):
         return struct.pack("=" + pack_type * len(from_), *from_)
-    elif    (   isinstance(pack_type, six.class_types)
+    else:
+        synthesize = \
+            (   isinstance(pack_type, six.class_types)
             and issubclass(pack_type, Protobj)
             and hasattr(pack_type, "synthetic")
             and hasattr(pack_type, "pack")
-            ):
+            )
         return b"".join(
                 f.pack()
-            if isinstance(item, Protobj) and hasattr(item, "pack") else
+            if isinstance(f, Protobj) and hasattr(f, "pack") else
                 pack_type.synthetic(*f).pack()
-            for f in from_
-        )
-    else:
-        # If we can't pack it, you'd better have packed it yourself...
-        return b"".join(
-                f.pack()
-            if isinstance(item, Protobj) and hasattr(item, "pack") else
+            if synthesize else:
+                # If we can't pack it, you'd better have packed it yourself...
+                # Otherwise, TypeError
                 f
             for f in from_
         )
