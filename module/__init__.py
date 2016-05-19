@@ -767,7 +767,7 @@ def pack_list(from_, pack_type):
             ):
         return b"".join(
                 f.pack()
-            if isinstance(f, pack_type) else
+            if isinstance(item, Protobj) and hasattr(item, "pack") else
                 pack_type.synthetic(*f).pack()
             for f in from_
         )
