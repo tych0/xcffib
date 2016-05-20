@@ -12,7 +12,7 @@ xcffib: $(GEN) module/*.py
 	$(GEN) --input $(XCBDIR) --output ./xcffib
 	cp ./module/*py ./xcffib/
 	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
-	python xcffib/ffi_build.py
+	python3 xcffib/ffi_build.py
 
 .PHONY: xcffib-fmt
 xcffib-fmt: $(GEN) module/*.py
