@@ -13,12 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
 import xcffib
 import xcffib.xproto
 import struct
 from xcffib.xproto import EventMask
 
 from .testing import XcffibTest
+
+from nose.tools import raises
 
 class TestPythonCode(XcffibTest):
 
@@ -116,3 +119,84 @@ class TestPythonCode(XcffibTest):
         )
 
         e2 = xcffib.xproto.ClientMessageEvent(e)
+
+    def test_pack_list_string(self):
+        data = [[(-2, -1, 0, 1, 2), "i"], [(1.1, 2.2, 3.3), "d"]]
+        for d, f in data:
+            packed = xcffib.pack_list(d, f)
+            assert d == struct.unpack("=%s%s" % (len(d), f), packed)
+
+    def test_pack_list_struct(self):
+        class FooStructTest(StructTest):
+            pass
+
+        class BarStructTest(StructTest):
+            pass
+
+        class UselessStructTest(StructTest):
+            def pack(self): pass
+            synthetic = classmethod(lambda self: self.__new__(self))
+
+        data = [FooStructTest.synthetic("3I3i", (1, 2, 3, -5, -6, -7)),
+                BarStructTest.synthetic("3d", (1.1, 2.2, 3.3))]
+
+        def pack_list_test_struct(struct_list, pack_type):
+            packed = xcffib.pack_list(struct_list, pack_type)
+            unpacker = xcffib.MemoryUnpacker(packed)
+            for s in struct_list:
+                assert type(s)(s.fmt, unpacker) == s
+            assert unpacker.offset == unpacker.known_max
+
+        pack_list_test_struct(data, UselessStructTest)
+
+    def test_pack_list_synthetic(self):
+        data_synthetic = [["3I3i", (1, 2, 3, -5, -6, -7)],
+                          ["3d", (1.1, 2.2, 3.3)]]
+
+        def pack_list_test_synthetic(iterable_list, pack_type):
+            packed = xcffib.pack_list(iterable_list, pack_type)
+            unpacker = xcffib.MemoryUnpacker(packed)
+            for i in iterable_list:
+                assert pack_type.synthetic(*i) == pack_type(i[0], unpacker)
+            assert unpacker.offset == unpacker.known_max
+
+        pack_list_test_synthetic(data_synthetic, StructTest)
+
+    def test_pack_list_packed(self):
+        data_packed = [six.b(s) for s in ["one", "two", "three"]]
+
+        def pack_list_test_packed(packed_list):
+            packed_a = xcffib.pack_list(packed_list, None)
+            packed_b = six.b("").join(b for b in packed_list)
+            assert packed_a == packed_b
+
+        pack_list_test_packed(data_packed)
+
+    @raises(AssertionError)
+    def test_pack_list_unpacked(self):
+        data_unpacked = [object(), [1, 2, 3]]
+        xcffib.pack_list(data_unpacked, None)
+
+
+class StructTest(xcffib.Struct):
+    def __init__(self, fmt, unpacker):
+        xcffib.Struct.__init__(self, unpacker)
+        self.data = unpacker.unpack(fmt)
+        self.fmt = fmt
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return (self.fmt == other.fmt and
+                    self.data == other.data)
+        else:
+            return NotImplemented
+
+    def pack(self):
+        return struct.pack("=" + self.fmt, *self.data)
+
+    @classmethod
+    def synthetic(cls, fmt, data):
+        self = cls.__new__(cls)
+        self.fmt = fmt
+        self.data = data
+        return self

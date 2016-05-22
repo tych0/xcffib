@@ -761,22 +761,34 @@ def pack_list(from_, pack_type):
     if isinstance(pack_type, six.string_types):
         return struct.pack("=" + pack_type * len(from_), *from_)
     else:
-        synthesize = \
-            (   isinstance(pack_type, six.class_types)
-            and issubclass(pack_type, Protobj)
-            and hasattr(pack_type, "synthetic")
-            and hasattr(pack_type, "pack")
-            )
-        return b"".join(
-                f.pack()
-            if isinstance(f, Protobj) and hasattr(f, "pack") else
-                pack_type.synthetic(*f).pack()
-            if synthesize else
+        buf = six.BytesIO()
+        synthesize = (isinstance(pack_type, six.class_types) and
+                      issubclass(pack_type, Struct) and
+                      hasattr(pack_type, "synthetic") and
+                      hasattr(pack_type, "pack"))
+        for item in from_:
+            if isinstance(item, Struct) and hasattr(item, "pack"):
+                packed = item.pack()
+            elif synthesize:
+                packed = pack_type.synthetic(*item).pack()
+            else:
                 # If we can't pack it, you'd better have packed it yourself...
-                # Otherwise, TypeError
-                f
-            for f in from_
-        )
+                packed = item
+            # * On python2, six.BytesIO wraps StringIO.StringIO - even with
+            #   versions of python >= 2.6, which provide the `io` module (with
+            #   io.BytesIO). Method write() accepts any object, and writes its
+            #   __str__ representation.
+            # * On python3, six.BytesIO wraps io.BytesIO. Method write()
+            #   requires objects supporting the buffer protocol/interface, or
+            #   throws TypeError.
+            # six.BytesIO provides compatibility with python < 2.6 - otherwise
+            # we would just use io.BytesIO. To catch otherwise hard-to-detect
+            # errors on python 2, however, ensure that we are actually writing
+            # a `bytes` object. Since versions of python 2 <= 2.5 do not
+            # support the `bytes` alias, use `six.binary_type` instead.
+            assert isinstance(packed, six.binary_type)
+            buf.write(packed)
+        return buf.getvalue()
 
 
 def wrap(ptr):
