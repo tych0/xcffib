@@ -654,7 +654,10 @@ class Connection(object):
 
         reply = ffi.cast("xcb_generic_reply_t *", data)
 
-        # why is this 32 and not sizeof(xcb_generic_reply_t) == 8?
+        # this is 32 and not `sizeof(xcb_generic_reply_t) == 8` because,
+        # according to the X11 protocol specs: "Every reply consists of 32 bytes
+        # followed by zero or more additional bytes of data, as specified in the
+        # length field."
         return CffiUnpacker(data, known_max=32 + reply.length * 4)
 
     @ensure_connected
