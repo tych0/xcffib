@@ -329,6 +329,9 @@ class Cookie(object):
             "Request is not void and checked")
         self.conn.request_check(self.sequence)
 
+    def discard_reply(self):
+        return self.conn.discard_reply(self.sequence)
+
 
 class VoidCookie(Cookie):
 
