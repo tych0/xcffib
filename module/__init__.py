@@ -680,6 +680,10 @@ class Connection(object):
     def send_request(self, flags, xcb_parts, xcb_req):
         return lib.xcb_send_request(self._conn, flags, xcb_parts, xcb_req)
 
+    @ensure_connected
+    def discard_reply(self, sequence):
+        return lib.xcb_discard_reply(self._conn, sequence)
+
 
 # More backwards compatibility
 connect = Connection
