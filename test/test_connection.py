@@ -72,6 +72,12 @@ class TestConnection(XcffibTest):
         assert self.xproto.GetInputFocus().sequence == 2
         assert self.xproto.GetInputFocus().sequence == 3
 
+    def test_discard_sequence(self):
+        cookie = self.xproto.GetInputFocus()
+        cookie.discard_reply()
+        # this hangs if you leave it in, because the reply really was discarded
+        # assert cookie.reply()
+
     @raises(xcffib.ConnectionException)
     def test_invalid(self):
         conn = xcffib.Connection('notadisplay')
