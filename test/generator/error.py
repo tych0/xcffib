@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import six
+import io
 MAJOR_VERSION = 2
 MINOR_VERSION = 2
 key = xcffib.ExtensionKey("ERROR")
@@ -15,7 +15,7 @@ class RequestError(xcffib.Error):
         self.bad_value, self.minor_opcode, self.major_opcode = unpacker.unpack("xx2xIHBx")
         self.bufsize = unpacker.offset - base
     def pack(self):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(struct.pack("=B", 1))
         buf.write(struct.pack("=x2xIHBx", self.bad_value, self.minor_opcode, self.major_opcode))
         return buf.getvalue()

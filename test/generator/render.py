@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import six
+import io
 MAJOR_VERSION = 0
 MINOR_VERSION = 11
 key = xcffib.ExtensionKey("RENDER")
@@ -15,7 +15,7 @@ class COLOR(xcffib.Struct):
         self.red, self.green, self.blue, self.alpha = unpacker.unpack("HHHH")
         self.bufsize = unpacker.offset - base
     def pack(self):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(struct.pack("=HHHH", self.red, self.green, self.blue, self.alpha))
         return buf.getvalue()
     fixed_size = 8
@@ -36,7 +36,7 @@ class RECTANGLE(xcffib.Struct):
         self.x, self.y, self.width, self.height = unpacker.unpack("hhHH")
         self.bufsize = unpacker.offset - base
     def pack(self):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(struct.pack("=hhHH", self.x, self.y, self.width, self.height))
         return buf.getvalue()
     fixed_size = 8
@@ -50,7 +50,7 @@ class RECTANGLE(xcffib.Struct):
         return self
 class renderExtension(xcffib.Extension):
     def FillRectangles(self, op, dst, color, rects_len, rects, is_checked=False):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(struct.pack("=xx2xB3xI", op, dst))
         buf.write(color.pack() if hasattr(color, "pack") else COLOR.synthetic(*color).pack())
         buf.write(xcffib.pack_list(rects, RECTANGLE))

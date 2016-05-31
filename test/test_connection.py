@@ -226,7 +226,7 @@ class TestConnection(XcffibTest):
 
         reply = self.xproto.GetProperty(False, wid, wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
 
-        assert reply.value.to_atoms() == (wm_delete_window,)
+        assert reply.value.to_atoms() == [wm_delete_window]
 
         wm_take_focus = self.intern("WM_TAKE_FOCUS")
 
@@ -236,7 +236,7 @@ class TestConnection(XcffibTest):
 
         reply = self.xproto.GetProperty(False, wid, wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
 
-        assert reply.value.to_atoms() == (wm_take_focus,)
+        assert reply.value.to_atoms() == [wm_take_focus]
 
     def test_GetAtomName(self):
         wm_protocols = "WM_PROTOCOLS"
@@ -270,10 +270,10 @@ class TestConnection(XcffibTest):
         c.disconnect()
 
     def test_auth_connect(self):
-        authname = six.b("MIT-MAGIC-COOKIE-1")
-        authdata = six.b("\xa5\xcf\x95\xfa\x19\x49\x03\x60\xaf\xe4\x1e\xcd\xa3\xe2\xad\x47")
+        authname = b"MIT-MAGIC-COOKIE-1"
+        authdata = b"\xa5\xcf\x95\xfa\x19\x49\x03\x60\xaf\xe4\x1e\xcd\xa3\xe2\xad\x47"
 
-        authstr = authname + six.b(':') + authdata
+        authstr = authname + b':' + authdata
 
         conn = xcffib.connect(display=os.environ['DISPLAY'], auth=authstr)
 

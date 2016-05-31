@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
 import xcffib
 import xcffib.xproto
 import struct
@@ -163,16 +162,16 @@ class TestPythonCode(XcffibTest):
         pack_list_test_synthetic(data_synthetic, StructTest)
 
     def test_pack_list_packed(self):
-        data_packed = [six.b(s) for s in ["one", "two", "three"]]
+        data_packed = [b"one", b"two", b"three"]
 
         def pack_list_test_packed(packed_list):
             packed_a = xcffib.pack_list(packed_list, None)
-            packed_b = six.b("").join(b for b in packed_list)
+            packed_b = b"".join(b for b in packed_list)
             assert packed_a == packed_b
 
         pack_list_test_packed(data_packed)
 
-    @raises(AssertionError)
+    @raises(TypeError)
     def test_pack_list_unpacked(self):
         data_unpacked = [object(), [1, 2, 3]]
         xcffib.pack_list(data_unpacked, None)
