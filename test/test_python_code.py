@@ -16,6 +16,7 @@
 import xcffib
 import xcffib.xproto
 import struct
+import sys
 from xcffib.xproto import EventMask
 
 from .testing import XcffibTest
@@ -44,9 +45,16 @@ class TestPythonCode(XcffibTest):
         for actual, expected in zip(range(20), cm.data8):
             assert actual == expected, actual
 
-        assert cm.data32[0] == 0x03020100
-        assert cm.data32[1] == 0x07060504
-        assert cm.data32[2] == 0x0b0a0908
+        if sys.byteorder == "little":
+            assert cm.data32[0] == 0x03020100
+            assert cm.data32[1] == 0x07060504
+            assert cm.data32[2] == 0x0b0a0908
+        elif sys.byteorder == "big":
+            assert cm.data32[0] == 0x00010203
+            assert cm.data32[1] == 0x04050607
+            assert cm.data32[2] == 0x08090a0b
+        else:
+            raise Exception("unknown byte order?")
 
     def test_offset_map(self):
         om = xcffib.OffsetMap({0: "Event0,0"})
