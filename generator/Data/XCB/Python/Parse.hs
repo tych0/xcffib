@@ -227,6 +227,7 @@ xExpressionToPyExpr acc (Unop o e) =
   let o' = xUnopToPyOp o
       e' = xExpressionToNestedPyExpr acc e
   in Paren (UnaryOp o' e' ()) ()
+xExpressionToPyExpr _ (ParamRef n) = mkName n
 
 getConst :: XExpression -> Maybe Int
 getConst (Value i) = Just i
@@ -294,7 +295,7 @@ structElemToPyUnpack _ _ _ (Doc _ _ _) = Left (Nothing, "")
 structElemToPyUnpack _ _ _ (Fd _) = Left (Nothing, "")
 
 -- The switch fields pick the way to expression to pack based on the expression
-structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
+structElemToPyUnpack unpacker ext m (Switch name expr _ bitcases) =
   let cmp = xExpressionToPyExpr ((++) "self.") expr
       switch = map ((pkSwitch unpacker ext m) . (mkSwitch cmp)) bitcases
   in Right (name, switch, Nothing)
@@ -302,7 +303,7 @@ structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
       mkSwitch :: Expr ()
                -> BitCase
                -> (GenStructElem Type, Expr ())
-      mkSwitch cmp (BitCase _ bcCmp elems) =
+      mkSwitch cmp (BitCase _ bcCmp _ elems) =
         let cmpVal = xExpressionToPyExpr id bcCmp
             equality = BinaryOp (P.BinaryAnd ()) cmp cmpVal ()
             elems' = case elems of
@@ -366,7 +367,7 @@ structElemToPyPack _ _ _ (Pad i) = Left (Nothing, mkPad i)
 -- TODO: implement doc and fd?
 structElemToPyPack _ _ _ (Doc _ _ _) = Left (Nothing, "")
 structElemToPyPack _ _ _ (Fd _) = Left (Nothing, "")
-structElemToPyPack ext m accessor (Switch n expr bitcases) =
+structElemToPyPack ext m accessor (Switch n expr _ bitcases) =
   let name = accessor n
       cmp = xExpressionToPyExpr id expr
       switch = map (mkSwitch cmp) bitcases
@@ -377,7 +378,7 @@ structElemToPyPack ext m accessor (Switch n expr bitcases) =
       mkSwitch :: Expr ()
                -> BitCase
                -> (GenStructElem Type, Expr ())
-      mkSwitch cmp (BitCase _ bcCmp elems) =
+      mkSwitch cmp (BitCase _ bcCmp _ elems) =
         let cmpVal = xExpressionToPyExpr id bcCmp
             equality = BinaryOp (P.BinaryAnd ()) cmp cmpVal ()
             elems' = case elems of
@@ -674,7 +675,7 @@ mkSyntheticMethod membs = do
       getName (SField n _ _ _) = Just n
       getName (ExprField n _ _) = Just n
       getName (ValueParam _ n _ _) = Just n
-      getName (Switch n _ _) = Just n
+      getName (Switch n _ _ _) = Just n
       getName (Doc _ _ _) = Nothing
       getName (Fd n) = Just n
 
@@ -695,7 +696,7 @@ processXDecl _ (XImport n) =
   return $ Declaration [ mkRelImport n]
 processXDecl _ (XEnum name membs) =
   return $ Declaration [mkEnum name $ xEnumElemsToPyEnum id membs]
-processXDecl ext (XStruct n membs) = do
+processXDecl ext (XStruct n _ membs) = do
   m <- get
   let (statements, len) = mkStructStyleUnpack "" ext m membs
       pack = mkPackMethod ext n m Nothing membs Nothing
@@ -706,7 +707,7 @@ processXDecl ext (XStruct n membs) = do
         return $ mkAssign "fixed_size" rhs
   modify $ mkModify ext n (CompositeType ext n)
   return $ Declaration [mkXClass n "xcffib.Struct" statements (pack : fixedLength ++ synthetic)]
-processXDecl ext (XEvent name opcode membs noSequence) = do
+processXDecl ext (XEvent name opcode _ membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       prefix = if fromMaybe False noSequence then "x" else "x%c2x"
@@ -717,7 +718,7 @@ processXDecl ext (XEvent name opcode membs noSequence) = do
   return $ Declaration [ mkXClass cname "xcffib.Event" statements (pack : synthetic)
                        , eventsUpd
                        ]
-processXDecl ext (XError name opcode membs) = do
+processXDecl ext (XError name opcode _ membs) = do
   m <- get
   let cname = name ++ "Error"
       prefix = "xx2x"
@@ -729,7 +730,7 @@ processXDecl ext (XError name opcode membs) = do
                        , alias
                        , errorsUpd
                        ]
-processXDecl ext (XRequest name opcode membs reply) = do
+processXDecl ext (XRequest name opcode _ membs reply) = do
   m <- get
   let
       -- xtest doesn't seem to use the same packing strategy as everyone else,
@@ -738,7 +739,7 @@ processXDecl ext (XRequest name opcode membs reply) = do
       (args, packStmts) = mkPackStmts ext name m id prefix membs
       cookieName = (name ++ "Cookie")
       replyDecl = concat $ maybeToList $ do
-        reply' <- reply
+        GenXReply _ reply' <- reply
         let (replyStmts, _) = mkStructStyleUnpack "x%c2x4x" ext m reply'
             replyName = name ++ "Reply"
             theReply = mkXClass replyName "xcffib.Reply" replyStmts []
@@ -762,7 +763,7 @@ processXDecl ext (XRequest name opcode membs reply) = do
       requestBody = buf ++ packStmts ++ [ret]
       request = mkMethod name allArgs requestBody
   return $ Request request replyDecl
-processXDecl ext (XUnion name membs) = do
+processXDecl ext (XUnion name _ membs) = do
   m <- get
   let unpackF = structElemToPyUnpack unpackerCopy ext m
       (fields, listInfo) = partitionEithers $ map unpackF membs
