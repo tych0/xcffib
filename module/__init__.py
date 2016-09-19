@@ -37,6 +37,7 @@ except KeyError:
     raise NotImplementedError("unsupported platform %s" % platform.system())
 
 __xcb_proto_version__ = 'placeholder'
+__version__ = 'placeholder'
 
 X_PROTOCOL = lib.X_PROTOCOL
 X_PROTOCOL_REVISION = lib.X_PROTOCOL_REVISION
