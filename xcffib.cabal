@@ -54,7 +54,8 @@ executable xcffibgen
                  containers,
                  mtl >= 2.1,
                  attoparsec,
-                 bytestring
+                 bytestring,
+                 semigroups
   ghc-options: -Wall
 
 test-suite PyHelpersTests
