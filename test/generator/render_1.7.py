@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import six
+import io
 MAJOR_VERSION = 0
 MINOR_VERSION = 11
 key = xcffib.ExtensionKey("RENDER")

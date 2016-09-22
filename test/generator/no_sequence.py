@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import six
+import io
 _events = {}
 _errors = {}
 class KeymapNotifyEvent(xcffib.Event):
@@ -13,7 +13,7 @@ class KeymapNotifyEvent(xcffib.Event):
         self.keys = xcffib.List(unpacker, "B", 31)
         self.bufsize = unpacker.offset - base
     def pack(self):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(struct.pack("=B", 11))
         buf.write(xcffib.pack_list(self.keys, "B"))
         buf_len = len(buf.getvalue())

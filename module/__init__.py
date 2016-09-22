@@ -20,6 +20,9 @@ import platform
 import six
 import struct
 import weakref
+import codecs
+import locale
+import io
 
 try:
     from xcffib._ffi import ffi
@@ -441,21 +444,44 @@ class List(Protobj):
     def __delitem__(self, key):
         del self.list[key]
 
+    def buf(self):
+        return b"".join(self)
+
+    def decode(self, encoding="utf-8", errors="strict"):
+        # codecs.decode provides more flexibility
+        return codecs.decode(self.buf(), encoding, errors)
+
+    def to_bytes(self):
+        """wrapper around `self.buf`, to mirror `self.to_string`"""
+        return self.buf()
+
     def to_string(self):
-        """ A helper for converting a List of chars to a native string. Dies if
-        the list contents are not something that could be reasonably converted
-        to a string. """
-        return ''.join(chr(six.byte2int(i)) for i in self)
+        # The old approach:
+        #   return ''.join(chr(six.byte2int(i)) for i in self)
+        # Which was broken under python 3, and should have been:
+        #   return ''.join(chr(i) for i in six.iterbytes(self))
+        # Is completely crazy. Under python 3, it converts `bytes` to `str`
+        # (unicode object), equivalent to:
+        #   return self.decode("unicode-escape")
+        # Under python 2, it has no effect, equivalent to:
+        #   return self.buf()
+        # Anyway, it doesn't make sense to return a bytes object in python 2
+        # but a unicode object in python 3, so now:
+        """A helper for decoding a List of bytes to the platform's default
+        encoding. Bytes outside the codec's range are replaced with U+FFFD
+        REPLACEMENT CHARACTER (errors="replace")."""
+        # On python 2, comparisons between `unicode` and `str` succeed as long
+        # as the `unicode` code points are all ASCII - so unit tests should
+        # continue working.
+        return self.decode(locale.getpreferredencoding(False), errors="replace")
 
     def to_utf8(self):
-        return six.b('').join(self).decode('utf-8')
+        return self.decode("utf-8")
 
     def to_atoms(self):
         """ A helper for converting a List of chars to an array of atoms """
-        return struct.unpack("=" + "I" * (len(self) // 4), b''.join(self))
-
-    def buf(self):
-        return b''.join(self.list)
+        assert len(self) % 4 == 0
+        return list(struct.unpack("=" + "I" * (len(self) // 4), b''.join(self)))
 
     @classmethod
     def synthetic(cls, list=None):
@@ -490,7 +516,7 @@ class Connection(object):
     xpyb. """
     def __init__(self, display=None, fd=-1, auth=None):
         if auth is not None:
-            [name, data] = auth.split(six.b(':'))
+            [name, data] = auth.split(b':')
 
             c_auth = ffi.new("xcb_auth_info_t *")
             c_auth.name = ffi.new('char[]', name)
@@ -754,33 +780,37 @@ def pack_list(from_, pack_type):
             # PY3 is "helpful" in that when you do tuple(b'foo') you get
             # (102, 111, 111) instead of something more reasonable like
             # (b'f', b'o', b'o'), so we rebuild from_ as a tuple of bytes
-            from_ = [six.int2byte(b) for b in six.iterbytes(from_)]
+            from_ = list(struct.unpack("c" * len(from_), from_))
         elif isinstance(from_, six.string_types):
             # Catch Python 3 strings and Python 2 unicode strings, both of
             # which we encode to bytes as utf-8
             # Here we create the tuple of bytes from the encoded string
-            from_ = [six.int2byte(b) for b in bytearray(from_, 'utf-8')]
+            from_ = from_.encode("utf-8")
+            from_ = list(struct.unpack("c" * len(from_), from_))
         elif isinstance(from_[0], six.integer_types):
             # Pack from_ as char array, where from_ may be an array of ints
             # possibly greater than 256
-            def to_bytes(v):
-                for _ in range(4):
-                    v, r = divmod(v, 256)
-                    yield r
-            from_ = [six.int2byte(b) for i in from_ for b in to_bytes(i)]
+            from_ = struct.pack("<" + "I" * len(from_), *from_)
+            from_ = struct.unpack("c" * len(from_), from_)
 
     if isinstance(pack_type, six.string_types):
         return struct.pack("=" + pack_type * len(from_), *from_)
     else:
-        buf = six.BytesIO()
+        buf = io.BytesIO()
+        synthesize = (isinstance(pack_type, six.class_types) and
+                      issubclass(pack_type, Struct) and
+                      hasattr(pack_type, "synthetic") and
+                      hasattr(pack_type, "pack"))
         for item in from_:
-            # If we can't pack it, you'd better have packed it yourself. But
-            # let's not confuse things which aren't our Probobjs for packable
-            # things.
-            if isinstance(item, Protobj) and hasattr(item, "pack"):
-                buf.write(item.pack())
+            if isinstance(item, Struct) and hasattr(item, "pack"):
+                packed = item.pack()
+            elif synthesize:
+                packed = pack_type.synthetic(*item).pack()
             else:
-                buf.write(item)
+                packed = item
+            # Raises `TypeError` if `packed` does not support the buffer
+            # protocol/interface. On python2, this includes the `str` type.
+            buf.write(packed)
         return buf.getvalue()
 
 
