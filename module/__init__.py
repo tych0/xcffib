@@ -452,7 +452,7 @@ class List(Protobj):
 
     def to_atoms(self):
         """ A helper for converting a List of chars to an array of atoms """
-        return struct.unpack("=" + "I" * (len(self) // 4), b''.join(self))
+        return struct.unpack("<" + "I" * (len(self) // 4), b''.join(self))
 
     def buf(self):
         return b''.join(self.list)

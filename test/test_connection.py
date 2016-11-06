@@ -238,7 +238,7 @@ class TestConnection(XcffibTest):
 
         self.xproto.ChangeProperty(xcffib.xproto.PropMode.Replace, wid,
                 wm_protocols, xcffib.xproto.Atom.ATOM, 32,
-                1, struct.pack("=I", wm_take_focus))
+                1, (wm_take_focus,))
 
         reply = self.xproto.GetProperty(False, wid, wm_protocols, xcffib.xproto.Atom.ATOM, 0, 1).reply()
 
