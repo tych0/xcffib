@@ -26,15 +26,12 @@ try:
 except ImportError:
     from xcffib.ffi_build import ffi
 
-SONAMES = {
-    "Linux": "libxcb.so.1",
-    "Darwin": "libxcb.dylib",
-}
-
-try:
-    lib = ffi.dlopen(SONAMES[platform.system()])
-except KeyError:
-    raise NotImplementedError("unsupported platform %s" % platform.system())
+soname = "libxcb.so.1"
+if platform.system() == "Darwin":
+    soname = "libxcb.dylib"
+elif platform.system() == "Windows":
+    soname = "libxcb.dll"
+lib = ffi.dlopen(soname)
 
 __xcb_proto_version__ = 'placeholder'
 __version__ = 'placeholder'
