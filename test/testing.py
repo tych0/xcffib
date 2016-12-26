@@ -44,10 +44,6 @@ class XcffibTest(XvfbTest):
             xcffib.xproto.WindowClass.InputOutput,
             self.default_screen.root_visual,
             xcffib.xproto.CW.BackPixel | xcffib.xproto.CW.EventMask,
-            [
-                self.default_screen.black_pixel,
-                xcffib.xproto.EventMask.StructureNotify
-            ],
             is_checked=is_checked
         )
 
@@ -56,11 +52,6 @@ class XcffibTest(XvfbTest):
         self.xproto.ChangeWindowAttributes(
             self.default_screen.root,
             xcffib.xproto.CW.EventMask,
-            [
-                EventMask.SubstructureNotify |
-                EventMask.StructureNotify |
-                EventMask.SubstructureRedirect
-            ]
         )
 
         self.spawn(['xeyes'])
