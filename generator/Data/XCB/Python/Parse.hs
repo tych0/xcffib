@@ -301,7 +301,7 @@ structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
     where
       mkSwitch :: Expr ()
                -> BitCase
-               -> (GenStructElem Type, Maybe (Expr ()))
+               -> (GenStructElem Type, Expr ())
       mkSwitch cmp (BitCase _ bc_cmp elems) =
         let cmp_val = xExpressionToPyExpr id bc_cmp
             equality = BinaryOp (P.Equality ()) cmp cmp_val ()
@@ -309,12 +309,12 @@ structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
                        [] -> error "Empty switch elements"
                        [x] -> x
                        (_:_) -> error "Only one switch element currently supported"
-        in (elems', Just equality)
+        in (elems', equality)
 
       pkSwitch :: Expr ()
                -> String
                -> TypeInfoMap
-               -> (GenStructElem Type, Maybe (Expr ()))
+               -> (GenStructElem Type, Expr ())
                -> (Expr (), Expr (), Maybe (Expr ()))
       pkSwitch unpacker' ext' m' (struct, cond) =
         let unpacked = structElemToPyUnpack unpacker' ext' m' struct
@@ -327,7 +327,7 @@ structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
                               ((_, _, Nothing):_) -> error "Invalid switch cases"
                               [] -> error "Empty switch statement"
 
-        in (elem', cons, cond)
+        in (elem', cons, Just cond)
 
 -- The enum field is mostly for user information, so we ignore it.
 structElemToPyUnpack unpacker ext m (X.List n typ len _) =
@@ -363,12 +363,49 @@ structElemToPyPack :: String
                    -> TypeInfoMap
                    -> (String -> String)
                    -> GenStructElem Type
-                   -> Either (Maybe String, String) [(String, Maybe (Expr ()))]
+                   -> Either (Maybe String, String) [(String, [(Maybe (Expr ()), Maybe (Expr ()))])]
 structElemToPyPack _ _ _ (Pad i) = Left (Nothing, mkPad i)
 -- TODO: implement doc, switch, and fd?
 structElemToPyPack _ _ _ (Doc _ _ _) = Left (Nothing, "")
-structElemToPyPack _ _ _ (Switch _ _ _) = Left (Nothing, "")
 structElemToPyPack _ _ _ (Fd _) = Left (Nothing, "")
+structElemToPyPack ext m accessor (Switch n expr bitcases) =
+  let name = accessor n
+      cmp = xExpressionToPyExpr id expr
+      switch = map (mkSwitch cmp) bitcases
+  in Right $ [(name
+             , map (pkSwitch name ext m accessor) switch
+             )]
+    where
+      mkSwitch :: Expr ()
+               -> BitCase
+               -> (GenStructElem Type, Expr ())
+      mkSwitch cmp (BitCase _ bc_cmp elems) =
+        let cmp_val = xExpressionToPyExpr id bc_cmp
+            equality = BinaryOp (P.Equality ()) cmp cmp_val ()
+            elems' = case elems of
+                       [] -> error "Empty switch elements"
+                       [x] -> x
+                       (_:_) -> error "Only one switch element currently supported"
+        in (elems', equality)
+
+      pkSwitch :: String
+               -> String
+               -> TypeInfoMap
+               -> (String -> String)
+               -> (GenStructElem Type, Expr ())
+               -> (Expr (), Maybe (Expr ()))
+      pkSwitch name ext' m' _ (expr', cond) =
+        let acc' = \_ -> name
+            packed = structElemToPyPack ext' m' acc' expr'
+            -- Parsing these cases is annoying, there should be a better way to do this...
+            outexpr = case packed of
+                        Left (Just _, packStr) ->
+                          mkCall "buf.write" [mkCall "struct.pack"
+                                                     (mkStr ('=' : packStr) : [mkName name])]
+                        Left (Nothing, _) -> error "Switch must have something to unpack"
+                        Right [(_, [(expr'', Nothing)])] -> expr''
+                        Right _ -> error "Nested switches not implemented"
+        in (outexpr, Just cond)
 structElemToPyPack _ m accessor (SField n typ _ _) =
   let name = accessor n
   in case m M.! typ of
@@ -378,7 +415,9 @@ structElemToPyPack _ m accessor (SField n typ _ _) =
              trueB = mkCall (name ++ ".pack") noArgs
              synthetic = mkCall (typNam ++ ".synthetic") [mkArg ("*" ++ name)]
              falseB = mkCall (mkDot synthetic "pack") noArgs
-         in Right $ [(name, Just (CondExpr trueB cond falseB ()))]
+         in Right $ [(name
+                    , [(Just (CondExpr trueB cond falseB ()), Nothing)]
+                    )]
 -- TODO: assert values are in enum?
 structElemToPyPack ext m accessor (X.List n typ expr _) =
   let name = accessor n
@@ -388,24 +427,34 @@ structElemToPyPack ext m accessor (X.List n typ expr _) =
       -- anything, which we denote using Nothing
       list_len = if isNothing expr then [(name ++ "_len", Nothing)] else []
       list = case m M.! typ of
-        BaseType c -> [(name, Just (mkCall "xcffib.pack_list" [ mkName $ name
-                                                        , mkStr c
-                                                        ]))]
+        BaseType c -> [(name
+                      , [(Just (mkCall "xcffib.pack_list" [ mkName $ name
+                                                          , mkStr c
+                                                          ])
+                        , Nothing)]
+                      )]
         CompositeType tExt c ->
           let c' = if tExt == ext then c else (tExt ++ "." ++ c)
-          in [(name, Just (mkCall "xcffib.pack_list" ([ mkName $ name
-                                                , mkName c'
-                                                ])))]
+          in [(name
+             , [(Just (mkCall "xcffib.pack_list" ([ mkName $ name
+                                                  , mkName c'
+                                                  ]))
+               , Nothing)]
+             )]
   in Right $ list_len ++ list
 structElemToPyPack _ m accessor (ExprField name typ expr) =
   let e = (xExpressionToPyExpr accessor) expr
       name' = accessor name
   in case m M.! typ of
-       BaseType c -> Right $ [(name', Just (mkCall "struct.pack" [ mkStr ('=' : c)
-                                                           , e
-                                                           ]))]
-       CompositeType _ _ -> Right $ [(name',
-                                      Just (mkCall (mkDot e "pack") noArgs))]
+       BaseType c -> Right $ [(name'
+                             , [(Just (mkCall "struct.pack" [ mkStr ('=' : c)
+                                                            , e
+                                                            ])
+                               , Nothing)]
+                             )]
+       CompositeType _ _ -> Right $ [(name'
+                                    , [(Just (mkCall (mkDot e "pack") noArgs), Nothing)]
+                                    )]
 
 -- As near as I can tell here the padding param is unused.
 structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
@@ -415,7 +464,7 @@ structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
           list' = mkCall "xcffib.pack_list" [ mkName $ accessor list
                                             , mkStr "I"
                                             ]
-      in Right $ [(mask, Just mask'), (list, Just list')]
+      in Right $ [(mask, [(Just mask', Nothing)]), (list, [(Just list', Nothing)])]
     CompositeType _ _ -> error (
       "ValueParams other than CARD{16,32} not allowed.")
 
@@ -432,7 +481,6 @@ mkPackStmts :: String
 mkPackStmts ext name m accessor prefix membs =
   let packF = structElemToPyPack ext m accessor
       (toPack, stmts) = partitionEithers $ map packF membs
-      listWrites = map (flip StmtExpr () . mkCall "buf.write" . (: [])) $ catMaybes lists
       (args, keys) = let (as, ks) = unzip toPack in (catMaybes as, ks)
 
       -- In some cases (e.g. xproto.ConfigureWindow) there is padding after
@@ -442,6 +490,7 @@ mkPackStmts ext name m accessor prefix membs =
       -- been told to pack something explcitly, that we don't also pack it
       -- implicitly.
       (listNames, lists) = unzip $ filter (flip notElem args . fst) (concat stmts)
+      listWrites = map mkListWrites lists
       listNames' = case (ext, name) of
                      -- XXX: QueryTextExtents has a field named "odd_length"
                      -- which is unused, let's just drop it.
@@ -455,6 +504,18 @@ mkPackStmts ext name m accessor prefix membs =
                                          (mkStr ('=' : packStr) : (map mkName args))]
       writeStmt = if length packStr > 0 then [StmtExpr write ()] else []
   in (args ++ listNames', writeStmt ++ listWrites)
+    where
+      mkListWrites :: [(Maybe Expr (), Maybe (Expr ()))]
+                   -> Statement()
+      mkListWrites [] = error "Empty list for packing"
+      mkListWrites [((Just expr), Nothing)] = flip StmtExpr () . mkCall "buf.write" $ (: []) expr
+      mkListWrites list = Conditional (map (uncurry mkConds) list) [] ()
+
+      mkConds :: Maybe (Expr ())
+              -> Maybe (Expr ())
+              -> (Expr (), Suite ())
+      mkConds (Just expr') (Just cond) = (cond, [flip StmtExpr () . mkCall "buf.write" $ (: []) expr'])
+      mkConds _ Nothing = error "Can't create conditional without condition"
 
 mkPackMethod :: String
              -> String
