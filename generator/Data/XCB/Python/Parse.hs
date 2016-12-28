@@ -393,7 +393,7 @@ structElemToPyPack ext m accessor (Switch n expr bitcases) =
                -> TypeInfoMap
                -> (String -> String)
                -> (GenStructElem Type, Expr ())
-               -> (Expr (), Maybe (Expr ()))
+               -> (Maybe (Expr ()), Maybe (Expr ()))
       pkSwitch name ext' m' _ (expr', cond) =
         let acc' = \_ -> name
             packed = structElemToPyPack ext' m' acc' expr'
@@ -403,9 +403,9 @@ structElemToPyPack ext m accessor (Switch n expr bitcases) =
                           mkCall "buf.write" [mkCall "struct.pack"
                                                      (mkStr ('=' : packStr) : [mkName name])]
                         Left (Nothing, _) -> error "Switch must have something to unpack"
-                        Right [(_, [(expr'', Nothing)])] -> expr''
+                        Right [(_, [(Just (expr''), Nothing)])] -> expr''
                         Right _ -> error "Nested switches not implemented"
-        in (outexpr, Just cond)
+        in (Just outexpr, Just cond)
 structElemToPyPack _ m accessor (SField n typ _ _) =
   let name = accessor n
   in case m M.! typ of
@@ -425,7 +425,7 @@ structElemToPyPack ext m accessor (X.List n typ expr _) =
       -- list, or use "%s_len" % name if there is no fieldref. We need to add
       -- the _len to the arguments of the function but we don't need to pack
       -- anything, which we denote using Nothing
-      list_len = if isNothing expr then [(name ++ "_len", Nothing)] else []
+      list_len = if isNothing expr then [(name ++ "_len", [(Nothing, Nothing)])] else []
       list = case m M.! typ of
         BaseType c -> [(name
                       , [(Just (mkCall "xcffib.pack_list" [ mkName $ name
@@ -505,7 +505,7 @@ mkPackStmts ext name m accessor prefix membs =
       writeStmt = if length packStr > 0 then [StmtExpr write ()] else []
   in (args ++ listNames', writeStmt ++ listWrites)
     where
-      mkListWrites :: [(Maybe Expr (), Maybe (Expr ()))]
+      mkListWrites :: [(Maybe (Expr ()), Maybe (Expr ()))]
                    -> Statement()
       mkListWrites [] = error "Empty list for packing"
       mkListWrites [((Just expr), Nothing)] = flip StmtExpr () . mkCall "buf.write" $ (: []) expr
@@ -516,6 +516,7 @@ mkPackStmts ext name m accessor prefix membs =
               -> (Expr (), Suite ())
       mkConds (Just expr') (Just cond) = (cond, [flip StmtExpr () . mkCall "buf.write" $ (: []) expr'])
       mkConds _ Nothing = error "Can't create conditional without condition"
+      mkConds Nothing _ = error "IDK"
 
 mkPackMethod :: String
              -> String
