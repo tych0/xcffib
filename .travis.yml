@@ -6,6 +6,7 @@ python:
   - 3.3
   - 3.4
   - 3.5
+  - 3.6
   - pypy
   - pypy3
 
@@ -28,5 +29,7 @@ install:
 
 script: "make -j3 check"
 
+# pypy and pypy3 are currently not available in sudo-less Trusty builds, when
+# available, we can switch to those
 sudo: required
 dist: trusty
