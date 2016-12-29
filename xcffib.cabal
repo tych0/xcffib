@@ -33,7 +33,8 @@ library
                  containers,
                  mtl >= 2.1,
                  attoparsec,
-                 bytestring
+                 bytestring,
+                 either
   hs-source-dirs: generator
   exposed-modules: Data.XCB.Python.Parse,
                    Data.XCB.Python.PyHelpers
@@ -55,7 +56,8 @@ executable xcffibgen
                  mtl >= 2.1,
                  attoparsec,
                  bytestring,
-                 semigroups
+                 semigroups,
+                 either
   ghc-options: -Wall
 
 test-suite PyHelpersTests
