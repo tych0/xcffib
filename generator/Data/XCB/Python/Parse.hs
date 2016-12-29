@@ -28,6 +28,7 @@ import Data.Attoparsec.ByteString.Char8
 import Data.Bits
 import qualified Data.ByteString.Char8 as BS
 import Data.Either
+import Data.Either.Combinators
 import Data.List
 import qualified Data.Map as M
 import Data.Tree
@@ -211,8 +212,8 @@ xExpressionToPyExpr _ (Value i) = mkInt i
 xExpressionToPyExpr _ (Bit i) = BinaryOp (ShiftLeft ()) (mkInt 1) (mkInt i) ()
 xExpressionToPyExpr acc (FieldRef n) = mkName $ acc n
 xExpressionToPyExpr _ (EnumRef (UnQualType enum) n) = mkName $ enum ++ "." ++ n
--- Currently xcb only uses unqualified types, not sure how qualtype should behave, but just silence warning
-xExpressionToPyExpr _ (EnumRef (QualType _ _) n) = mkName n
+-- Currently xcb only uses unqualified types, not sure how qualtype should behave
+xExpressionToPyExpr _ (EnumRef (QualType _ _) _) = error "Qualified type, unknown behavior"
 xExpressionToPyExpr acc (PopCount e) =
   mkCall "xcffib.popcount" [xExpressionToPyExpr acc e]
 -- http://cgit.freedesktop.org/xcb/proto/tree/doc/xml-xcb.txt#n290
@@ -295,16 +296,15 @@ structElemToPyUnpack _ _ _ (Fd _) = Left (Nothing, "")
 -- The switch fields pick the way to expression to pack based on the expression
 structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
   let cmp = xExpressionToPyExpr ((++) "self.") expr
-      switch = map (mkSwitch cmp) bitcases
-      switch' = map (pkSwitch unpacker ext m) switch
-  in Right (name, switch', Nothing)
+      switch = map ((pkSwitch unpacker ext m) .(mkSwitch cmp)) bitcases
+  in Right (name, switch, Nothing)
     where
       mkSwitch :: Expr ()
                -> BitCase
                -> (GenStructElem Type, Expr ())
-      mkSwitch cmp (BitCase _ bc_cmp elems) =
-        let cmp_val = xExpressionToPyExpr id bc_cmp
-            equality = BinaryOp (P.Equality ()) cmp cmp_val ()
+      mkSwitch cmp (BitCase _ bcCmp elems) =
+        let cmpVal = xExpressionToPyExpr id bcCmp
+            equality = BinaryOp (P.Equality ()) cmp cmpVal ()
             elems' = case elems of
                        [] -> error "Empty switch elements"
                        [x] -> x
@@ -318,9 +318,7 @@ structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
                -> (Expr (), Expr (), Maybe (Expr ()))
       pkSwitch unpacker' ext' m' (struct, cond) =
         let unpacked = structElemToPyUnpack unpacker' ext' m' struct
-            (_, unpacked', _) = case unpacked of
-                                     Left _ -> error "Must unpack in switch"
-                                     Right x -> x
+            (_, unpacked', _) = fromRight' unpacked
             (elem', cons) = case unpacked' of
                               [(x, x', Nothing)] -> (x, x')
                               ((_, _, Just _):_) -> error "Nested switch statements"
@@ -379,9 +377,9 @@ structElemToPyPack ext m accessor (Switch n expr bitcases) =
       mkSwitch :: Expr ()
                -> BitCase
                -> (GenStructElem Type, Expr ())
-      mkSwitch cmp (BitCase _ bc_cmp elems) =
-        let cmp_val = xExpressionToPyExpr id bc_cmp
-            equality = BinaryOp (P.BinaryAnd ()) cmp cmp_val ()
+      mkSwitch cmp (BitCase _ bcCmp elems) =
+        let cmpVal = xExpressionToPyExpr id bcCmp
+            equality = BinaryOp (P.BinaryAnd ()) cmp cmpVal ()
             elems' = case elems of
                        [] -> error "Empty switch elements"
                        [x] -> x
@@ -489,7 +487,7 @@ mkPackStmts ext name m accessor prefix membs =
       -- been told to pack something explcitly, that we don't also pack it
       -- implicitly.
       (listNames, lists) = unzip $ filter (flip notElem args . fst) (concat stmts)
-      listWrites = concat (mapMaybe mkListWrites lists)
+      listWrites = concat $ map mkListWrites lists
       listNames' = case (ext, name) of
                      -- XXX: QueryTextExtents has a field named "odd_length"
                      -- which is unused, let's just drop it.
@@ -505,16 +503,16 @@ mkPackStmts ext name m accessor prefix membs =
   in (args ++ listNames', writeStmt ++ listWrites)
     where
       mkListWrites :: [(Maybe (Expr ()), Maybe (Expr ()))]
-                   -> Maybe (Suite ())
-      mkListWrites [] = Nothing
-      mkListWrites [((Just expr), Nothing)] = Just ([flip StmtExpr () . mkCall "buf.write" $ (: []) expr])
-      mkListWrites list = Just (map ((\x -> Conditional [x] [] ()) . mkConds) list)
+                   -> Suite ()
+      mkListWrites [] = []
+      mkListWrites [(Just expr, Nothing)] = [mkWrite expr]
+      mkListWrites ((Just _, Nothing):_) = error "Can't create conditional without condition"
+      mkListWrites ((Just expr, Just cond):xs) = Conditional [(cond, [mkWrite expr])] [] () : mkListWrites xs
+      mkListWrites ((Nothing, _):_) = error "Can't create conditional without expression"
 
-      mkConds :: (Maybe (Expr ()), Maybe(Expr ()))
-              -> (Expr (), Suite ())
-      mkConds ((Just expr'), (Just cond)) = (cond, [flip StmtExpr () . mkCall "buf.write" $ (: []) expr'])
-      mkConds (_, Nothing) = error "Can't create conditional without condition"
-      mkConds (Nothing, _) = error "Can't create conditional without expression"
+      mkWrite :: Expr ()
+              -> Statement ()
+      mkWrite expr' = flip StmtExpr () . mkCall "buf.write" $ (: []) expr'
 
 mkPackMethod :: String
              -> String
