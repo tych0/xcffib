@@ -47,7 +47,7 @@ executable xcffibgen
                  language-python >= 0.5.0,
                  split,
                  xcb-types >= 0.7.0,
-                 optparse-applicative >= 0.5,
+                 optparse-applicative >= 0.13,
                  filepath,
                  filemanip,
                  directory >= 1.2,
