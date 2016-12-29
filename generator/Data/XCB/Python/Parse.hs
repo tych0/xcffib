@@ -296,7 +296,7 @@ structElemToPyUnpack _ _ _ (Fd _) = Left (Nothing, "")
 -- The switch fields pick the way to expression to pack based on the expression
 structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
   let cmp = xExpressionToPyExpr ((++) "self.") expr
-      switch = map ((pkSwitch unpacker ext m) .(mkSwitch cmp)) bitcases
+      switch = map ((pkSwitch unpacker ext m) . (mkSwitch cmp)) bitcases
   in Right (name, switch, Nothing)
     where
       mkSwitch :: Expr ()
@@ -304,7 +304,7 @@ structElemToPyUnpack unpacker ext m (Switch name expr bitcases) =
                -> (GenStructElem Type, Expr ())
       mkSwitch cmp (BitCase _ bcCmp elems) =
         let cmpVal = xExpressionToPyExpr id bcCmp
-            equality = BinaryOp (P.Equality ()) cmp cmpVal ()
+            equality = BinaryOp (P.BinaryAnd ()) cmp cmpVal ()
             elems' = case elems of
                        [] -> error "Empty switch elements"
                        [x] -> x
@@ -603,7 +603,8 @@ mkStructStyleUnpack prefix ext m membs =
         let listStmts = case lists of
                           [] -> error "List should not be empty"
                           [(list, cons, Nothing)] -> mkList listName list (stNeedsPad st) cons
-                          _ -> [Conditional (map (mkConds (stNeedsPad st)) lists) [] ()]
+                          _ -> map (\x -> Conditional [x] [] ()) $ map (mkConds (stNeedsPad st)) lists
+                          --_ -> [Conditional (map (mkConds (stNeedsPad st)) lists) [] ()]
         (restNames, restStmts, restSz) <- mkUnpackStmts xs
         let totalSize = do
                           before <- packSz

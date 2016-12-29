@@ -29,11 +29,11 @@ class GetPropertyReply(xcffib.Reply):
         xcffib.Reply.__init__(self, unpacker)
         base = unpacker.offset
         self.num_items, self.format = unpacker.unpack("xx2x4xIB")
-        if self.format == PropertyFormat._8Bits:
+        if self.format & PropertyFormat._8Bits:
             self.items = xcffib.List(unpacker, "B", self.num_items)
-        elif self.format == PropertyFormat._16Bits:
+        if self.format & PropertyFormat._16Bits:
             self.items = xcffib.List(unpacker, "H", self.num_items)
-        elif self.format == PropertyFormat._32Bits:
+        if self.format & PropertyFormat._32Bits:
             self.items = xcffib.List(unpacker, "I", self.num_items)
         self.bufsize = unpacker.offset - base
 class GetPropertyCookie(xcffib.Cookie):
@@ -46,13 +46,13 @@ class GetPropertyWithPadReply(xcffib.Reply):
         base = unpacker.offset
         self.num_items, self.format = unpacker.unpack("xx2x4xIB")
         self.names = xcffib.List(unpacker, "B", self.num_items)
-        if self.format == PropertyFormat._8Bits:
+        if self.format & PropertyFormat._8Bits:
             unpacker.pad("B")
             self.items = xcffib.List(unpacker, "B", self.num_items)
-        elif self.format == PropertyFormat._16Bits:
+        if self.format & PropertyFormat._16Bits:
             unpacker.pad("H")
             self.items = xcffib.List(unpacker, "H", self.num_items)
-        elif self.format == PropertyFormat._32Bits:
+        if self.format & PropertyFormat._32Bits:
             unpacker.pad("I")
             self.items = xcffib.List(unpacker, "I", self.num_items)
         self.bufsize = unpacker.offset - base
