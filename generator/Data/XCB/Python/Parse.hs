@@ -365,7 +365,7 @@ structElemToPyPack :: String
                    -> GenStructElem Type
                    -> Either (Maybe String, String) [(String, [(Maybe (Expr ()), Maybe (Expr ()))])]
 structElemToPyPack _ _ _ (Pad i) = Left (Nothing, mkPad i)
--- TODO: implement doc, switch, and fd?
+-- TODO: implement doc and fd?
 structElemToPyPack _ _ _ (Doc _ _ _) = Left (Nothing, "")
 structElemToPyPack _ _ _ (Fd _) = Left (Nothing, "")
 structElemToPyPack ext m accessor (Switch n expr bitcases) =
@@ -381,7 +381,7 @@ structElemToPyPack ext m accessor (Switch n expr bitcases) =
                -> (GenStructElem Type, Expr ())
       mkSwitch cmp (BitCase _ bc_cmp elems) =
         let cmp_val = xExpressionToPyExpr id bc_cmp
-            equality = BinaryOp (P.Equality ()) cmp cmp_val ()
+            equality = BinaryOp (P.BinaryAnd ()) cmp cmp_val ()
             elems' = case elems of
                        [] -> error "Empty switch elements"
                        [x] -> x
@@ -400,8 +400,7 @@ structElemToPyPack ext m accessor (Switch n expr bitcases) =
             -- Parsing these cases is annoying, there should be a better way to do this...
             outexpr = case packed of
                         Left (Just _, packStr) ->
-                          mkCall "buf.write" [mkCall "struct.pack"
-                                                     (mkStr ('=' : packStr) : [mkName name])]
+                          mkCall "struct.pack" (mkStr ('=' : packStr) : [(mkCall (mkDot (mkName name) "pop") [mkInt 0])])
                         Left (Nothing, _) -> error "Switch must have something to unpack"
                         Right [(_, [(Just (expr''), Nothing)])] -> expr''
                         Right _ -> error "Nested switches not implemented"
@@ -425,7 +424,7 @@ structElemToPyPack ext m accessor (X.List n typ expr _) =
       -- list, or use "%s_len" % name if there is no fieldref. We need to add
       -- the _len to the arguments of the function but we don't need to pack
       -- anything, which we denote using Nothing
-      list_len = if isNothing expr then [(name ++ "_len", [(Nothing, Nothing)])] else []
+      list_len = if isNothing expr then [(name ++ "_len", [])] else []
       list = case m M.! typ of
         BaseType c -> [(name
                       , [(Just (mkCall "xcffib.pack_list" [ mkName $ name
@@ -490,7 +489,7 @@ mkPackStmts ext name m accessor prefix membs =
       -- been told to pack something explcitly, that we don't also pack it
       -- implicitly.
       (listNames, lists) = unzip $ filter (flip notElem args . fst) (concat stmts)
-      listWrites = map mkListWrites lists
+      listWrites = concat (mapMaybe mkListWrites lists)
       listNames' = case (ext, name) of
                      -- XXX: QueryTextExtents has a field named "odd_length"
                      -- which is unused, let's just drop it.
@@ -506,17 +505,16 @@ mkPackStmts ext name m accessor prefix membs =
   in (args ++ listNames', writeStmt ++ listWrites)
     where
       mkListWrites :: [(Maybe (Expr ()), Maybe (Expr ()))]
-                   -> Statement()
-      mkListWrites [] = error "Empty list for packing"
-      mkListWrites [((Just expr), Nothing)] = flip StmtExpr () . mkCall "buf.write" $ (: []) expr
-      mkListWrites list = Conditional (map (uncurry mkConds) list) [] ()
+                   -> Maybe (Suite ())
+      mkListWrites [] = Nothing
+      mkListWrites [((Just expr), Nothing)] = Just ([flip StmtExpr () . mkCall "buf.write" $ (: []) expr])
+      mkListWrites list = Just (map ((\x -> Conditional [x] [] ()) . mkConds) list)
 
-      mkConds :: Maybe (Expr ())
-              -> Maybe (Expr ())
+      mkConds :: (Maybe (Expr ()), Maybe(Expr ()))
               -> (Expr (), Suite ())
-      mkConds (Just expr') (Just cond) = (cond, [flip StmtExpr () . mkCall "buf.write" $ (: []) expr'])
-      mkConds _ Nothing = error "Can't create conditional without condition"
-      mkConds Nothing _ = error "IDK"
+      mkConds ((Just expr'), (Just cond)) = (cond, [flip StmtExpr () . mkCall "buf.write" $ (: []) expr'])
+      mkConds (_, Nothing) = error "Can't create conditional without condition"
+      mkConds (Nothing, _) = error "Can't create conditional without expression"
 
 mkPackMethod :: String
              -> String

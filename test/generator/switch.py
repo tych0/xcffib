@@ -16,6 +16,12 @@ class INT64(xcffib.Struct):
         buf.write(struct.pack("=iI", self.hi, self.lo))
         return buf.getvalue()
     fixed_size = 8
+    @classmethod
+    def synthetic(cls, hi, lo):
+        self = cls.__new__(cls)
+        self.hi = hi
+        self.lo = lo
+        return self
 class GetPropertyReply(xcffib.Reply):
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
@@ -56,14 +62,14 @@ class switchExtension(xcffib.Extension):
     def GetProperty(self, value_mask, items, is_checked=True):
         buf = six.BytesIO()
         buf.write(struct.pack("=xx2xI", value_mask))
-        if value_mask == CA.Counter:
-            buf.write(buf.write(struct.pack("=I", items)))
-        elif value_mask == CA.Value:
-            buf.write(items.pack())
-        elif value_mask == CA.ValueType:
-            buf.write(buf.write(struct.pack("=I", items)))
-        elif value_mask == CA.Events:
-            buf.write(buf.write(struct.pack("=I", items)))
+        if value_mask & CA.Counter:
+            buf.write(struct.pack("=I", items.pop(0)))
+        if value_mask & CA.Value:
+            buf.write(items.pack() if hasattr(items, "pack") else INT64.synthetic(*items).pack())
+        if value_mask & CA.ValueType:
+            buf.write(struct.pack("=I", items.pop(0)))
+        if value_mask & CA.Events:
+            buf.write(struct.pack("=I", items.pop(0)))
         return self.send_request(59, buf, GetPropertyCookie, is_checked=is_checked)
     def GetPropertyWithPad(self, is_checked=True):
         buf = six.BytesIO()
