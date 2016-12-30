@@ -31,6 +31,20 @@ before it can be merged. The `newtests` make target can be used to regenerate
 expected haskell test data if the tests are failing because you made a change
 to the generated python code.
 
+## Hacking on new xcb-proto versions
+
+Sometimes (more often recently), xcb-proto makes some updates that we need to
+do some work for. These often require some updates to `xcb-types` as well.
+First, hack your changes into `xcb-types` and `cabal install` them., then git
+clone the version of xcb-proto you want to somewhere, e.g. `~/packages`:
+
+    ~/packages $ git clone http://anongit.freedesktop.org/git/xcb/proto.git xcb-proto`
+
+Finally, you can build/test xcffib against this custom version of
+`xcb-{proto|types}` with:
+
+    make XCBDIR=~/packages/xcb-proto/src check
+
 ## Differences
 
 In general, you should `s/xcb/xcffib/g`. Explicit differences are listed below,
