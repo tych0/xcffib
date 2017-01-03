@@ -1,0 +1,93 @@
+<!-- based on xinput and sync -->
+<xcb header="switch">
+
+  <xidtype name="COUNTER" />
+
+  <struct name="INT64">
+    <field type="INT32" name="hi" />
+    <field type="CARD32" name="lo" />
+  </struct>
+
+  <request name="GetProperty" opcode="59">
+    <field type="CARD32"  name="value_mask" enum="CA" />
+    <!-- a switch in a request with field bitcases (see sync) -->
+    <switch name="items">
+      <fieldref>value_mask</fieldref>
+      <bitcase>
+        <enumref ref="CA">Counter</enumref>
+        <field type="COUNTER" name="counter" />
+      </bitcase>
+      <bitcase>
+        <enumref ref="CA">Value</enumref>
+        <field type="switch:INT64" name="value" />
+      </bitcase>
+      <bitcase>
+        <enumref ref="CA">ValueType</enumref>
+        <field type="CARD32" name="valueType" />
+      </bitcase>
+      <bitcase>
+        <enumref ref="CA">Events</enumref>
+        <field type="CARD32" name="events" />
+      </bitcase>
+    </switch>
+    <reply>
+      <field type="CARD32" name="num_items" />
+      <field type="CARD8"  name="format" enum="PropertyFormat" />
+      <!-- a switch in a reply with list bitcases (see sync) -->
+      <switch name="items">
+        <fieldref>format</fieldref>
+        <bitcase>
+          <enumref ref="PropertyFormat">8Bits</enumref>
+          <list type="CARD8" name="data8">
+            <fieldref>num_items</fieldref>
+          </list>
+        </bitcase>
+        <bitcase>
+          <enumref ref="PropertyFormat">16Bits</enumref>
+          <list type="CARD16" name="data16">
+            <fieldref>num_items</fieldref>
+          </list>
+        </bitcase>
+        <bitcase>
+          <enumref ref="PropertyFormat">32Bits</enumref>
+          <list type="CARD32" name="data32">
+            <fieldref>num_items</fieldref>
+          </list>
+        </bitcase>
+      </switch>
+    </reply>
+  </request>
+
+  <request name="GetPropertyWithPad" opcode="60">
+    <reply>
+      <field type="CARD32" name="num_items" />
+      <field type="CARD8"  name="format" enum="PropertyFormat" />
+      <list type="CARD8" name="names">
+        <fieldref>num_items</fieldref>
+      </list>
+      <!-- a switch in a reply with list bitcases that need pads (see sync) -->
+      <switch name="items">
+        <fieldref>format</fieldref>
+        <bitcase>
+          <enumref ref="PropertyFormat">8Bits</enumref>
+          <list type="CARD8" name="data8">
+            <fieldref>num_items</fieldref>
+          </list>
+        </bitcase>
+        <bitcase>
+          <enumref ref="PropertyFormat">16Bits</enumref>
+          <list type="CARD16" name="data16">
+            <fieldref>num_items</fieldref>
+          </list>
+        </bitcase>
+        <bitcase>
+          <enumref ref="PropertyFormat">32Bits</enumref>
+          <list type="CARD32" name="data32">
+            <fieldref>num_items</fieldref>
+          </list>
+        </bitcase>
+      </switch>
+    </reply>
+  </request>
+
+</xcb>
