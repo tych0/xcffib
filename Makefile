@@ -1,8 +1,12 @@
 GEN=./dist/build/xcffibgen/xcffibgen
 AUTOPEP8=autopep8 --in-place --aggressive --aggressive
 
-XCBVER=$(shell pkg-config --modversion xcb-proto)
 XCBDIR?=$(shell pkg-config --variable=xcbincludedir xcb-proto)
+ifneq ($(XCBDIR),$(shell pkg-config --variable=xcbincludedir xcb-proto))
+	XCBVER=$(shell sed -e '1,/AC_INIT/d' $(XCBDIR)/../configure.ac | head -n 1 | tr -d ,[:blank:])
+else
+	XCBVER=$(shell pkg-config --modversion xcb-proto)
+endif
 NCPUS=$(shell grep -c processor /proc/cpuinfo)
 PARALLEL=$(shell which parallel)
 CABAL=cabal --config-file=/dev/null

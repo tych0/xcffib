@@ -1,19 +1,35 @@
 language: python
 
-python:
-  - 2.7
-  - 3.2
-  - 3.3
-  - 3.4
-  - 3.5
-  - 3.6
-  - pypy
-  - pypy3
+# The idea here is to test all supported versions of python with xcb-proto
+# master, and then do some testing on older xcb-proto versions to make sure we
+# don't regress. We probably don't need the full matrix, so let's save
+# travis-ci some $$.
+matrix:
+  include:
+  - python: 2.7
+    env: XCBVER=master
+  - python: 3.2
+    env: XCBVER=master
+  - python: 3.3
+    env: XCBVER=master
+  - python: 3.4
+    env: XCBVER=master
+  - python: 3.5
+    env: XCBVER=master
+  - python: 3.6
+    env: XCBVER=master
+  - python: pypy
+    env: XCBVER=master
+  - python: pypy3
+    env: XCBVER=master
+  - python: 3.6
+    env: XCBVER=1.12
+  - python: 3.6
+    env: XCBVER=1.11
 
 addons:
   apt:
     packages:
-      - xcb-proto
       - ghc
       - cabal-install
       - happy
@@ -26,8 +42,10 @@ install:
   - cabal install --only-dependencies --enable-tests
   - cabal configure --enable-tests
   - pip install -r requirements.txt
+  - git clone http://anongit.freedesktop.org/git/xcb/proto.git
+  - ( cd proto && git checkout "$XCBVER" )
 
-script: "make -j3 check"
+script: "make XCBDIR=$TRAVIS_BUILD_DIR/proto/src check"
 
 # pypy and pypy3 are currently not available in sudo-less Trusty builds, when
 # available, we can switch to those
