@@ -83,7 +83,7 @@ else ifneq ($(wildcard ./xcffib.egg-info*),)
 	@echo "xcffib.egg-info exists, not releasing."
 else
 	sed -i "s/version = .*/version = \"${ver}\"/" setup.py
-	sed -i "s/__version__ = .*/__version = \"${ver}\"/" xcffib/__init__.py
+	sed -i "s/__version__ = .*/__version__ = \"${ver}\"/" xcffib/__init__.py
 	sed -r -i -e "s/(^version = \s*)[\"0-9\.]*/\1\"${ver}\"/" setup.py
 	sed -r -i -e "s/(^version:\s*)[0-9\.]*/\1${ver}/" xcffib.cabal
 	git commit -a -m "Release v${ver}"
