@@ -199,7 +199,9 @@ class TestConnection(XcffibTest):
         reply = self.xproto.GetProperty(False, wid,
                 net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, (2 ** 32) - 1).reply()
 
+        print(reply.value.buf())
         assert reply.value.buf() == title_bytes
+        print(reply.value.to_utf8())
         assert reply.value.to_utf8() == title_string
 
         # Also check with a unicode string

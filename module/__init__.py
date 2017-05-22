@@ -418,6 +418,8 @@ class List(Protobj):
 
         self.bufsize = unpacker.offset - old
 
+        self.raw = bytes(unpacker.buf[old:old+self.bufsize])
+
         assert count is None or count == len(self.list)
 
     def __str__(self):
@@ -452,7 +454,7 @@ class List(Protobj):
         return struct.unpack("<" + "I" * (len(self) // 4), b''.join(self))
 
     def buf(self):
-        return b''.join(self.list)
+        return self.raw
 
     @classmethod
     def synthetic(cls, list=None):
