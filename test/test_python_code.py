@@ -124,3 +124,18 @@ class TestPythonCode(XcffibTest):
         )
 
         e2 = xcffib.xproto.ClientMessageEvent(e)
+
+    def test_get_image(self):
+        # adapted from: https://gist.github.com/liftoff/4741790
+        setup = self.conn.get_setup()
+        screen = setup.roots[0]
+        width = screen.width_in_pixels
+        height = screen.height_in_pixels
+        root = screen.root
+
+        # GetImage requires an output format as the first arg.  We want ZPixmap:
+        output_format = xcffib.xproto.ImageFormat.ZPixmap
+        plane_mask = 2**32 - 1 # No idea what this is but it works!
+        reply = self.conn.core.GetImage(
+            output_format, root, 0, 0, width, height, plane_mask).reply()
+        reply.data.buf()
