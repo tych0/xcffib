@@ -468,19 +468,24 @@ class List(Protobj):
 
 class OffsetMap(object):
 
-    def __init__(self, core):
-        self.offsets = [(0, core)]
+    def __init__(self, corethings, default=None):
+        self.offsets = [(0, corethings, core)]
+        self.default = default
 
-    def add(self, offset, things):
-        self.offsets.append((offset, things))
+    def add(self, offset, things, cls=None):
+        self.offsets.append((offset, things, cls))
         self.offsets.sort(key=lambda x: x[0], reverse=True)
 
     def __getitem__(self, item):
         try:
-            offset, things = next((k, v) for k, v in self.offsets if item >= k)
+            offset, things, cls = next((k, v, c) for k, v, c in self.offsets if item >= k)
             return things[item - offset]
         except StopIteration:
             raise IndexError(item)
+        except KeyError:
+            if not self.default:
+                raise
+            return self.default(cls, item - offset)
 
 
 class Connection(object):
@@ -525,17 +530,17 @@ class Connection(object):
         self.setup = self.get_setup()
 
         self._event_offsets = OffsetMap(core_events)
-        self._error_offsets = OffsetMap(core_errors)
+        self._error_offsets = OffsetMap(core_errors, GenericError)
         self._setup_extensions()
 
     def _setup_extensions(self):
-        for key, (_, events, errors) in extensions.items():
+        for key, (cls, events, errors) in extensions.items():
             # We're explicitly not putting this as an argument to the next call
             # as a hack for lifetime management.
             c_ext = key.to_cffi()
             reply = lib.xcb_get_extension_data(self._conn, c_ext)
             self._event_offsets.add(reply.first_event, events)
-            self._error_offsets.add(reply.first_error, errors)
+            self._error_offsets.add(reply.first_error, errors, cls)
 
     def __call__(self, key):
         return extensions[key][0](self, key)
@@ -736,6 +741,28 @@ class Error(Response, XcffibException):
         Response.__init__(self, unpacker)
         XcffibException.__init__(self)
         self.code = unpacker.unpack('B', increment=False)
+
+
+class GenericError(XcffibException):
+
+    def __init__(self, ext, code, unpacker=None):
+        if unpacker:
+            cdata = unpacker.cdata
+            self.error_code = cdata.error_code
+            self.major_code = cdata.major_code
+            self.minor_code = cdata.minor_code
+            self.sequence = cdata.sequence
+        s = ext.__name__
+        if s.endswith('Extension'):
+            s = s[:-len('Extension')]
+        s = '{} error {}'.format(s, code)
+        XcffibException.__init__(self, s)
+        self.ext = ext
+        self.code = code
+        self.unpacker = unpacker
+
+    def __call__(self, unpacker):
+        return GenericError(self.ext, self.code, unpacker)
 
 
 def pack_list(from_, pack_type):
