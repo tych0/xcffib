@@ -44,7 +44,7 @@ executable xcffibgen
   main-is: xcffibgen.hs
   hs-source-dirs: generator
   build-depends: base ==4.*,
-                 xcffib >= 0.1.0,
+                 xcffib,
                  language-python >= 0.5.0,
                  split,
                  xcb-types >= 0.8.0,
@@ -65,7 +65,7 @@ test-suite PyHelpersTests
   main-is: PyHelpersTests.hs
   type: exitcode-stdio-1.0
   build-depends: base ==4.*,
-                 xcffib >= 0.1.0,
+                 xcffib,
                  language-python >= 0.5.0,
                  HUnit,
                  test-framework,
@@ -76,7 +76,7 @@ test-suite GeneratorTests.hs
   main-is: GeneratorTests.hs
   type: exitcode-stdio-1.0
   build-depends: base ==4.*,
-                 xcffib >= 0.1.0,
+                 xcffib,
                  xcb-types >= 0.8.0,
                  language-python >= 0.5.0,
                  HUnit,
