@@ -418,7 +418,7 @@ class List(Protobj):
 
         self.bufsize = unpacker.offset - old
 
-        self.raw = bytes(unpacker.buf[old:old+self.bufsize])
+        self.raw = bytes(unpacker.buf[old:old + self.bufsize])
 
         assert count is None or count == len(self.list)
 
