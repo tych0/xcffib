@@ -39,6 +39,8 @@ addons:
 
 install:
   - cabal update
+  - git clone http://github.com/aslatter/xcb-types
+  - ( cd xcb-types && cabal install --only-dependencies && cabal configure && cabal install )
   - cabal install --only-dependencies --enable-tests
   - cabal configure --enable-tests
   - pip install -r requirements.txt
