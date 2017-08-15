@@ -758,6 +758,21 @@ processXDecl ext (XidUnion name _) =
   do modify $ mkModify ext name (BaseType "I")
      return Noop
 
+-- EventStruct basically describes a set of possible events that could be
+-- represented by this one member. Slated to land in 1.13, it is only used in
+-- SendExtensionEvent for now.
+--
+-- Rather than do a bunch of work nobody will use, I've punted on this for now,
+-- leaving EventStructs as raw buffers. Since we support synthetic creation of
+-- events from buffers and SendExtensionEvent has the event types, people can
+-- unpack the thing themselves, by using the raw buffer that we keep around in
+-- the new Buffer class. Maybe some day in the future someone can add some
+-- syntactic sugar to make this a little nicer, but at least things compile
+-- again.
+processXDecl ext (XEventStruct name _) = do
+  modify $ mkModify ext name (CompositeType ext name)
+  return $ Declaration $ [mkXClass name "xcffib.Buffer" [] []]
+
 mkVersion :: XHeader -> Suite ()
 mkVersion header =
   let major = ver "MAJOR_VERSION" (xheader_major_version header)

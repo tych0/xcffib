@@ -297,6 +297,12 @@ class Protobj(object):
             self.bufsize = unpacker.known_max
 
 
+class Buffer(Protobj):
+    def __init__(self, unpacker):
+        Protobj.__init__(self, unpacker)
+        self.buf = unpacker.buf
+
+
 class Struct(Protobj):
     pass
 

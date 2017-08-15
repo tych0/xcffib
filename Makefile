@@ -54,7 +54,7 @@ valgrind: xcffib
 
 newtests: $(GEN)
 	$(GEN) --input ./test/generator/ --output ./test/generator/
-	git diff tests
+	git diff test
 
 # These are all split out so make -j3 check goes as fast as possible.
 .PHONY: lint

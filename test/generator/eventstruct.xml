@@ -1,0 +1,37 @@
+<!-- based on xinput -->
+<xcb header="eventstruct" extension-name="eventstruct" extension-name="eventstruct">
+
+
+    <!-- SendExtensionEvent -->
+    <eventstruct name="EventForSend">
+        <allowed extension="Input" xge="false" opcode-min="0" opcode-max="16" />
+        <!-- We need not allow the newer events which are based on
+             the GenericEvent extension:
+             The wire-protocol-spec
+             https://cgit.freedesktop.org/xorg/lib/libXi/tree/specs/encoding.xml?idĺibXi-1.7.9#n1793
+             only allows fixed sized events, which seems
+             to rule out GenericEvent.
+
+             The xlib-implementation also assumes fixed-sized events.
+             https://cgit.freedesktop.org/xorg/lib/libXi/tree/src/XSndExEv.c?id=libXi-1.7.9#n106
+
+             The Xserver also allows only non-GE events:
+	     https:g/xorg/xserver/tree/Xi/sendexev.c?id=xorg-server-1.19.1#n144
+        -->
+    </eventstruct>
+
+    <request name="SendExtensionEvent" opcode="31">
+        <field type="CARD8"  name="device_id" />
+        <field type="BOOL"   name="propagate" />
+        <field type="CARD16" name="num_classes" />
+        <field type="CARD8"  name="num_events" />
+        <pad bytes="3" />
+        <list type="EventForSend" name="events">
+            <fieldref>num_events</fieldref>
+        </list>
+        <list type="CARD8" name="classes">
+            <fieldref>num_classes</fieldref>
+        </list>
+    </request>
+
+</xcb>

@@ -41,6 +41,7 @@ pyTests = [ "event"
           , "render_1.7"
           , "xproto_1.7"
           , "render"
+          , "eventstruct"
           ]
 
 mkFname :: String -> FilePath
