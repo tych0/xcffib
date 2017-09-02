@@ -247,7 +247,7 @@ def _add_ext(key, value, events, errors):
 
 class ExtensionKey(object):
 
-    """ This definitely isn't needed, but we keep it around for compatibilty
+    """ This definitely isn't needed, but we keep it around for compatibility
     with xpyb.
     """
 
