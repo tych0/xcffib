@@ -35,7 +35,7 @@ to the generated python code.
 
 Sometimes (more often recently), xcb-proto makes some updates that we need to
 do some work for. These often require some updates to `xcb-types` as well.
-First, hack your changes into `xcb-types` and `cabal install` them., then git
+First, hack your changes into `xcb-types` and `cabal install` them, then git
 clone the version of xcb-proto you want to somewhere, e.g. `~/packages`:
 
     ~/packages $ git clone http://anongit.freedesktop.org/git/xcb/proto.git xcb-proto`
