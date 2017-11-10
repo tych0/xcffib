@@ -8,10 +8,6 @@ matrix:
   include:
   - python: 2.7
     env: XCBVER=master
-  - python: 3.2
-    env: XCBVER=master
-  - python: 3.3
-    env: XCBVER=master
   - python: 3.4
     env: XCBVER=master
   - python: 3.5
