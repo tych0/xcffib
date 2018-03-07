@@ -34,10 +34,10 @@ addons:
 install:
   - sudo apt-add-repository -y ppa:hvr/ghc && sudo apt update && sudo apt install cabal-install-2.0 ghc-7.10.3
   - export PATH=$PATH:/opt/cabal/2.0/bin:/opt/ghc/7.10.3/bin
-  - git clone http://github.com/aslatter/xcb-types
   - cabal update
-  - ( cd xcb-types && cabal install --only-dependencies && cabal configure && cabal install )
   - cabal install --only-dependencies --enable-tests
+  - git clone http://github.com/aslatter/xcb-types
+  - ( cd xcb-types && cabal configure && cabal install )
   - cabal configure --enable-tests
   - pip install -r requirements.txt
   - git clone http://anongit.freedesktop.org/git/xcb/proto.git
