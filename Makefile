@@ -91,5 +91,5 @@ else
 	python setup.py sdist
 	python setup.py sdist upload
 	cabal sdist
-	cabal upload dist/xcffib-${ver}.tar.gz
+	cabal upload --publish dist/xcffib-${ver}.tar.gz
 endif
