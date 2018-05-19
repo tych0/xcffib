@@ -33,7 +33,7 @@ elif platform.system() == "Windows":
     soname = "libxcb.dll"
 else:
     soname = ctypes.util.find_library("xcb")
-    if soname == None:
+    if soname is None:
         soname = "libxcb.so"
 lib = ffi.dlopen(soname)
 
