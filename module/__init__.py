@@ -15,6 +15,7 @@
 
 from __future__ import division, absolute_import
 
+import ctypes.util
 import functools
 import platform
 import six
@@ -26,11 +27,14 @@ try:
 except ImportError:
     from xcffib.ffi_build import ffi
 
-soname = "libxcb.so.1"
 if platform.system() == "Darwin":
     soname = "libxcb.dylib"
 elif platform.system() == "Windows":
     soname = "libxcb.dll"
+else:
+    soname = ctypes.util.find_library("xcb")
+    if soname == None:
+        soname = "libxcb.so"
 lib = ffi.dlopen(soname)
 
 __xcb_proto_version__ = 'placeholder'
