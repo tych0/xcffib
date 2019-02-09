@@ -48,4 +48,4 @@ install:
 script: "make XCBDIR=$TRAVIS_BUILD_DIR/proto/src check"
 
 sudo: required
-dist: trusty
+dist: xenial
