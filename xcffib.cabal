@@ -58,6 +58,8 @@ executable xcffibgen
                  bytestring,
                  semigroups,
                  either
+  other-modules: Data.XCB.Python.Parse,
+                 Data.XCB.Python.PyHelpers
   ghc-options: -Wall
 
 test-suite PyHelpersTests
