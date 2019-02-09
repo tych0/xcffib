@@ -14,9 +14,9 @@ matrix:
     env: XCBVER=master
   - python: 3.6
     env: XCBVER=master
-  - python: pypy
+  - python: pypy2.7-6.0
     env: XCBVER=master
-  - python: pypy3
+  - python: pypy3.5-6.0
     env: XCBVER=master
   - python: 3.6
     env: XCBVER=xcb-proto-1.13
