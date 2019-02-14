@@ -16,7 +16,6 @@
 module Main where
 
 
-import Data.Semigroup
 import Data.XCB.Types
 import Data.XCB.Python.Parse
 
