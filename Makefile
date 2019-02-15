@@ -88,8 +88,8 @@ else
 	sed -r -i -e "s/(^version:\s*)[0-9\.]*/\1${ver}/" xcffib.cabal
 	git commit -a -m "Release v${ver}"
 	git tag v${ver}
-	python setup.py sdist
-	python setup.py sdist upload
+	python3 setup.py sdist
+	python3 setup.py sdist upload
 	cabal new-sdist
 	cabal upload --publish dist-newstyle/xcffib-${ver}.tar.gz
 endif
