@@ -1,4 +1,3 @@
-GEN=./dist/build/xcffibgen/xcffibgen
 AUTOPEP8=autopep8 --in-place --aggressive --aggressive
 
 XCBDIR?=$(shell pkg-config --variable=xcbincludedir xcb-proto)
@@ -10,37 +9,38 @@ endif
 NCPUS=$(shell grep -c processor /proc/cpuinfo)
 PARALLEL=$(shell which parallel)
 CABAL=cabal --config-file=./cabal.config
+GEN=$(CABAL) new-run exe:xcffibgen --
 
 # you should have xcb-proto installed to run this
-xcffib: $(GEN) module/*.py
+xcffib: module/*.py
 	$(GEN) --input $(XCBDIR) --output ./xcffib
 	cp ./module/*py ./xcffib/
 	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
 	@if [ "$(TRAVIS)" = true ]; then python xcffib/ffi_build.py; else python xcffib/ffi_build.py > /dev/null 2>&1 || python3 xcffib/ffi_build.py; fi
 
 .PHONY: xcffib-fmt
-xcffib-fmt: $(GEN) module/*.py
+xcffib-fmt: module/*.py
 ifeq (${PARALLEL},)
 	$(AUTOPEP8) ./xcffib/*.py
 else
 	find ./xcffib/*.py | parallel -j $(NCPUS) $(AUTOPEP8) '{}'
 endif
 
-dist:
-	$(CABAL) configure --enable-tests
+dist-newstyle:
+	$(CABAL) new-configure --enable-tests
 
-.PHONY: $(GEN)
-$(GEN): dist
-	$(CABAL) build
+.PHONY: gen
+gen: dist-newstyle
+	$(CABAL) new-build
 
 .PHONY: clean
 clean:
-	-$(CABAL) clean
+	-$(CABAL) new-clean
 	-rm -rf xcffib
 	-rm -rf module/*pyc module/__pycache__
 	-rm -rf test/*pyc test/__pycache__
 	-rm -rf build *egg* *deb .pybuild
-	-rm -rf .pc
+	-rm -rf .pc cabal.project.local*
 
 # A target for just running nosetests. Travis will run 'check', which does
 # everything. (Additionally, travis uses separate environments where nosetests
@@ -52,7 +52,7 @@ pycheck: xcffib
 valgrind: xcffib
 	valgrind --leak-check=full --show-leak-kinds=definite nosetests -d
 
-newtests: $(GEN)
+newtests:
 	$(GEN) --input ./test/generator/ --output ./test/generator/
 	git diff test
 
@@ -62,8 +62,8 @@ lint:
 	flake8 --config=./test/flake8.cfg ./module
 
 .PHONY: htests
-htests: $(GEN)
-	$(CABAL) test
+htests:
+	$(CABAL) new-test
 
 check: xcffib lint htests
 	nosetests -d -v
@@ -90,6 +90,6 @@ else
 	git tag v${ver}
 	python setup.py sdist
 	python setup.py sdist upload
-	cabal sdist
-	cabal upload --publish dist/xcffib-${ver}.tar.gz
+	cabal new-sdist
+	cabal upload --publish dist-newstyle/xcffib-${ver}.tar.gz
 endif
