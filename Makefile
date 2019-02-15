@@ -9,7 +9,7 @@ else
 endif
 NCPUS=$(shell grep -c processor /proc/cpuinfo)
 PARALLEL=$(shell which parallel)
-CABAL=cabal --config-file=/dev/null
+CABAL=cabal --config-file=./cabal.config
 
 # you should have xcb-proto installed to run this
 xcffib: $(GEN) module/*.py
