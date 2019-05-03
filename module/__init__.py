@@ -461,7 +461,7 @@ class List(Protobj):
 
     def to_atoms(self):
         """ A helper for converting a List of chars to an array of atoms """
-        return struct.unpack("<" + "I" * (len(self) // 4), b''.join(self))
+        return struct.unpack("<" + "%dI" % (len(self) // 4), b''.join(self))
 
     def buf(self):
         return self.raw
@@ -779,7 +779,7 @@ def pack_list(from_, pack_type):
             from_ = [six.int2byte(b) for i in from_ for b in to_bytes(i)]
 
     if isinstance(pack_type, six.string_types):
-        return struct.pack("=" + pack_type * len(from_), *from_)
+        return struct.pack("=%d%s" % (len(from_), pack_type), *from_)
     else:
         buf = six.BytesIO()
         for item in from_:
