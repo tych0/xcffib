@@ -415,7 +415,7 @@ class List(Protobj):
         old = unpacker.offset
 
         if isinstance(typ, str):
-            self.list = list(unpacker.unpack(typ * count))
+            self.list = list(unpacker.unpack("%d%s" % (count, typ)))
         elif count is not None:
             for _ in range(count):
                 item = typ(unpacker)
