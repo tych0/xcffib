@@ -60,7 +60,7 @@ else:
         cffi_modules=["xcffib/ffi_build.py:ffi"]
     )
 
-version = "0.7.0"
+version = "0.8.0"
 dependencies = ['six', requires_cffi]
 
 setup(
