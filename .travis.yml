@@ -8,21 +8,21 @@ matrix:
   include:
   - python: 2.7
     env: XCBVER=master
-  - python: 3.4
-    env: XCBVER=master
   - python: 3.5
     env: XCBVER=master
   - python: 3.6
+    env: XCBVER=master
+  - python: 3.7
     env: XCBVER=master
   - python: pypy2.7-6.0
     env: XCBVER=master
   - python: pypy3.5-6.0
     env: XCBVER=master
-  - python: 3.6
+  - python: 3.7
     env: XCBVER=xcb-proto-1.13
-  - python: 3.6
+  - python: 3.7
     env: XCBVER=1.12
-  - python: 3.6
+  - python: 3.7
     env: XCBVER=1.11
 
 addons:
