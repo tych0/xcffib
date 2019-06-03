@@ -155,4 +155,3 @@ class TestXcffibTestGenerator(object):
             height = screen.height_in_pixels
             assert width == 1001
             assert height == 502
-

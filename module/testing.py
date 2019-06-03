@@ -27,6 +27,14 @@ def lock_path(display):
     return '/tmp/.X%d-lock' % display
 
 
+def find_display():
+    display = 10
+    while True:
+        if not os.path.exists(lock_path(display)):
+            return display
+        display += 1
+
+
 class XvfbTest(object):
 
     """ A helper class for testing things with nosetests. This class will run
@@ -116,8 +124,5 @@ class XvfbTest(object):
         # Don't do this for every test.
         if hasattr(self, '_display'):
             return self._display
-        self._display = 10
-        while True:
-            if not os.path.exists(lock_path(self._display)):
-                return self._display
-            self._display += 1
+        self._display = find_display()
+        return self._display
