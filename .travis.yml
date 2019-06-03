@@ -38,7 +38,7 @@ install:
   - export PATH=$PATH:/opt/cabal/bin:/opt/ghc/bin
   - cabal new-update
   - pip install -r requirements.txt
-  - git clone http://anongit.freedesktop.org/git/xcb/proto.git
+  - git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git proto
   - ( cd proto && git checkout "$XCBVER" )
 
 script: "make XCBDIR=$TRAVIS_BUILD_DIR/proto/src check"
