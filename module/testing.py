@@ -37,16 +37,17 @@ class XvfbTest(object):
     # test.
     xtrace = False
 
+    def __init__(self, width=800, height=600, depth=16):
+        self.width = width
+        self.height = height
+        self.depth = depth
+
     def spawn(self, cmd):
         """ Spawn a command but swallow its output. """
         discard = open(os.devnull)
         return subprocess.Popen(cmd, stdout=discard, stderr=discard)
 
     def setUp(self):
-        self.width = 800
-        self.height = 600
-        self.depth = 16
-
         self._old_display = os.environ.get('DISPLAY')
         os.environ['DISPLAY'] = ':%d' % self._find_display()
         self._xvfb = self.spawn(self._xvfb_command())
@@ -85,6 +86,13 @@ class XvfbTest(object):
             del os.environ['DISPLAY']
         else:
             os.environ['DISPLAY'] = self._old_display
+
+    def __enter__(self):
+        self.setUp()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.tearDown()
 
     def _xvfb_command(self):
         """ You can override this if you have some extra args for Xvfb or

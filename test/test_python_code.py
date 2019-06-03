@@ -15,6 +15,7 @@
 
 import xcffib
 import xcffib.xproto
+import os
 import struct
 import sys
 from xcffib.xproto import EventMask
@@ -139,3 +140,19 @@ class TestPythonCode(XcffibTest):
         reply = self.conn.core.GetImage(
             output_format, root, 0, 0, width, height, plane_mask).reply()
         reply.data.buf()
+
+
+class TestXcffibTestGenerator(object):
+
+    def test_XcffibTest_generator(self):
+        old_display = os.environ['DISPLAY']
+        # use some non-default width/height
+        with XcffibTest(width=1001, height=502) as test:
+            assert os.environ['DISPLAY'] != old_display
+            setup = test.conn.get_setup()
+            screen = setup.roots[0]
+            width = screen.width_in_pixels
+            height = screen.height_in_pixels
+            assert width == 1001
+            assert height == 502
+
