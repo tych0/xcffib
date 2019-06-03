@@ -145,7 +145,10 @@ class TestPythonCode(XcffibTest):
 class TestXcffibTestGenerator(object):
 
     def test_XcffibTest_generator(self):
-        old_display = os.environ['DISPLAY']
+        try:
+            old_display = os.environ['DISPLAY']
+        except KeyError:
+            old_display = ""
         # use some non-default width/height
         with XcffibTest(width=1001, height=502) as test:
             assert os.environ['DISPLAY'] != old_display
