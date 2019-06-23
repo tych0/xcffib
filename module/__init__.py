@@ -106,10 +106,11 @@ class Unpacker(object):
         self.offset += type_pad(size, self.offset)
 
     def unpack(self, fmt, increment=True):
+        fmt = "=" + fmt
         size = struct.calcsize(fmt)
         if size > self.size - self.offset:
             self._resize(size)
-        ret = struct.unpack_from("=" + fmt, self.buf, self.offset)
+        ret = struct.unpack_from(fmt, self.buf, self.offset)
 
         if increment:
             self.offset += size
