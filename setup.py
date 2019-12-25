@@ -75,6 +75,7 @@ setup(
     install_requires=dependencies,
     setup_requires=dependencies,
     packages=['xcffib'],
+    package_data={'xcffib': ['py.typed']},
     zip_safe=False,
     cmdclass={
         'build': binding_build,
