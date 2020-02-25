@@ -18,6 +18,7 @@ import xcffib.xproto
 import os
 import struct
 import sys
+import time
 from xcffib.xproto import EventMask
 
 from .testing import XcffibTest
@@ -151,6 +152,7 @@ class TestXcffibTestGenerator(object):
             old_display = ""
         # use some non-default width/height
         with XcffibTest(width=1001, height=502) as test:
+            time.sleep(0.1)
             assert os.environ['DISPLAY'] != old_display
             setup = test.conn.get_setup()
             screen = setup.roots[0]
