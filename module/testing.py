@@ -27,10 +27,22 @@ def lock_path(display):
     return '/tmp/.X%d-lock' % display
 
 
+def get_lock(display):
+    try:
+        os.mkdir(lock_path(display))
+        return True
+    except FileExistsError:
+        return False
+
+
+def release_lock(display):
+    os.rmdir(lock_path(display))
+
+
 def find_display():
     display = 10
     while True:
-        if not os.path.exists(lock_path(display)):
+        if get_lock(display):
             return display
         display += 1
 
