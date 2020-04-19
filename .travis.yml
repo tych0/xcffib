@@ -4,7 +4,7 @@ language: python
 # master, and then do some testing on older xcb-proto versions to make sure we
 # don't regress. We probably don't need the full matrix, so let's save
 # travis-ci some $$.
-matrix:
+jobs:
   include:
   - python: 2.7
     env: XCBVER=master
@@ -45,5 +45,5 @@ install:
 
 script: "make XCBDIR=$TRAVIS_BUILD_DIR/proto/src check"
 
-sudo: required
+os: linux
 dist: xenial
