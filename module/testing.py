@@ -15,6 +15,7 @@
 # Not strictly necessary to be included with the binding, but may be useful for
 # others who want to test things using xcffib.
 
+import fcntl
 import os
 import time
 import errno
@@ -27,10 +28,31 @@ def lock_path(display):
     return '/tmp/.X%d-lock' % display
 
 
+def get_lock(display):
+    lockfile = lock_path(display)
+    try:
+        with open(lockfile, "w") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True  # successfully got a lock
+    except OSError:
+        return False  # failed to get a lock
+
+
+def release_lock(display):
+    lockfile = lock_path(display)
+    if os.path.exists(lockfile):
+        try:
+            with open(lockfile, "r") as f:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        except OSError:
+            pass
+        os.remove(lockfile)
+
+
 def find_display():
     display = 10
     while True:
-        if not os.path.exists(lock_path(display)):
+        if get_lock(display):
             return display
         display += 1
 
