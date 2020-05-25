@@ -65,10 +65,9 @@ not public APIs, or not actually generated (in the case of the exceptions) by
   for a `<list type="char"/>`, you can use a python string literal. `xcffib`
   also gives you a string of length 1 out for each element in such a list,
   instead of an `int`. Finally, there is a helper method called `to_string` on
-  `xcffib.List`, to convert these string-like things into native strings. In
-  both python2 and python3 you get a native `str`. This means that for things
-  like `xproto.STR`, you can just do `the_str.name.to_string()` instead of
-  `''.join(map(chr, the_str.name))`.
+  `xcffib.List`, to convert these string-like things into native strings. This
+  means that for things like `xproto.STR`, you can just do
+  `the_str.name.to_string()` instead of `''.join(map(chr, the_str.name))`.
 * As above, `void` is also packed/unpacked as `char`s, since the convention is
   to use it as string data, e.g. in `xproto.ChangeProperty`.
 * The submodule `xcb` is gone. The top module re-exported all these constants

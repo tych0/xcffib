@@ -6,8 +6,6 @@ language: python
 # travis-ci some $$.
 jobs:
   include:
-  - python: 2.7
-    env: XCBVER=master
   - python: 3.5
     env: XCBVER=master
   - python: 3.6
@@ -15,8 +13,6 @@ jobs:
   - python: 3.7
     env: XCBVER=master
   - python: 3.8
-    env: XCBVER=master
-  - python: pypy
     env: XCBVER=master
   - python: pypy3
     env: XCBVER=master
