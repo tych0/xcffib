@@ -44,4 +44,4 @@ install:
 script: "make XCBDIR=$TRAVIS_BUILD_DIR/proto/src check"
 
 os: linux
-dist: xenial
+dist: focal
