@@ -52,8 +52,7 @@ class XvfbTest(object):
 
     def spawn(self, cmd):
         """ Spawn a command but swallow its output. """
-        discard = open(os.devnull)
-        return subprocess.Popen(cmd, stdout=discard, stderr=discard)
+        return subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def setUp(self):
         self._old_display = os.environ.get('DISPLAY')
