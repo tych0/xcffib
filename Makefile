@@ -69,13 +69,6 @@ htests:
 check: xcffib lint htests
 	nosetests -d -v
 
-deb:
-	git buildpackage --git-upstream-tree=master
-	lintian
-
-deb-src:
-	git buildpackage --git-upstream-tree=master -S
-
 # make release ver=0.99.99
 release: xcffib
 ifeq (${ver},)
