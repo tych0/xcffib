@@ -15,6 +15,7 @@
 # Not strictly necessary to be included with the binding, but may be useful for
 # others who want to test things using xcffib.
 
+import fcntl
 import os
 import time
 import errno
@@ -30,9 +31,14 @@ def lock_path(display):
 def find_display():
     display = 10
     while True:
-        if not os.path.exists(lock_path(display)):
-            return display
-        display += 1
+        f = open(lock_path(display), "w+")
+        try:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            f.close()
+            display += 1
+            continue
+        return display, f
 
 
 class XvfbTest(object):
@@ -56,12 +62,14 @@ class XvfbTest(object):
 
     def setUp(self):
         self._old_display = os.environ.get('DISPLAY')
-        os.environ['DISPLAY'] = ':%d' % self._find_display()
+        self._display, self._display_lock = find_display()
+        os.environ['DISPLAY'] = ':%d' % self._display
         self._xvfb = self.spawn(self._xvfb_command())
 
         if self.xtrace:
             subprocess.Popen(['xtrace', '-n'])
-            # xtrace's default display is :9
+            # xtrace's default display is :9; obviously this won't work
+            # concurrently, but it's not the default so...
             os.environ['DISPLAY'] = ':9'
         self.conn = self._connect_to_xvfb()
 
@@ -82,6 +90,7 @@ class XvfbTest(object):
         # Delete our X lock file too, since we .kill() the process so it won't
         # clean up after itself.
         try:
+            self._display_lock.close()
             os.remove(lock_path(self._display))
         except OSError as e:
             # we don't care if it doesn't exist, maybe something crashed and
@@ -118,10 +127,3 @@ class XvfbTest(object):
             except ConnectionException:
                 time.sleep(0.2)
         assert False, "couldn't connect to xvfb"
-
-    def _find_display(self):
-        # Don't do this for every test.
-        if hasattr(self, '_display'):
-            return self._display
-        self._display = find_display()
-        return self._display
