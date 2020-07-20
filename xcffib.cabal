@@ -39,6 +39,7 @@ library
   exposed-modules: Data.XCB.Python.Parse,
                    Data.XCB.Python.PyHelpers
   ghc-options: -Wall
+  default-language: Haskell2010
 
 executable xcffibgen
   main-is: xcffibgen.hs
@@ -61,6 +62,7 @@ executable xcffibgen
   other-modules: Data.XCB.Python.Parse,
                  Data.XCB.Python.PyHelpers
   ghc-options: -Wall
+  default-language: Haskell2010
 
 test-suite PyHelpersTests
   hs-source-dirs: test
@@ -72,6 +74,7 @@ test-suite PyHelpersTests
                  HUnit,
                  test-framework,
                  test-framework-hunit
+  default-language: Haskell2010
 
 test-suite GeneratorTests.hs
   hs-source-dirs: test
@@ -85,3 +88,4 @@ test-suite GeneratorTests.hs
                  test-framework,
                  test-framework-hunit,
                  filepath
+  default-language: Haskell2010
