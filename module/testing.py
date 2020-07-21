@@ -31,11 +31,14 @@ def lock_path(display):
 def find_display():
     display = 10
     while True:
-        f = open(lock_path(display), "w+")
         try:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            f = open(lock_path(display), "w+")
+            try:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                f.close()
+                raise
         except OSError:
-            f.close()
             display += 1
             continue
         return display, f
