@@ -1,3 +1,4 @@
 include README.md
 include LICENSE
 exclude xcffib/_ffi.py
+include test/__init__.py
