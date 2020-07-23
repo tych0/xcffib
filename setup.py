@@ -50,15 +50,9 @@ if '_cffi_backend' in sys.builtin_module_names:
 else:
     requires_cffi = "cffi>=1.1.0"
 
-# PyPy < 2.6 hack, can be dropped when PyPy3 2.6 is released
-if requires_cffi.startswith("cffi==0."):
-    cffi_args = dict(
-        ext_package="xcffib"
-    )
-else:
-    cffi_args = dict(
-        cffi_modules=["xcffib/ffi_build.py:ffi"]
-    )
+cffi_args = dict(
+    cffi_modules=["xcffib/ffi_build.py:ffi"]
+)
 
 version = "0.10.1"
 dependencies = ['six', requires_cffi]
