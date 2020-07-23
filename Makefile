@@ -86,4 +86,5 @@ else
 	python3 setup.py sdist upload
 	cabal new-sdist
 	cabal upload --publish dist-newstyle/sdist/xcffib-${ver}.tar.gz
+	@echo "remember to push the tag!!!"
 endif
