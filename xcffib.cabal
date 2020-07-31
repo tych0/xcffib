@@ -57,8 +57,9 @@ executable xcffibgen
                  mtl >= 2.1,
                  attoparsec,
                  bytestring,
-                 semigroups,
                  either
+  if impl(ghc < 8.0)
+    build-depends: semigroups
   other-modules: Data.XCB.Python.Parse,
                  Data.XCB.Python.PyHelpers
   ghc-options: -Wall
