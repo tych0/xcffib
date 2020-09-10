@@ -65,7 +65,7 @@ setup(
     license="Apache License 2.0",
     url="http://github.com/tych0/xcffib",
     author="Tycho Andersen",
-    author_email="tycho@tycho.ws",
+    author_email="tycho@tycho.pizza",
     install_requires=dependencies,
     setup_requires=dependencies,
     packages=['xcffib'],

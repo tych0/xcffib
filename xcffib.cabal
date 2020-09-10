@@ -5,7 +5,7 @@ homepage:            http://github.com/tych0/xcffib
 license:             OtherLicense
 license-file:        LICENSE
 author:              Tycho Andersen
-maintainer:          Tycho Andersen <tycho@tycho.ws>
+maintainer:          Tycho Andersen <tycho@tycho.pizza>
 category:            X11
 build-type:          Simple
 cabal-version:       >=1.10
