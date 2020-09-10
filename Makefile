@@ -64,7 +64,7 @@ lint:
 
 .PHONY: htests
 htests:
-	$(CABAL) new-test
+	$(CABAL) new-test --enable-tests
 
 check: xcffib lint htests
 	nosetests -d -v
