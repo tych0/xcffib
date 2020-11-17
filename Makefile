@@ -9,7 +9,7 @@ endif
 NCPUS=$(shell grep -c processor /proc/cpuinfo)
 PARALLEL=$(shell which parallel)
 CABAL=cabal --config-file=./cabal.config
-GEN=$(CABAL) new-run exe:xcffibgen --
+GEN=$(CABAL) new-run -j$(NCPUS) exe:xcffibgen --
 
 # you should have xcb-proto installed to run this
 xcffib: module/*.py
@@ -32,7 +32,7 @@ dist-newstyle:
 
 .PHONY: gen
 gen: dist-newstyle
-	$(CABAL) new-build
+	$(CABAL) new-build -j$(NCPUS)
 
 .PHONY: clean
 clean:
@@ -64,7 +64,7 @@ lint:
 
 .PHONY: htests
 htests:
-	$(CABAL) new-test --enable-tests
+	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
 check: xcffib lint htests
 	nosetests -d -v
