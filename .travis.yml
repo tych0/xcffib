@@ -19,6 +19,8 @@ jobs:
   - python: pypy3
     env: XCBVER=master
   - python: 3.9
+    env: XCBVER=xcb-proto-1.14.1
+  - python: 3.9
     env: XCBVER=xcb-proto-1.14
   - python: 3.9
     env: XCBVER=xcb-proto-1.13
