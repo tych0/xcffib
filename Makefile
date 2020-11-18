@@ -43,13 +43,6 @@ clean:
 	-rm -rf build *egg* *deb .pybuild
 	-rm -rf .pc cabal.project.local*
 
-# A target for just running nosetests. Travis will run 'check', which does
-# everything. (Additionally, travis uses separate environments where nosetests
-# points to The Right Thing for each, so we don't need to do nosetests3.)
-pycheck: xcffib
-	nosetests -d
-	nosetests3 -d
-
 valgrind: xcffib
 	valgrind --leak-check=full --show-leak-kinds=definite nosetests -d
 
