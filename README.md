@@ -1,4 +1,4 @@
-# xcffib [![Build Status](https://travis-ci.org/tych0/xcffib.svg?branch=master)](https://travis-ci.org/tych0/xcffib)
+# xcffib [![Build Status](https://github.com/tych0/xcffib/workflows/ci/badge.svg?branch=master)](https://github.com/tych0/xcffib/actions)
 
 `xcffib` is intended to be a (mostly) drop-in replacement for `xpyb`. `xpyb`
 has an inactive upstream, several memory leaks, is python2 only and doesn't
@@ -19,9 +19,9 @@ If you're interested in doing development, read on...
 
 ## Development dependencies
 
-You should be able to install all the language deps from hackage or pip. The
-[.travis.yaml](https://github.com/tych0/xcffib/blob/master/.travis.yml) has an
-example of how to install the dependencies on Ubuntu flavors.
+You should be able to install all the language deps from hackage or pip.
+[.github/workflows/ci.yaml](https://github.com/tych0/xcffib/blob/master/.github/workflows/ci.yaml)
+has an example of how to install the dependencies on Ubuntu flavors.
 
 ## Hacking
 
