@@ -1,0 +1,32 @@
+name: ci
+
+on:
+    push:
+    pull_request:
+    schedule:
+        - cron: '0 0 * * 0' # weekly
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        name: "python ${{ matrix.python-version }} xcbver ${{ matrix.xcbver }}"
+        strategy:
+            matrix:
+                python-version: [3.6, 3.7, 3.8, 3.9, pypy3]
+                xcbver: [1.11, 1.12, xcb-proto-1.13, xcb-proto-1.14, xcb-proto-1.14.1, master]
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up python ${{ matrix.python-version }}
+              uses: actions/setup-python@v2
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - uses: actions/setup-haskell@v1.1.3
+              with:
+                  ghc-version: 8.10
+                  cabal-version: 3.4
+            - run: cabal update
+            - run: pip install -r requirements.txt
+            - run: pip install nose2
+            - run: sudo apt install x11-apps
+            - run: git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git proto && cd proto && git checkout ${{ matrix.xcbver }}
+            - run: make XCBDIR=./proto/src check
