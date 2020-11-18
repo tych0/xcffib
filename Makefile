@@ -64,6 +64,7 @@ check: xcffib lint htests
 
 # make release ver=0.99.99
 release: xcffib
+
 ifeq (${ver},)
 	@echo "no version (ver=) specified, not releasing."
 else ifneq ($(wildcard ./xcffib.egg-info*),)
