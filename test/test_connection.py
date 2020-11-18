@@ -22,9 +22,6 @@ from xcffib import ffi
 from xcffib.testing import XvfbTest
 from .testing import XcffibTest
 
-from nose.tools import raises
-from nose import SkipTest
-
 import struct
 
 class TestConnection(XcffibTest):
@@ -37,10 +34,14 @@ class TestConnection(XcffibTest):
         self.xproto = None
         XvfbTest.tearDown(self)
 
-    @raises(xcffib.ConnectionException)
     def test_invalid_display(self):
-        self.conn = xcffib.Connection('notvalid')
-        self.conn.invalid()
+        try:
+            self.conn = xcffib.Connection('notvalid')
+            self.conn.invalid()
+        except xcffib.ConnectionException:
+            pass
+        else:
+            raise Exception("no connection exception!")
 
     def test_get_setup(self):
         setup = self.conn.get_setup()
@@ -58,30 +59,11 @@ class TestConnection(XcffibTest):
         assert screen.height_in_pixels == self.height
         assert screen.root_depth == self.depth
 
-    def test_seq_increases(self):
-        # If this test starts failing because the sequence numbers don't mach,
-        # that's probably because you added a new test that imports a new X
-        # extension. When that happens, every new connection automatically does
-        # a QueryExtention for each new ext that has been imported, so the
-        # squence numbers go up by one.
-        #
-        # i.e:
-        # xproto setup query = seqno 0
-        # xtest setup query = seqno 1
-        raise SkipTest
-        assert self.xproto.GetInputFocus().sequence == 2
-        assert self.xproto.GetInputFocus().sequence == 3
-
     def test_discard_sequence(self):
         cookie = self.xproto.GetInputFocus()
         cookie.discard_reply()
         # this hangs if you leave it in, because the reply really was discarded
         # assert cookie.reply()
-
-    @raises(xcffib.ConnectionException)
-    def test_invalid(self):
-        conn = xcffib.Connection('notadisplay')
-        conn.invalid()
 
     def test_list_extensions(self):
         reply = self.conn.core.ListExtensions().reply()
@@ -100,9 +82,13 @@ class TestConnection(XcffibTest):
         assert reply.width == 1
         assert reply.height == 1
 
-    @raises(xcffib.XcffibException)
     def test_wait_for_nonexistent_request(self):
-        self.conn.wait_for_reply(10)
+        try:
+            self.conn.wait_for_reply(10)
+        except xcffib.XcffibException:
+            pass
+        else:
+            raise Exception("xcffib exception expected")
 
     def test_no_windows(self):
         # Make sure there aren't any windows in the root window. This mostly
@@ -120,18 +106,26 @@ class TestConnection(XcffibTest):
         assert len(reply.children) == 1
         assert reply.children[0] == wid
 
-    @raises(AssertionError)
     def test_checking_unchecked_fails(self):
-        wid = self.conn.generate_id()
-        self.create_window(wid)
-        self.xproto.QueryTreeUnchecked(self.default_screen.root).check()
+        try:
+            wid = self.conn.generate_id()
+            self.create_window(wid)
+            self.xproto.QueryTreeUnchecked(self.default_screen.root).check()
+        except AssertionError:
+            pass
+        else:
+            raise Exception("expected assertion error")
 
-    @raises(AssertionError)
     def test_checking_default_checked_fails(self):
-        wid = self.conn.generate_id()
-        self.create_window(wid)
-        cookie = self.xproto.QueryTree(self.default_screen.root)
-        cookie.check()
+        try:
+            wid = self.conn.generate_id()
+            self.create_window(wid)
+            cookie = self.xproto.QueryTree(self.default_screen.root)
+            cookie.check()
+        except AssertionError:
+            pass
+        else:
+            raise Exception("expected assertion error")
 
     def test_checking_foreced_checked_succeeds(self):
         wid = self.conn.generate_id()
@@ -145,10 +139,14 @@ class TestConnection(XcffibTest):
         e = self.conn.wait_for_event()
         assert isinstance(e, xcffib.xproto.CreateNotifyEvent)
 
-    @raises(xcffib.xproto.WindowError)
     def test_query_invalid_wid_generates_error(self):
-        # query a bad WINDOW
-        self.xproto.QueryTree(0xf00).reply()
+        try:
+            # query a bad WINDOW
+            self.xproto.QueryTree(0xf00).reply()
+        except xcffib.xproto.WindowError:
+            pass
+        else:
+            raise Exception("expected WindowError")
 
     def test_OpenFont(self):
         fid = self.conn.generate_id()

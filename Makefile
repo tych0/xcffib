@@ -67,7 +67,7 @@ htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
 check: xcffib lint htests
-	nosetests -d -v
+	nose2 -v
 
 # make release ver=0.99.99
 release: xcffib
