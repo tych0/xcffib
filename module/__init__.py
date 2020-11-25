@@ -556,6 +556,7 @@ class Connection(object):
             raise XcffibException("Invalid connection.")
         err = lib.xcb_connection_has_error(self._conn)
         if err > 0:
+            self.disconnect()
             raise ConnectionException(err)
 
     def ensure_connected(f):
@@ -637,8 +638,9 @@ class Connection(object):
         return lib.xcb_generate_id(self._conn)
 
     def disconnect(self):
-        self.invalid()
-        return lib.xcb_disconnect(self._conn)
+        if self._conn is not None:
+            lib.xcb_disconnect(self._conn)
+            self._conn = None
 
     def _process_error(self, c_error):
         self.invalid()
