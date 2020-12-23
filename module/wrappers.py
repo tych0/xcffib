@@ -9,24 +9,40 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import weakref
 
 
-def IDWrapper(freer):
+def IDWrapper(finalizer):
     """
-    Classes create with IDWrapper return an ID and then free it upon exit of the
-    context.
+    Classes create with IDWrapper return an ID and then free it upon exit of
+    the context or when garbage collected, whichever comes first.
     """
     class Wrapper:
         def __init__(self, conn):
-            self.conn = conn
-            self.id = None
+            super().__init__()
+            self.id = conn.generate_id()
+            _finalizer = None
+
+            def finalize(conn, xid):
+                _finalizer.detach()
+                getattr(conn.core, finalizer)(xid)
+
+            _finalizer = weakref.finalize(
+                self,
+                finalize,
+                conn,
+                self.id,
+            )
+            self._finalizer = _finalizer
 
         def __enter__(self):
-            self.id = self.conn.generate_id()
             return self.id
 
         def __exit__(self, exception_type, exception_value, traceback):
-            getattr(self.conn.core, freer)(self.id)
+            self.finalize()
+
+        def finalize(self):
+            self._finalizer()
 
     return Wrapper
 
