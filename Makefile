@@ -44,7 +44,7 @@ clean:
 	-rm -rf .pc cabal.project.local*
 
 valgrind: xcffib
-	valgrind --leak-check=full --show-leak-kinds=definite nosetests -d
+	valgrind --leak-check=full --show-leak-kinds=definite pytest -v
 
 newtests:
 	$(GEN) --input ./test/generator/ --output ./test/generator/
@@ -60,7 +60,7 @@ htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
 check: xcffib lint htests
-	nose2 -v
+	pytest -v
 
 # make release ver=0.99.99
 release: xcffib
