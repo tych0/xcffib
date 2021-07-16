@@ -26,7 +26,7 @@ jobs:
                   cabal-version: 3.2
             - run: cabal update
             - run: pip install -r requirements.txt
-            - run: pip install nose2
+            - run: pip install pytest
             - run: sudo apt install x11-apps
             - run: git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git proto && cd proto && git checkout ${{ matrix.xcbver }}
             - run: make XCBDIR=./proto/src check
