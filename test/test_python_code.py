@@ -20,9 +20,10 @@ import struct
 import sys
 from xcffib.xproto import EventMask
 
-from .testing import XcffibTest
+from .conftest import XcffibTest
 
-class TestPythonCode(XcffibTest):
+
+class TestPythonCode:
 
     def test_struct_pack_uses_List(self):
         # suppose we have a list of ints...
@@ -65,9 +66,9 @@ class TestPythonCode(XcffibTest):
         assert om[1] == "Event1,0"
         assert om[2] == "Event1,1"
 
-    def test_create_ClientMessageEvent(self):
-        wm_protocols = self.intern("WM_PROTOCOLS")
-        wm_delete_window = self.intern("WM_DELETE_WINDOW")
+    def test_create_ClientMessageEvent(self, xcffib_test):
+        wm_protocols = xcffib_test.intern("WM_PROTOCOLS")
+        wm_delete_window = xcffib_test.intern("WM_DELETE_WINDOW")
 
         # should be exactly 20 bytes
         data = [
@@ -81,11 +82,11 @@ class TestPythonCode(XcffibTest):
         union = xcffib.xproto.ClientMessageData.synthetic(data, "I" * 5)
         assert list(union.data32) == data
 
-        wid = self.conn.generate_id()
-        self.create_window(wid=wid)
+        wid = xcffib_test.conn.generate_id()
+        xcffib_test.create_window(wid=wid)
 
-        wm_protocols = self.intern("WM_PROTOCOLS")
-        wm_delete_window = self.intern("WM_DELETE_WINDOW")
+        wm_protocols = xcffib_test.intern("WM_PROTOCOLS")
+        wm_delete_window = xcffib_test.intern("WM_DELETE_WINDOW")
 
         e = xcffib.xproto.ClientMessageEvent.synthetic(
             format=32,
@@ -94,18 +95,18 @@ class TestPythonCode(XcffibTest):
             data=union
         )
 
-        self.xproto.SendEvent(False, wid, EventMask.NoEvent, e.pack())
-        self.conn.flush()
+        xcffib_test.xproto.SendEvent(False, wid, EventMask.NoEvent, e.pack())
+        xcffib_test.conn.flush()
 
-        e = self.conn.wait_for_event()
+        e = xcffib_test.conn.wait_for_event()
         assert isinstance(e, xcffib.xproto.ClientMessageEvent)
         assert e.window == wid
         assert list(e.data.data32) == data
 
-    def test_pack_from_event(self):
-        wm_protocols = self.intern("WM_PROTOCOLS")
-        wm_delete_window = self.intern("WM_DELETE_WINDOW")
-        wid = self.conn.generate_id()
+    def test_pack_from_event(self, xcffib_test):
+        wm_protocols = xcffib_test.intern("WM_PROTOCOLS")
+        wm_delete_window = xcffib_test.intern("WM_DELETE_WINDOW")
+        wid = xcffib_test.conn.generate_id()
 
         # should be exactly 20 bytes
         data = [
@@ -126,9 +127,9 @@ class TestPythonCode(XcffibTest):
 
         e2 = xcffib.xproto.ClientMessageEvent(e)
 
-    def test_get_image(self):
+    def test_get_image(self, xcffib_test):
         # adapted from: https://gist.github.com/liftoff/4741790
-        setup = self.conn.get_setup()
+        setup = xcffib_test.conn.get_setup()
         screen = setup.roots[0]
         width = screen.width_in_pixels
         height = screen.height_in_pixels
@@ -137,12 +138,12 @@ class TestPythonCode(XcffibTest):
         # GetImage requires an output format as the first arg.  We want ZPixmap:
         output_format = xcffib.xproto.ImageFormat.ZPixmap
         plane_mask = 2**32 - 1 # No idea what this is but it works!
-        reply = self.conn.core.GetImage(
+        reply = xcffib_test.conn.core.GetImage(
             output_format, root, 0, 0, width, height, plane_mask).reply()
         reply.data.buf()
 
 
-class TestXcffibTestGenerator(object):
+class TestXcffibTestGenerator:
 
     def test_XcffibTest_generator(self):
         try:

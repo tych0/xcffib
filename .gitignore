@@ -17,6 +17,7 @@ debian/python-xcffib*
 debian/python3-xcffib*
 .pybuild
 .cabal-sandbox/
+.mypy_cache/
 cabal.sandbox.config
 cabal.project.local*
 .ghc.environment*

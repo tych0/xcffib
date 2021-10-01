@@ -23,7 +23,6 @@
 """
     This is mostly stolen from qtile's tests/scripts/window.py
 """
-from __future__ import print_function
 import os
 import sys
 import struct
@@ -31,15 +30,14 @@ import time
 import xcffib
 import xcffib.xproto
 from xcffib.xproto import EventMask
-from xcffib.testing import XvfbTest
 
-class TestWindow(XvfbTest):
 
-    def test_the_script(self):
+class TestWindow:
+    def test_the_script(self, xcffib_test):
         NAME = "one"
         for i in range(20):
             try:
-                conn = xcffib.connect(os.environ['DISPLAY'])
+                conn = xcffib.connect(os.environ["DISPLAY"])
             except xcffib.ConnectionException:
                 time.sleep(0.1)
                 continue
@@ -48,51 +46,104 @@ class TestWindow(XvfbTest):
                 sys.exit(1)
             break
         else:
-            print("Could not open window on display %s" % (sys.argv[1]), file=sys.stderr)
+            print(
+                "Could not open window on display %s" % (sys.argv[1]), file=sys.stderr
+            )
             sys.exit(1)
 
         screen = conn.get_setup().roots[conn.pref_screen]
 
         window = conn.generate_id()
-        background = conn.core.AllocColor(screen.default_colormap, 0x2828, 0x8383, 0xCECE).reply().pixel # Color "#2883ce"
-        conn.core.CreateWindow(xcffib.CopyFromParent, window, screen.root,
-                100, 100, 100, 100, 1,
-                xcffib.xproto.WindowClass.InputOutput, screen.root_visual,
-                xcffib.xproto.CW.BackPixel | xcffib.xproto.CW.EventMask,
-                [background, xcffib.xproto.EventMask.StructureNotify | xcffib.xproto.EventMask.Exposure])
+        background = (
+            conn.core.AllocColor(screen.default_colormap, 0x2828, 0x8383, 0xCECE)
+            .reply()
+            .pixel
+        )  # Color "#2883ce"
+        conn.core.CreateWindow(
+            xcffib.CopyFromParent,
+            window,
+            screen.root,
+            100,
+            100,
+            100,
+            100,
+            1,
+            xcffib.xproto.WindowClass.InputOutput,
+            screen.root_visual,
+            xcffib.xproto.CW.BackPixel | xcffib.xproto.CW.EventMask,
+            [
+                background,
+                xcffib.xproto.EventMask.StructureNotify
+                | xcffib.xproto.EventMask.Exposure,
+            ],
+        )
 
-        conn.core.ChangeProperty(xcffib.xproto.PropMode.Replace,
-                window, xcffib.xproto.Atom.WM_NAME,
-                xcffib.xproto.Atom.STRING, 8, len(NAME),
-                NAME)
+        conn.core.ChangeProperty(
+            xcffib.xproto.PropMode.Replace,
+            window,
+            xcffib.xproto.Atom.WM_NAME,
+            xcffib.xproto.Atom.STRING,
+            8,
+            len(NAME),
+            NAME,
+        )
 
         wm_protocols = "WM_PROTOCOLS"
-        wm_protocols = conn.core.InternAtom(0, len(wm_protocols), wm_protocols).reply().atom
+        wm_protocols = (
+            conn.core.InternAtom(0, len(wm_protocols), wm_protocols).reply().atom
+        )
 
         wm_delete_window = "WM_DELETE_WINDOW"
-        wm_delete_window = conn.core.InternAtom(0, len(wm_delete_window), wm_delete_window).reply().atom
+        wm_delete_window = (
+            conn.core.InternAtom(0, len(wm_delete_window), wm_delete_window)
+            .reply()
+            .atom
+        )
 
-        conn.core.ChangeProperty(xcffib.xproto.PropMode.Replace,
-                window, wm_protocols,
-                xcffib.xproto.Atom.ATOM, 32, 1,
-                [wm_delete_window])
+        conn.core.ChangeProperty(
+            xcffib.xproto.PropMode.Replace,
+            window,
+            wm_protocols,
+            xcffib.xproto.Atom.ATOM,
+            32,
+            1,
+            [wm_delete_window],
+        )
 
-        conn.core.ConfigureWindow(window,
-                xcffib.xproto.ConfigWindow.X | xcffib.xproto.ConfigWindow.Y |
-                xcffib.xproto.ConfigWindow.Width | xcffib.xproto.ConfigWindow.Height |
-                xcffib.xproto.ConfigWindow.BorderWidth,
-                [0, 0, 100, 100, 1])
+        conn.core.ConfigureWindow(
+            window,
+            xcffib.xproto.ConfigWindow.X
+            | xcffib.xproto.ConfigWindow.Y
+            | xcffib.xproto.ConfigWindow.Width
+            | xcffib.xproto.ConfigWindow.Height
+            | xcffib.xproto.ConfigWindow.BorderWidth,
+            [0, 0, 100, 100, 1],
+        )
         conn.core.MapWindow(window)
         conn.flush()
-        conn.core.ConfigureWindow(window,
-                xcffib.xproto.ConfigWindow.X | xcffib.xproto.ConfigWindow.Y |
-                xcffib.xproto.ConfigWindow.Width | xcffib.xproto.ConfigWindow.Height |
-                xcffib.xproto.ConfigWindow.BorderWidth,
-                [0, 0, 100, 100, 1])
+        conn.core.ConfigureWindow(
+            window,
+            xcffib.xproto.ConfigWindow.X
+            | xcffib.xproto.ConfigWindow.Y
+            | xcffib.xproto.ConfigWindow.Width
+            | xcffib.xproto.ConfigWindow.Height
+            | xcffib.xproto.ConfigWindow.BorderWidth,
+            [0, 0, 100, 100, 1],
+        )
 
         # now kill the window from the "wm" side via WM_DELETE_WINDOW protocol
-        WM_PROTOCOLS = self.conn.core.InternAtom(False, len("WM_PROTOCOLS"), "WM_PROTOCOLS").reply().atom
-        WM_DELETE_WINDOW = self.conn.core.InternAtom(False, len("WM_DELETE_WINDOW"), "WM_DELETE_WINDOW").reply().atom
+        WM_PROTOCOLS = (
+            xcffib_test.conn.core.InternAtom(False, len("WM_PROTOCOLS"), "WM_PROTOCOLS")
+            .reply()
+            .atom
+        )
+        WM_DELETE_WINDOW = (
+            xcffib_test.conn.core.InternAtom(
+                False, len("WM_DELETE_WINDOW"), "WM_DELETE_WINDOW"
+            )
+            .reply()
+            .atom
+        )
         vals = [
             33,  # ClientMessageEvent
             32,  # Format
@@ -105,10 +156,10 @@ class TestWindow(XvfbTest):
             0,
             0,
         ]
-        e = struct.pack('BBHII5I', *vals)
-        self.conn.core.SendEvent(False, window, EventMask.NoEvent, e)
+        e = struct.pack("BBHII5I", *vals)
+        xcffib_test.conn.core.SendEvent(False, window, EventMask.NoEvent, e)
 
-        self.conn.flush()
+        xcffib_test.conn.flush()
 
         while 1:
             conn.flush()

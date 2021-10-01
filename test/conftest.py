@@ -1,4 +1,5 @@
 # Copyright 2014 Tycho Andersen
+# Copyright 2021 Sean Vig
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +16,20 @@
 import xcffib
 from xcffib.testing import XvfbTest
 from xcffib.xproto import EventMask
+
+import pytest
+
+
+@pytest.fixture
+def xcffib_test():
+    with XcffibTest() as test_data:
+        yield test_data
+
+
+@pytest.fixture
+def xproto_test(xcffib_test):
+    xcffib_test.xproto = xcffib.xproto.xprotoExtension(xcffib_test.conn)
+    return xcffib_test
 
 
 class XcffibTest(XvfbTest):
