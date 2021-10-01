@@ -11,6 +11,7 @@ jobs:
         runs-on: ubuntu-latest
         name: "python ${{ matrix.python-version }} xcbver ${{ matrix.xcbver }}"
         strategy:
+            fail-fast: false
             matrix:
                 python-version: [3.6, 3.7, 3.8, 3.9, pypy3]
                 xcbver: [1.11, 1.12, xcb-proto-1.13, xcb-proto-1.14, xcb-proto-1.14.1, master]
