@@ -44,7 +44,7 @@ def find_display():
         return display, f
 
 
-class XvfbTest(object):
+class XvfbTest:
 
     """ A helper class for testing things with nosetests. This class will run
     each test in its own fresh xvfb, leaving you with an xcffib connection to
