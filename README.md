@@ -31,7 +31,7 @@ before it can be merged. The `newtests` make target can be used to regenerate
 expected haskell test data if the tests are failing because you made a change
 to the generated python code.
 
-## Hacking on new xcb-proto versions
+### Hacking on new xcb-proto versions
 
 Sometimes (more often recently), xcb-proto makes some updates that we need to
 do some work for. These often require some updates to `xcb-types` as well.
@@ -44,6 +44,15 @@ Finally, you can build/test xcffib against this custom version of
 `xcb-{proto|types}` with:
 
     make XCBDIR=~/packages/xcb-proto/src check
+
+### Hacking on new xcb-types versions
+
+To go along with new xcb-proto elements, sometimes you need to hack on newer
+versions of xcb-types. Newer cabals require you to do something like:
+
+    echo packages: ../xcb-types/xcb-types.cabal ./xcffib.cabal > cabal.project
+
+In order to find locally modified versions of xcb-types.
 
 ## Differences
 
