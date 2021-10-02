@@ -294,6 +294,7 @@ structElemToPyUnpack _ _ _ (Pad i) = Left (Nothing, mkPad i)
 structElemToPyUnpack _ _ _ (Doc _ _ _) = Left (Nothing, "")
 -- XXX: What does fd mean? we should implement it correctly
 structElemToPyUnpack _ _ _ (Fd _) = Left (Nothing, "")
+structElemToPyUnpack _ _ _ (Length _ _) = Left (Nothing, "")
 
 -- The switch fields pick the way to expression to pack based on the expression
 structElemToPyUnpack _ _ _ (Switch name expr _ bitcases) =
@@ -352,9 +353,10 @@ structElemToPyPack :: String
                                                                      [(Expr (), [GenStructElem Type])]
                                                     )]
 structElemToPyPack _ _ _ (Pad i) = Left (Nothing, mkPad i)
--- TODO: implement doc and fd?
+-- TODO: implement these?
 structElemToPyPack _ _ _ (Doc _ _ _) = Left (Nothing, "")
 structElemToPyPack _ _ _ (Fd _) = Left (Nothing, "")
+structElemToPyPack _ _ _ (Length _ _) = Left (Nothing, "")
 structElemToPyPack _ _ accessor (Switch n expr _ bitcases) =
   let name = accessor n
       cmp = xExpressionToPyExpr id expr
@@ -646,6 +648,7 @@ mkSyntheticMethod membs = do
       getName (Switch n _ _ _) = Just n
       getName (Doc _ _ _) = Nothing
       getName (Fd n) = Just n
+      getName (Length _ _) = Nothing
 
       assign :: String -> Statement ()
       assign n = mkAssign (mkDot "self" n) $ mkName n
