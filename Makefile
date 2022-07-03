@@ -60,7 +60,7 @@ htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
 check: xcffib lint htests
-	pytest -v
+	pytest-3 -v
 
 # make release ver=0.99.99
 release: xcffib
