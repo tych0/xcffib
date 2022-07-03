@@ -68,7 +68,7 @@ class XcffibTest(XvfbTest):
 
     def xeyes(self):
         # Enable CreateNotify
-        self.xproto.ChangeWindowAttributes(
+        self.xproto.ChangeWindowAttributesChecked(
             self.default_screen.root,
             xcffib.xproto.CW.EventMask,
             [
@@ -76,7 +76,7 @@ class XcffibTest(XvfbTest):
                 EventMask.StructureNotify |
                 EventMask.SubstructureRedirect
             ]
-        )
+        ).check()
 
         self.spawn(['xeyes'])
 

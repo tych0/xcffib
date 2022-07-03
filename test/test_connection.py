@@ -127,7 +127,6 @@ class TestConnection:
 
     def test_create_window_generates_event(self, xproto_test):
         xproto_test.xeyes()
-        xproto_test.conn.flush()
 
         e = xproto_test.conn.wait_for_event()
         assert isinstance(e, xcffib.xproto.CreateNotifyEvent)
@@ -148,7 +147,6 @@ class TestConnection:
 
     def test_external_ConfigureWindow(self, xproto_test):
         xproto_test.xeyes()
-        xproto_test.conn.flush()
 
         e = xproto_test.conn.wait_for_event()
 
@@ -279,8 +277,6 @@ class TestConnection:
 
     def test_KillClient(self, xproto_test):
         xproto_test.xeyes()
-
-        xproto_test.conn.flush()
 
         e1 = xproto_test.conn.wait_for_event()
         xproto_test.xproto.KillClient(e1.window)
