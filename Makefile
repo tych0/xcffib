@@ -44,7 +44,7 @@ clean:
 	-rm -rf .pc cabal.project.local*
 
 valgrind: xcffib
-	valgrind --leak-check=full --show-leak-kinds=definite pytest -v
+	valgrind --leak-check=full --show-leak-kinds=definite pytest-3 -v
 
 newtests:
 	$(GEN) --input ./test/generator/ --output ./test/generator/
