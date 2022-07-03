@@ -27,7 +27,6 @@ jobs:
                   cabal-version: 3.4
             - run: cabal update
             - run: pip install -r requirements.txt
-            - run: pip install pytest
-            - run: sudo apt install x11-apps
+            - run: sudo apt install x11-apps python3-pytest
             - run: git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git proto && cd proto && git checkout ${{ matrix.xcbver }}
             - run: make XCBDIR=./proto/src check
