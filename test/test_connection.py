@@ -44,7 +44,6 @@ class TestConnection:
         assert screen.height_in_pixels == xproto_test.height
         assert screen.root_depth == xproto_test.depth
 
-    @pytest.mark.xfail
     def test_seq_increases(self, xproto_test):
         # If this test starts failing because the sequence numbers don't mach,
         # that's probably because you added a new test that imports a new X
