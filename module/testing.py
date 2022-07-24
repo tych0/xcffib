@@ -63,6 +63,12 @@ class XvfbTest:
         """ Spawn a command but swallow its output. """
         return subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    def _restore_display(self):
+        if self._old_display is None:
+            del os.environ['DISPLAY']
+        else:
+            os.environ['DISPLAY'] = self._old_display
+
     def setUp(self):
         self._old_display = os.environ.get('DISPLAY')
         self._display, self._display_lock = find_display()
@@ -74,7 +80,11 @@ class XvfbTest:
             # xtrace's default display is :9; obviously this won't work
             # concurrently, but it's not the default so...
             os.environ['DISPLAY'] = ':9'
-        self.conn = self._connect_to_xvfb()
+        try:
+            self.conn = self._connect_to_xvfb()
+        except AssertionError:
+            self._restore_dislpay()
+            raise
 
     def tearDown(self):
         try:
@@ -100,11 +110,8 @@ class XvfbTest:
             # cleaned it up during a test.
             if e.errno != errno.ENOENT:
                 raise
-
-        if self._old_display is None:
-            del os.environ['DISPLAY']
-        else:
-            os.environ['DISPLAY'] = self._old_display
+        finally:
+            self._restore_display()
 
     def __enter__(self):
         self.setUp()
