@@ -83,7 +83,7 @@ class XvfbTest:
         try:
             self.conn = self._connect_to_xvfb()
         except AssertionError:
-            self._restore_dislpay()
+            self._restore_display()
             raise
 
     def tearDown(self):
