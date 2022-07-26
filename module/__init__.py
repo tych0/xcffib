@@ -126,10 +126,11 @@ class Unpacker(object):
     @classmethod
     def synthetic(cls, data, format):
         self = cls.__new__(cls)
+        self.__init__(len(data))
         self.buf = data
         self.offset = 0
         self.size = len(data)
-        self.size
+        return self
 
 
 class CffiUnpacker(Unpacker):
