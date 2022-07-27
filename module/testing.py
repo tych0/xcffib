@@ -61,7 +61,7 @@ class XvfbTest:
 
     def spawn(self, cmd):
         """ Spawn a command but swallow its output. """
-        return subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return subprocess.Popen(cmd)
 
     def _restore_display(self):
         if self._old_display is None:
