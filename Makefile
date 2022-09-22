@@ -76,7 +76,7 @@ else
 	git commit -a -m "Release v${ver}"
 	git tag v${ver}
 	python3 setup.py sdist
-	python3 setup.py sdist upload
+	twine upload dist/xcfffib-${ver}.tar.gz
 	cabal new-sdist
 	cabal upload --publish dist-newstyle/sdist/xcffib-${ver}.tar.gz
 	@echo "remember to push the tag!!!"
