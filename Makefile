@@ -40,7 +40,7 @@ clean:
 	-rm -rf xcffib
 	-rm -rf module/*pyc module/__pycache__
 	-rm -rf test/*pyc test/__pycache__
-	-rm -rf build *egg* *deb .pybuild
+	-rm -rf build *egg* *deb .pybuild dist
 	-rm -rf .pc cabal.project.local*
 
 valgrind: xcffib
