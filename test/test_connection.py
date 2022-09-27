@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import os
-import six
 import xcffib
 import xcffib.xproto
 
@@ -185,7 +184,7 @@ class TestConnection:
         utf8_string = xproto_test.intern("UTF8_STRING")
 
         title_bytes = b"test\xc2\xb7"
-        title_string = six.u("test\u00B7")
+        title_string = "test\u00B7"
 
         # First check with an object already encoded as bytes
         xproto_test.xproto.ChangeProperty(
@@ -297,12 +296,10 @@ class TestConnection:
         c.disconnect()
 
     def test_auth_connect(self, xproto_test):
-        authname = six.b("MIT-MAGIC-COOKIE-1")
-        authdata = six.b(
-            "\xa5\xcf\x95\xfa\x19\x49\x03\x60\xaf\xe4\x1e\xcd\xa3\xe2\xad\x47"
-        )
+        authname = b"MIT-MAGIC-COOKIE-1"
+        authdata = b"\xa5\xcf\x95\xfa\x19\x49\x03\x60\xaf\xe4\x1e\xcd\xa3\xe2\xad\x47"
 
-        authstr = authname + six.b(":") + authdata
+        authstr = authname + b":" + authdata
 
         conn = xcffib.connect(display=os.environ["DISPLAY"], auth=authstr)
 

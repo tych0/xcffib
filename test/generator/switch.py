@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import six
+import io
 _events = {}
 _errors = {}
 class INT64(xcffib.Struct):
@@ -12,7 +12,7 @@ class INT64(xcffib.Struct):
         self.hi, self.lo = unpacker.unpack("iI")
         self.bufsize = unpacker.offset - base
     def pack(self):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(struct.pack("=iI", self.hi, self.lo))
         return buf.getvalue()
     fixed_size = 8
@@ -60,7 +60,7 @@ class GetPropertyWithPadCookie(xcffib.Cookie):
     reply_type = GetPropertyWithPadReply
 class switchExtension(xcffib.Extension):
     def GetProperty(self, value_mask, items, is_checked=True):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(struct.pack("=xx2xI", value_mask))
         if value_mask & CA.Counter:
             counter = items.pop(0)
@@ -76,7 +76,7 @@ class switchExtension(xcffib.Extension):
             buf.write(struct.pack("=I", events))
         return self.send_request(59, buf, GetPropertyCookie, is_checked=is_checked)
     def GetPropertyWithPad(self, is_checked=True):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(struct.pack("=xx2x"))
         return self.send_request(60, buf, GetPropertyWithPadCookie, is_checked=is_checked)
 xcffib._add_ext(key, switchExtension, _events, _errors)
