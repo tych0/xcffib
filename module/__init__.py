@@ -17,8 +17,8 @@ from __future__ import division, absolute_import
 
 import ctypes.util
 import functools
+import io
 import platform
-import six
 import struct
 import weakref
 
@@ -456,10 +456,10 @@ class List(Protobj):
         """ A helper for converting a List of chars to a native string. Dies if
         the list contents are not something that could be reasonably converted
         to a string. """
-        return ''.join(chr(six.byte2int(i)) for i in self)
+        return ''.join(chr(i[0]) for i in self)
 
     def to_utf8(self):
-        return six.b('').join(self).decode('utf-8')
+        return b''.join(self).decode('utf-8')
 
     def to_atoms(self):
         """ A helper for converting a List of chars to an array of atoms """
@@ -501,7 +501,7 @@ class Connection(object):
     xpyb. """
     def __init__(self, display=None, fd=-1, auth=None):
         if auth is not None:
-            [name, data] = auth.split(six.b(':'))
+            [name, data] = auth.split(b':')
 
             c_auth = ffi.new("xcb_auth_info_t *")
             c_auth.name = ffi.new('char[]', name)
@@ -766,25 +766,25 @@ def pack_list(from_, pack_type):
             # PY3 is "helpful" in that when you do tuple(b'foo') you get
             # (102, 111, 111) instead of something more reasonable like
             # (b'f', b'o', b'o'), so we rebuild from_ as a tuple of bytes
-            from_ = [six.int2byte(b) for b in six.iterbytes(from_)]
-        elif isinstance(from_, six.string_types):
+            from_ = [bytes((b,)) for b in bytes(from_)]
+        elif isinstance(from_, str):
             # Catch Python 3 strings and Python 2 unicode strings, both of
             # which we encode to bytes as utf-8
             # Here we create the tuple of bytes from the encoded string
-            from_ = [six.int2byte(b) for b in bytearray(from_, 'utf-8')]
-        elif isinstance(from_[0], six.integer_types):
+            from_ = [bytes((b,)) for b in bytearray(from_, 'utf-8')]
+        elif isinstance(from_[0], int):
             # Pack from_ as char array, where from_ may be an array of ints
             # possibly greater than 256
             def to_bytes(v):
                 for _ in range(4):
                     v, r = divmod(v, 256)
                     yield r
-            from_ = [six.int2byte(b) for i in from_ for b in to_bytes(i)]
+            from_ = [bytes((b,)) for i in from_ for b in to_bytes(i)]
 
-    if isinstance(pack_type, six.string_types):
+    if isinstance(pack_type, str):
         return struct.pack("=%d%s" % (len(from_), pack_type), *from_)
     else:
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         for item in from_:
             # If we can't pack it, you'd better have packed it yourself. But
             # let's not confuse things which aren't our Probobjs for packable

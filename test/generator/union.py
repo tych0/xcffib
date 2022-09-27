@@ -1,6 +1,6 @@
 import xcffib
 import struct
-import six
+import io
 _events = {}
 _errors = {}
 class ClientMessageData(xcffib.Union):
@@ -12,7 +12,7 @@ class ClientMessageData(xcffib.Union):
         self.data16 = xcffib.List(unpacker.copy(), "H", 10)
         self.data32 = xcffib.List(unpacker.copy(), "I", 5)
     def pack(self):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(xcffib.pack_list(self.data8, "B"))
         return buf.getvalue()
 xcffib._add_ext(key, unionExtension, _events, _errors)

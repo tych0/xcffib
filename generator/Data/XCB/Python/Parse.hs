@@ -92,7 +92,7 @@ xform = map buildPython . dependencyOrder
     processXHeader :: XHeader
                    -> State TypeInfoMap (String, Suite ())
     processXHeader header = do
-      let imports = [mkImport "xcffib", mkImport "struct", mkImport "six"]
+      let imports = [mkImport "xcffib", mkImport "struct", mkImport "io"]
           version = mkVersion header
           key = maybeToList $ mkKey header
           globals = [mkDict "_events", mkDict "_errors"]
@@ -430,7 +430,7 @@ structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
       "ValueParams other than CARD{16,32} not allowed.")
 
 buf :: Suite ()
-buf = [mkAssign "buf" (mkCall "six.BytesIO" noArgs)]
+buf = [mkAssign "buf" (mkCall "io.BytesIO" noArgs)]
 
 mkPackStmts :: String
             -> String

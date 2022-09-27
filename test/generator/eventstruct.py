@@ -1,13 +1,13 @@
 import xcffib
 import struct
-import six
+import io
 _events = {}
 _errors = {}
 class EventForSend(xcffib.Buffer):
     pass
 class eventstructExtension(xcffib.Extension):
     def SendExtensionEvent(self, device_id, propagate, num_classes, num_events, events, classes, is_checked=False):
-        buf = six.BytesIO()
+        buf = io.BytesIO()
         buf.write(struct.pack("=xx2xBBHB3x", device_id, propagate, num_classes, num_events))
         buf.write(xcffib.pack_list(events, EventForSend))
         buf.write(xcffib.pack_list(classes, "B"))

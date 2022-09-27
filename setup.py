@@ -55,7 +55,7 @@ cffi_args = dict(
 )
 
 version = "0.12.1"
-dependencies = ['six', requires_cffi]
+dependencies = [requires_cffi]
 
 setup(
     name="xcffib",
