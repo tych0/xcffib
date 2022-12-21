@@ -12,7 +12,7 @@ CABAL=cabal --config-file=./cabal.config
 GEN=$(CABAL) new-run -j$(NCPUS) exe:xcffibgen --
 
 # you should have xcb-proto installed to run this
-xcffib: module/*.py
+xcffib: module/*.py xcffib.cabal $(shell find . -path ./test -prune -false -o -name \*.hs)
 	$(GEN) --input $(XCBDIR) --output ./xcffib
 	cp ./module/*py ./xcffib/
 	touch ./xcffib/py.typed
