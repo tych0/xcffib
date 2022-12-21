@@ -67,9 +67,9 @@ class TestConnection:
                     # This gives an "xcffib.xproto.LengthError"...
                     conn.render.CreateLinearGradientChecked(
                         pic_gradient,
-                        2,
                         xcffib.render.POINTFIX.synthetic(0, 0),
                         xcffib.render.POINTFIX.synthetic(200, 200),
+                        2,
                         [0, 1],
                         [
                             xcffib.render.COLOR.synthetic(0, 0, 65535, 65535),
