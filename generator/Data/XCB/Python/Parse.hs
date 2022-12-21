@@ -27,7 +27,6 @@ import Control.Monad.State.Strict
 import Data.Attoparsec.ByteString.Char8
 import Data.Bits
 import qualified Data.ByteString.Char8 as BS
-import Data.Either
 import Data.Either.Combinators as EC
 import Data.List
 import qualified Data.Map as M
@@ -743,9 +742,10 @@ processXDecl ext (XRequest name opcode _ membs reply) = do
 processXDecl ext (XUnion name _ membs) = do
   m <- get
   let unpackF = structElemToPyUnpack unpackerCopy ext m
-      (fields, listInfo) = partitionEithers $ map unpackF membs
-      toUnpack = concat $ map mkUnionUnpack fields
-      (names, listOrSwitches, _) = unzip3 listInfo
+      (fields, listInfo) = span EC.isLeft $ map unpackF membs
+      toUnpack = concat $ map (mkUnionUnpack . EC.fromLeft') fields
+      listInfo' = map (either mkBaseUnpack id) listInfo
+      (names, listOrSwitches, _) = unzip3 listInfo'
       (exprs, _) = unzip $ map EC.fromLeft' listOrSwitches
       lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
       initMethod = lists ++ toUnpack
@@ -761,6 +761,8 @@ processXDecl ext (XUnion name _ membs) = do
                   -> Suite ()
     mkUnionUnpack (n, typ) =
       mkUnpackFrom unpackerCopy (maybeToList n) typ
+
+    mkBaseUnpack _ = error "xcffib: trailing base types unpack not implemented"
 
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.
