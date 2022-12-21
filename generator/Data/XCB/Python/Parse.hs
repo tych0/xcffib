@@ -28,7 +28,7 @@ import Data.Attoparsec.ByteString.Char8
 import Data.Bits
 import qualified Data.ByteString.Char8 as BS
 import Data.Either
-import Data.Either.Combinators
+import Data.Either.Combinators as EC
 import Data.List
 import qualified Data.Map as M
 import Data.Tree
@@ -441,8 +441,9 @@ mkPackStmts :: String
             -> ([String], Suite ())
 mkPackStmts ext name m accessor prefix membs =
   let packF = structElemToPyPack ext m accessor
-      (toPack, stmts) = partitionEithers $ map packF membs
-      (args, keys) = let (as, ks) = unzip toPack in (catMaybes as, ks)
+      (toPack, stmts) = span EC.isLeft $ map packF membs
+      stmts' = map (either mkBasePack id) stmts
+      (args, keys) = let (as, ks) = unzip (map EC.fromLeft' toPack) in (catMaybes as, ks)
 
       -- In some cases (e.g. xproto.ConfigureWindow) there is padding after
       -- value_mask. The way the xml specification deals with this is by
@@ -450,7 +451,7 @@ mkPackStmts ext name m accessor prefix membs =
       -- implying it implicitly. Thus, we want to make sure that if we've already
       -- been told to pack something explcitly, that we don't also pack it
       -- implicitly.
-      (listNames, listOrSwitches) = unzip $ filter (flip notElem args . fst) (concat stmts)
+      (listNames, listOrSwitches) = unzip $ filter (flip notElem args . fst) (concat stmts')
       listWrites = concat $ map (uncurry mkWrites) $ zip listNames listOrSwitches
       listNames' = case (ext, name) of
                      -- XXX: QueryTextExtents has a field named "odd_length"
@@ -485,6 +486,11 @@ mkPackStmts ext name m accessor prefix membs =
             -> String
             -> Statement ()
       mkPop toPop n = mkAssign n $ mkCall (mkDot toPop "pop") [mkInt 0]
+
+      mkBasePack (Nothing, "") = []
+      mkBasePack (n, c) =
+        let n' = maybe "" id n
+        in [(n', Left (Just (mkCall "struct.pack" [mkStr ('=' : c), mkName n'])))]
 
 mkPackMethod :: String
              -> String
@@ -724,7 +730,7 @@ processXDecl ext (XRequest name opcode _ membs reply) = do
       isChecked = pyTruth $ isJust reply
       argChecked = ArgKeyword (ident "is_checked") (mkName "is_checked") ()
       checkedParam = Param (ident "is_checked") Nothing (Just isChecked) ()
-      allArgs = (mkParams $ "self" : args) ++ [checkedParam]
+      allArgs = (mkParams $ "self" : (filter (not . null) args)) ++ [checkedParam]
       mkArg' = flip ArgExpr ()
       ret = mkReturn $ mkCall "self.send_request" ((map mkArg' [ mkInt opcode
                                                                , mkName "buf"
@@ -740,7 +746,7 @@ processXDecl ext (XUnion name _ membs) = do
       (fields, listInfo) = partitionEithers $ map unpackF membs
       toUnpack = concat $ map mkUnionUnpack fields
       (names, listOrSwitches, _) = unzip3 listInfo
-      (exprs, _) = unzip $ map fromLeft' listOrSwitches
+      (exprs, _) = unzip $ map EC.fromLeft' listOrSwitches
       lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
       initMethod = lists ++ toUnpack
       -- Here, we only want to pack the first member of the union, since every
