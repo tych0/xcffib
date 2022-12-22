@@ -1,13 +1,14 @@
-import os
 import xcffib
-import xcffib.xproto
-from xcffib.xproto import CW, EventMask, ExposeEvent, KeyPressEvent, WindowClass
 import xcffib.render
-from xcffib.wrappers import PixmapID
+import xcffib.xproto
+from xcffib.xproto import CW, EventMask, ExposeEvent, WindowClass
 
-from xcffib import ffi
+WIDTH = 50
+HEIGHT = 50
 
-import pytest
+
+def double_to_fixed(num):
+    return int(num * 65536)
 
 
 def find_format(screen, depth, visual):
@@ -55,25 +56,46 @@ class TestConnection:
                 reply = cookie.reply()
                 fmt = find_format(reply.screens[0], depth, visual)
 
-                with PixmapID(conn) as pix_mask:
-                    # Create a pixmap and picture for the mask
-                    conn.core.CreatePixmap(depth, pix_mask, window, 200, 200)
-                    pic_mask = conn.generate_id()
-                    conn.render.CreatePicture(pic_mask, pix_mask, fmt, 0, [])
+                # Create picture from the window
+                pic_window = conn.generate_id()
+                conn.render.CreatePicture(pic_window, window, fmt, 0, [])
 
-                    # Create the linear gradient
-                    pic_gradient = conn.generate_id()
+                # Create the linear gradient
+                pic_gradient = conn.generate_id()
+                conn.render.CreateLinearGradientChecked(
+                    pic_gradient,
+                    xcffib.render.POINTFIX.synthetic(0, 0),
+                    xcffib.render.POINTFIX.synthetic(double_to_fixed(WIDTH), double_to_fixed(HEIGHT)),
+                    2,
+                    [0, double_to_fixed(1)],
+                    [
+                        xcffib.render.COLOR.synthetic(0, 0, 0, 0xffff),  # Solid black
+                        xcffib.render.COLOR.synthetic(0xffff, 0xffff, 0xffff, 0xffff),  # Solid white
+                    ],
+                ).check()
 
-                    # This gives an "xcffib.xproto.LengthError"...
-                    conn.render.CreateLinearGradientChecked(
-                        pic_gradient,
-                        xcffib.render.POINTFIX.synthetic(0, 0),
-                        xcffib.render.POINTFIX.synthetic(200, 200),
-                        2,
-                        [0, 1],
-                        [
-                            xcffib.render.COLOR.synthetic(0, 0, 65535, 65535),
-                            xcffib.render.COLOR.synthetic(0, 65535, 65535, 65535),
-                        ],
-                    ).check()
-                    break
+                # Render the gradient onto the window
+                conn.render.Composite(
+                    xcffib.render.PictOp.Src,
+                    pic_gradient,
+                    0,
+                    pic_window,
+                    0, 0,
+                    0, 0,
+                    0, 0,
+                    WIDTH, HEIGHT
+                )
+
+                img = conn.core.GetImage(
+                    xcffib.xproto.ImageFormat.ZPixmap,
+                    window,
+                    0, 0,
+                    WIDTH, HEIGHT,
+                    0xffffffff
+                ).reply()
+
+                conn.flush()
+
+                assert img.data[0:2] == [0, 0]
+                assert img.data[-2:] == [255, 255]
+                break
