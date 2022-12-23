@@ -196,11 +196,11 @@ class ConnectionException(XcffibException):
             'accepts.'),
         lib.XCB_CONN_CLOSED_PARSE_ERR: (
             'Connection closed, error during parsing display string.'),
-        #        lib.XCB_CONN_CLOSED_INVALID_SCREEN: (
-        #            'Connection closed because the server does not have a screen '
-        #            'matching the display.'),
-        #        lib.XCB_CONN_CLOSED_FDPASSING_FAILED: (
-        #            'Connection closed because some FD passing operation failed'),
+        lib.XCB_CONN_CLOSED_INVALID_SCREEN: (
+            'Connection closed because the server does not have a screen '
+            'matching the display.'),
+        lib.XCB_CONN_CLOSED_FDPASSING_FAILED: (
+            'Connection closed because some FD passing operation failed'),
     }
 
     def __init__(self, err):
