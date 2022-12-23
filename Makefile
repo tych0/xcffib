@@ -60,6 +60,12 @@ htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
 check: xcffib lint htests
+	# lots of bugs here, so we keep the || true for now, but
+	# render all this just to be annoying so hopefully someone
+	# will fix these. they have all been around for a long time,
+	# so nobody is using the buggy requests right now,
+	# presumably.
+	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py || true
 	pytest-3 -v --durations=3
 
 # make release ver=0.99.99
