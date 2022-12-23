@@ -66,6 +66,7 @@ check: xcffib lint htests
 	# so nobody is using the buggy requests right now,
 	# presumably.
 	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py || true
+	python3 -m compileall xcffib
 	pytest-3 -v --durations=3
 
 # make release ver=0.99.99
