@@ -484,11 +484,13 @@ mkPackStmts ext name m accessor prefix membs =
       mkPop :: String
             -> String
             -> Statement ()
-      mkPop toPop n = mkAssign n $ mkCall (mkDot toPop "pop") [mkInt 0]
+      mkPop toPop n =
+        let pop = mkCall (mkDot toPop "pop") [mkInt 0]
+        in if null n then StmtExpr pop () else mkAssign n pop
 
       mkBasePack (Nothing, "") = []
       mkBasePack (n, c) =
-        let n' = maybe "_" id n
+        let n' = maybe "" id n
         in [(n', Left (Just (mkCall "struct.pack" [mkStr ('=' : c), mkName n'])))]
 
 mkPackMethod :: String
