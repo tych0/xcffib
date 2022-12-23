@@ -488,7 +488,7 @@ mkPackStmts ext name m accessor prefix membs =
 
       mkBasePack (Nothing, "") = []
       mkBasePack (n, c) =
-        let n' = maybe "" id n
+        let n' = maybe "_" id n
         in [(n', Left (Just (mkCall "struct.pack" [mkStr ('=' : c), mkName n'])))]
 
 mkPackMethod :: String
