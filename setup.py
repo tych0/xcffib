@@ -54,7 +54,7 @@ cffi_args = dict(
     cffi_modules=["xcffib/ffi_build.py:ffi"]
 )
 
-version = "1.1.1"
+version = "1.1.2"
 dependencies = [requires_cffi]
 
 setup(
