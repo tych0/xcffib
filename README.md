@@ -31,23 +31,23 @@ before it can be merged. The `newtests` make target can be used to regenerate
 expected haskell test data if the tests are failing because you made a change
 to the generated python code.
 
-### Hacking on new xcb-proto versions
+### Hacking on new xcbproto versions
 
-Sometimes (more often recently), xcb-proto makes some updates that we need to
+Sometimes (more often recently), xcbproto makes some updates that we need to
 do some work for. These often require some updates to `xcb-types` as well.
 First, hack your changes into `xcb-types` and `cabal install` them, then git
-clone the version of xcb-proto you want to somewhere, e.g. `~/packages`:
+clone the version of xcbproto you want to somewhere, e.g. `~/packages`:
 
-    ~/packages $ git clone http://anongit.freedesktop.org/git/xcb/proto.git xcb-proto`
+    ~/packages $ git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git
 
 Finally, you can build/test xcffib against this custom version of
 `xcb-{proto|types}` with:
 
-    make XCBDIR=~/packages/xcb-proto/src check
+    make XCBDIR=~/packages/xcbproto/src check
 
 ### Hacking on new xcb-types versions
 
-To go along with new xcb-proto elements, sometimes you need to hack on newer
+To go along with new xcbproto elements, sometimes you need to hack on newer
 versions of xcb-types. Newer cabals require you to do something like:
 
     echo packages: ../xcb-types/xcb-types.cabal ./xcffib.cabal > cabal.project
@@ -70,7 +70,7 @@ not public APIs, or not actually generated (in the case of the exceptions) by
 * `xcb.Request` is gone. It was an entirely internal and unnecessary interface.
 * `xcffib.Connection.send_request` takes slightly different (but more sensible)
    arguments.
-* Everywhere `xcb-proto` says `char`, `xcffib` uses a char. That means on input
+* Everywhere `xcbproto` says `char`, `xcffib` uses a char. That means on input
   for a `<list type="char"/>`, you can use a python string literal. `xcffib`
   also gives you a string of length 1 out for each element in such a list,
   instead of an `int`. Finally, there is a helper method called `to_string` on
