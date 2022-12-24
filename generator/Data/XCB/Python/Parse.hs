@@ -358,7 +358,7 @@ structElemToPyPack _ _ _ (Fd _) = Left (Nothing, "")
 structElemToPyPack _ _ _ (Length _ _) = Left (Nothing, "")
 structElemToPyPack _ _ accessor (Switch n expr _ bitcases) =
   let name = accessor n
-      cmp = xExpressionToPyExpr id expr
+      cmp = xExpressionToPyExpr accessor expr
       elems = map (mkSwitch cmp) bitcases
   in Right $ [(name, Right elems)]
     where
@@ -366,7 +366,7 @@ structElemToPyPack _ _ accessor (Switch n expr _ bitcases) =
                -> BitCase
                -> (Expr (), [GenStructElem Type])
       mkSwitch cmp (BitCase _ bcCmp _ elems') =
-        let cmpVal = xExpressionToPyExpr id bcCmp
+        let cmpVal = xExpressionToPyExpr accessor bcCmp
             equality = BinaryOp (P.BinaryAnd ()) cmp cmpVal ()
         in (equality, elems')
 structElemToPyPack ext m accessor (SField n typ _ _) =
