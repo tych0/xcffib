@@ -60,12 +60,13 @@ htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
 check: xcffib lint htests
-	# lots of bugs here, so we keep the || true for now, but
-	# render all this just to be annoying so hopefully someone
-	# will fix these. they have all been around for a long time,
-	# so nobody is using the buggy requests right now,
-	# presumably.
-	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py || true
+	# The --builtin=CW is a hack to work around:
+	# https://lists.freedesktop.org/archives/xcb/2022-December/011427.html
+	# when that lands and all tested versions have it, we can
+	# drop this.
+	#
+	# In the meantime, we can work around this in the binding if someone really needs it.
+	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py --builtins=CW
 	python3 -m compileall xcffib
 	pytest-3 -v --durations=3
 
