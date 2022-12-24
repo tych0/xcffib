@@ -212,7 +212,7 @@ xExpressionToPyExpr _ (Bit i) = BinaryOp (ShiftLeft ()) (mkInt 1) (mkInt i) ()
 xExpressionToPyExpr acc (FieldRef n) = mkName $ acc n
 xExpressionToPyExpr _ (EnumRef (UnQualType enum) n) = mkName $ enum ++ "." ++ n
 -- Currently xcb only uses unqualified types, not sure how qualtype should behave
-xExpressionToPyExpr _ (EnumRef (QualType _ _) _) = error "Qualified type, unknown behavior"
+xExpressionToPyExpr _ (EnumRef (QualType ext n) _) = mkName $ ext ++ "." ++ n
 xExpressionToPyExpr acc (PopCount e) =
   mkCall "xcffib.popcount" [xExpressionToPyExpr acc e]
 -- http://cgit.freedesktop.org/xcb/proto/tree/doc/xml-xcb.txt#n290
