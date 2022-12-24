@@ -808,3 +808,10 @@ def wrap(ptr):
     cffi_explicit_lifetimes[conn] = ptr
 
     return conn
+
+
+def __DeviceTimeCoord_wrapper(typ, num_axes):
+    def init(unpacker):
+        i = typ(unpacker)
+        i.num_axes = num_axes
+        return i

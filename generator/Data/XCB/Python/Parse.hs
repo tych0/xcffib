@@ -226,7 +226,10 @@ xExpressionToPyExpr acc (Unop o e) =
   let o' = xUnopToPyOp o
       e' = xExpressionToNestedPyExpr acc e
   in Paren (UnaryOp o' e' ()) ()
-xExpressionToPyExpr _ (ParamRef n) = mkName n
+xExpressionToPyExpr acc (ParamRef n) =
+    if n == "num_axes"
+    then mkName $ acc n
+    else error ("unsupported paramref " ++ n)
 
 getConst :: XExpression -> Maybe Int
 getConst (Value i) = Just i
@@ -321,6 +324,9 @@ structElemToPyUnpack unpacker ext m (X.List n typ len _) =
       cons = case m M.! typ of
                BaseType c -> mkStr c
                CompositeType tExt c | ext /= tExt -> mkName $ tExt ++ "." ++ c
+               CompositeType _ "DeviceTimeCoord" ->
+                 let wrapper = mkName "xcffib.__DeviceTimeCoord_wrapper"
+                 in mkCall wrapper [mkName "DeviceTimeCoord", mkName (attr "num_axes")]
                CompositeType _ c -> mkName c
       list = mkCall "xcffib.List" [ unpacker
                                   , cons
