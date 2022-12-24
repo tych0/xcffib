@@ -369,14 +369,15 @@ structElemToPyPack _ _ accessor (Switch n expr _ bitcases) =
         let cmpVal = xExpressionToPyExpr id bcCmp
             equality = BinaryOp (P.BinaryAnd ()) cmp cmpVal ()
         in (equality, elems')
-structElemToPyPack _ m accessor (SField n typ _ _) =
+structElemToPyPack ext m accessor (SField n typ _ _) =
   let name = accessor n
   in case m M.! typ of
        BaseType c -> Left (Just name, c)
-       CompositeType _ typNam ->
+       CompositeType tExt typNam ->
          let cond = mkCall "hasattr" [mkArg name, ArgExpr (mkStr "pack") ()]
              trueB = mkCall (name ++ ".pack") noArgs
-             synthetic = mkCall (typNam ++ ".synthetic") [mkArg ("*" ++ name)]
+             typNam' = if ext == tExt then typNam else tExt ++ "." ++ typNam
+             synthetic = mkCall (typNam' ++ ".synthetic") [mkArg ("*" ++ name)]
              falseB = mkCall (mkDot synthetic "pack") noArgs
          in Right $ [(name
                     , Left (Just (CondExpr trueB cond falseB ()))
