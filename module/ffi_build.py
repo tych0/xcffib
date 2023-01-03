@@ -15,7 +15,6 @@
 
 from cffi import FFI
 
-
 CONSTANTS = [
     ("X_PROTOCOL", 11),
     ("X_PROTOCOL_REVISION", 0),
