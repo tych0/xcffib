@@ -15,9 +15,12 @@
 
 import xcffib
 import xcffib.xproto
+import xcffib.xinput
 import os
+import six
 import struct
 import sys
+from xcffib._ffi import ffi
 from xcffib.xproto import EventMask
 
 from .conftest import XcffibTest
@@ -60,11 +63,15 @@ class TestPythonCode:
 
     def test_offset_map(self):
         om = xcffib.OffsetMap({0: "Event0,0"})
-        om.add(1, {0: "Event1,0", 1: "Event1,1"})
+        om.add(1, 0, {0: "Event1,0", 1: "Event1,1"})
 
         assert om[0] == "Event0,0"
         assert om[1] == "Event1,0"
         assert om[2] == "Event1,1"
+
+        om.add(10, 20, {5: "ExtensionEvent20,5", 6: "ExtensionEvent20,6"})
+        assert om.get_extension_item(20, 5) == "ExtensionEvent20,5"
+        assert om.get_extension_item(20, 6) == "ExtensionEvent20,6"
 
     def test_create_ClientMessageEvent(self, xcffib_test):
         wm_protocols = xcffib_test.intern("WM_PROTOCOLS")
@@ -141,6 +148,44 @@ class TestPythonCode:
         reply = xcffib_test.conn.core.GetImage(
             output_format, root, 0, 0, width, height, plane_mask).reply()
         reply.data.buf()
+
+    def test_ge_generic_event_hoist(self, xcffib_test):
+        """Tests the ability to hoist events to the correct extension event."""
+
+        # Create a bytearray representing a BarrierHitEvent from XInput
+        B_HIT_EVENT = struct.pack(
+            "=BBHIHHIIIIIIIIH2xiiQQ",
+            35,  # response_type
+            131,  # extension
+            1,  # sequence
+            9,  # length
+            25,  # event_type
+            2,  # device_id
+            0,  # time
+            1,  # event_id
+            0,  # root
+            0,  # event
+            0,  # barrier
+            1,  # full_sequence
+            0,  # d_time
+            0,  # flags
+            11,  # source_id
+            100 << 16,  # root_x
+            200 << 16,  # root_y
+            0,  # dx
+            0  # dy
+        )
+
+        # Create cdata from the bytearray and cast it to a generic reply
+        cdata = ffi.new("char x[72]", B_HIT_EVENT)
+        generic_reply = ffi.cast("xcb_generic_reply_t *", cdata)
+
+        # Pass the reply to our hoist_event method
+        event = xcffib_test.conn.hoist_event(generic_reply)
+        
+        assert isinstance(event, xcffib.xinput.BarrierHitEvent)
+        assert event.root_x >> 16 == 100
+        assert event.root_y >> 16 == 200
 
 
 class TestXcffibTestGenerator:

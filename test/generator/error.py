@@ -7,6 +7,7 @@ key = xcffib.ExtensionKey("ERROR")
 _events = {}
 _errors = {}
 class RequestError(xcffib.Error):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())

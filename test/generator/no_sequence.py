@@ -4,6 +4,7 @@ import io
 _events = {}
 _errors = {}
 class KeymapNotifyEvent(xcffib.Event):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())

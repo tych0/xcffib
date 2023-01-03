@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import division, absolute_import
+from __future__ import absolute_import, division
 
 import ctypes.util
 import functools
@@ -481,15 +481,22 @@ class List(Protobj):
 class OffsetMap(object):
 
     def __init__(self, core):
-        self.offsets = [(0, core)]
+        self.offsets = [(0, 0, core)]
 
-    def add(self, offset, things):
-        self.offsets.append((offset, things))
+    def add(self, offset, opcode, things):
+        self.offsets.append((offset, opcode, things))
         self.offsets.sort(key=lambda x: x[0], reverse=True)
+
+    def get_extension_item(self, extension, item):
+        try:
+            _, _, things = next((k, opcode, v) for k, opcode, v in self.offsets if opcode == extension)
+            return things[item]
+        except StopIteration:
+            raise IndexError(item)
 
     def __getitem__(self, item):
         try:
-            offset, things = next((k, v) for k, v in self.offsets if item >= k)
+            offset, _, things = next((k, opcode, v) for k, opcode, v in self.offsets if item >= k)
             return things[item - offset]
         except StopIteration:
             raise IndexError(item)
@@ -546,8 +553,8 @@ class Connection(object):
             # as a hack for lifetime management.
             c_ext = key.to_cffi()
             reply = lib.xcb_get_extension_data(self._conn, c_ext)
-            self._event_offsets.add(reply.first_event, events)
-            self._error_offsets.add(reply.first_error, errors)
+            self._event_offsets.add(reply.first_event, reply.major_opcode, events)
+            self._error_offsets.add(reply.first_error, reply.major_opcode, errors)
 
     def __call__(self, key):
         return extensions[key][0](self, key)
@@ -690,9 +697,26 @@ class Connection(object):
         # this bit set. We don't actually care where the event came from, so we
         # just throw this away. Maybe we could expose this, if anyone actually
         # cares about it.
-        event = self._event_offsets[e.response_type & 0x7f]
+        response_type = e.response_type & 0x7f
 
         buf = CffiUnpacker(e)
+        event = None
+
+        # If the response is a GeGenericEvent then we can try to hoist this to relevant
+        # extension event.
+        if response_type == 35:
+            # Extract the extension opcode and event
+            extension, _, event_type, _ = buf.unpack("xB2xIH22xI", increment=False)
+            try:
+                # Try to find matching event. If this fails, an IndexError is raised and
+                # we'll fall back to raising an GeGenericEvent
+                event = self._event_offsets.get_extension_item(extension, event_type)
+            except IndexError:
+                pass
+
+        if event is None:
+            event = self._event_offsets[response_type]
+
         return event(buf)
 
     @ensure_connected
@@ -740,7 +764,35 @@ class Reply(Response):
 
 
 class Event(Response):
-    pass
+
+    def __init__(self, unpacker):
+        # This is here for debugging purposes!
+        self.unpacker = unpacker
+
+        Response.__init__(self, unpacker)
+
+        # If this is a xcb_ge_generic_event_t (response type 35) then we need a few more fields
+        if self.xge and isinstance(unpacker, CffiUnpacker):
+            self.extension, self.length, self.event_type, self.full_sequence = unpacker.unpack("xB2xIH22xI")
+
+            # There's some extra work to do if the event has data past the 32 byte boundary
+            if self.length:
+
+                # Calculate the size of the original buffer. This is 4 bytes short as it seems to omit the `full_sequence` field
+                buffer_size = 32 + (self.length * 4) + 4
+
+                # Create a buffer object that's the full size
+                buffer = ffi.buffer(unpacker.cdata, buffer_size)
+
+                # Copy the event to the new buffer and skip the `full_sequence` field
+                buffer[32:buffer_size - 5] = buffer[36: buffer_size - 1]
+
+                # Provide the resized buffer to the unpacker
+                unpacker.buf = buffer
+
+            # The xge events in xcbproto do not include the fields in the first ten bytes but
+            # the generated code only skips four bytes so we need to adjust the starting offset
+            unpacker.offset = struct.calcsize("BBHIH") - struct.calcsize("xB2x")
 
 
 class Error(Response, XcffibException):

@@ -4,6 +4,7 @@ import io
 _events = {}
 _errors = {}
 class AxisInfo(xcffib.Struct):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
@@ -24,6 +25,7 @@ class AxisInfo(xcffib.Struct):
         self.maximum = maximum
         return self
 class ValuatorInfo(xcffib.Struct):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())

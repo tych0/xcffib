@@ -4,6 +4,7 @@ import io
 _events = {}
 _errors = {}
 class CHARINFO(xcffib.Struct):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
@@ -27,6 +28,7 @@ class CHARINFO(xcffib.Struct):
         self.attributes = attributes
         return self
 class FONTPROP(xcffib.Struct):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
@@ -46,6 +48,7 @@ class FONTPROP(xcffib.Struct):
         self.value = value
         return self
 class ListFontsWithInfoReply(xcffib.Reply):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())

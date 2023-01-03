@@ -7,6 +7,7 @@ key = xcffib.ExtensionKey("RENDER")
 _events = {}
 _errors = {}
 class COLOR(xcffib.Struct):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
@@ -28,6 +29,7 @@ class COLOR(xcffib.Struct):
         self.alpha = alpha
         return self
 class RECTANGLE(xcffib.Struct):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
