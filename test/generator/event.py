@@ -7,6 +7,7 @@ key = xcffib.ExtensionKey("EVENT")
 _events = {}
 _errors = {}
 class ScreenChangeNotifyEvent(xcffib.Event):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())

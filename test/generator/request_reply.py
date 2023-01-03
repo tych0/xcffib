@@ -4,6 +4,7 @@ import io
 _events = {}
 _errors = {}
 class STR(xcffib.Struct):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
@@ -24,6 +25,7 @@ class STR(xcffib.Struct):
         self.name = name
         return self
 class ListExtensionsReply(xcffib.Reply):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())

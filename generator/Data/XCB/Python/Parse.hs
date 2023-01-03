@@ -691,8 +691,8 @@ processXDecl ext (XStruct n _ membs) = do
         let rhs = mkInt theLen
         return $ mkAssign "fixed_size" rhs
   modify $ mkModify ext n (CompositeType ext n)
-  return $ Declaration [mkXClass n "xcffib.Struct" statements (pack : fixedLength ++ synthetic)]
-processXDecl ext (XEvent name opcode _ membs noSequence) = do
+  return $ Declaration [mkXClass n "xcffib.Struct" False statements (pack : fixedLength ++ synthetic)]
+processXDecl ext (XEvent name opcode _ xge membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
       prefix = if fromMaybe False noSequence then "x" else "x%c2x"
@@ -700,7 +700,9 @@ processXDecl ext (XEvent name opcode _ membs noSequence) = do
       synthetic = mkSyntheticMethod membs
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       eventsUpd = mkDictUpdate "_events" opcode cname
-  return $ Declaration [ mkXClass cname "xcffib.Event" statements (pack : synthetic)
+      isxge = fromMaybe False xge
+      -- xgeexp = mkAssign "xge" (if fromMaybe False xge then (mkName "True") else (mkName "False"))
+  return $ Declaration [ mkXClass cname "xcffib.Event" isxge statements (pack : synthetic)
                        , eventsUpd
                        ]
 processXDecl ext (XError name opcode _ membs) = do
@@ -711,7 +713,7 @@ processXDecl ext (XError name opcode _ membs) = do
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       errorsUpd = mkDictUpdate "_errors" opcode cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
-  return $ Declaration [ mkXClass cname "xcffib.Error" statements [pack]
+  return $ Declaration [ mkXClass cname "xcffib.Error" False statements [pack]
                        , alias
                        , errorsUpd
                        ]
@@ -727,7 +729,7 @@ processXDecl ext (XRequest name opcode _ membs reply) = do
         GenXReply _ reply' <- reply
         let (replyStmts, _) = mkStructStyleUnpack "x%c2x4x" ext m reply'
             replyName = name ++ "Reply"
-            theReply = mkXClass replyName "xcffib.Reply" replyStmts []
+            theReply = mkXClass replyName "xcffib.Reply" False replyStmts []
             replyType = mkAssign "reply_type" $ mkName replyName
             cookie = mkClass cookieName "xcffib.Cookie" [replyType]
         return [theReply, cookie]
@@ -761,7 +763,7 @@ processXDecl ext (XUnion name _ membs) = do
       -- Here, we only want to pack the first member of the union, since every
       -- member is the same data and we don't want to repeatedly pack it.
       pack = mkPackMethod ext name m Nothing [head membs] Nothing
-      decl = [mkXClass name "xcffib.Union" initMethod [pack]]
+      decl = [mkXClass name "xcffib.Union" False initMethod [pack]]
   modify $ mkModify ext name (CompositeType ext name)
   return $ Declaration decl
   where
@@ -791,7 +793,7 @@ processXDecl ext (XidUnion name _) =
 -- again.
 processXDecl ext (XEventStruct name _) = do
   modify $ mkModify ext name (CompositeType ext name)
-  return $ Declaration $ [mkXClass name "xcffib.Buffer" [] []]
+  return $ Declaration $ [mkXClass name "xcffib.Buffer" False [] []]
 
 mkVersion :: XHeader -> Suite ()
 mkVersion header =

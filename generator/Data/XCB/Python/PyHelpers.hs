@@ -134,15 +134,16 @@ mkParams = map (\x -> Param (ident x) Nothing Nothing ())
 mkArg :: String -> Argument ()
 mkArg n = ArgExpr (mkName n) ()
 
-mkXClass :: String -> String -> Suite () -> Suite () -> Statement ()
-mkXClass clazz superclazz [] [] = mkEmptyClass clazz superclazz
-mkXClass clazz superclazz constructor methods =
+mkXClass :: String -> String -> Bool -> Suite () -> Suite () -> Statement ()
+mkXClass clazz superclazz False [] [] = mkEmptyClass clazz superclazz
+mkXClass clazz superclazz xge constructor methods =
   let args = [ "self", "unpacker" ]
       super = mkCall (superclazz ++ ".__init__") $ map mkName args
       body = eventToUnpacker : (StmtExpr super ()) : constructor
       initParams = mkParams args
+      xgeexp = mkAssign "xge" (if xge then (mkName "True") else (mkName "False"))
       initMethod = Fun (ident "__init__") initParams Nothing body ()
-  in mkClass clazz superclazz $ initMethod : methods
+  in mkClass clazz superclazz $ xgeexp : initMethod : methods
 
     where
 

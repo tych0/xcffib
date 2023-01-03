@@ -4,6 +4,7 @@ import io
 _events = {}
 _errors = {}
 class INT64(xcffib.Struct):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
@@ -23,6 +24,7 @@ class INT64(xcffib.Struct):
         self.lo = lo
         return self
 class GetPropertyReply(xcffib.Reply):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
@@ -39,6 +41,7 @@ class GetPropertyReply(xcffib.Reply):
 class GetPropertyCookie(xcffib.Cookie):
     reply_type = GetPropertyReply
 class GetPropertyWithPadReply(xcffib.Reply):
+    xge = False
     def __init__(self, unpacker):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
