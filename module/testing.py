@@ -15,11 +15,11 @@
 # Not strictly necessary to be included with the binding, but may be useful for
 # others who want to test things using xcffib.
 
+import errno
 import fcntl
 import os
-import time
-import errno
 import subprocess
+import time
 
 from . import Connection, ConnectionException
 
