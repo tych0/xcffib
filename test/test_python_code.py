@@ -17,7 +17,6 @@ import xcffib
 import xcffib.xproto
 import xcffib.xinput
 import os
-import six
 import struct
 import sys
 from xcffib._ffi import ffi
