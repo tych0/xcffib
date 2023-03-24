@@ -53,8 +53,8 @@ class TestConnection:
         # i.e:
         # xproto setup query = seqno 0
         # xtest setup query = seqno 1
-        assert xproto_test.xproto.GetInputFocus().sequence == 6
         assert xproto_test.xproto.GetInputFocus().sequence == 7
+        assert xproto_test.xproto.GetInputFocus().sequence == 8
 
     def test_discard_sequence(self, xproto_test):
         cookie = xproto_test.xproto.GetInputFocus()

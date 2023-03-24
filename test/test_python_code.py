@@ -16,6 +16,7 @@
 import xcffib
 import xcffib.xproto
 import xcffib.xinput
+import xcffib.randr
 import os
 import struct
 import sys
@@ -185,6 +186,20 @@ class TestPythonCode:
         assert isinstance(event, xcffib.xinput.BarrierHitEvent)
         assert event.root_x >> 16 == 100
         assert event.root_y >> 16 == 200
+
+    def test_List_to_string(self, xcffib_test):
+        xrandr = xcffib_test.conn(xcffib.randr.key)
+        try:
+            setup = xcffib_test.conn.get_setup()
+            for screen in setup.roots:
+                scrn_rsrcs = xrandr.GetScreenResources(screen.root).reply()
+                for output in scrn_rsrcs.outputs:
+                    info = xrandr.GetOutputInfo(output, xcffib.XCB_CURRENT_TIME).reply()
+                    print(info.name.to_string())
+                    assert info.name.to_string() == 'screen'
+        finally:
+            xcffib_test.conn.disconnect()
+
 
 
 class TestXcffibTestGenerator:
