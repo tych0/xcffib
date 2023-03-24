@@ -456,7 +456,10 @@ class List(Protobj):
         """ A helper for converting a List of chars to a native string. Dies if
         the list contents are not something that could be reasonably converted
         to a string. """
-        return ''.join(chr(i[0]) for i in self)
+        try:
+            return ''.join(chr(i[0]) for i in self)
+        except TypeError:
+            return ''.join(chr(i) for i in self)
 
     def to_utf8(self):
         return b''.join(self).decode('utf-8')
