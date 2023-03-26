@@ -9,7 +9,7 @@ endif
 NCPUS=$(shell grep -c processor /proc/cpuinfo)
 PARALLEL=$(shell which parallel)
 CABAL=cabal --config-file=./cabal.config
-GEN=$(CABAL) new-run -j$(NCPUS) exe:xcffibgen --
+GEN=$(CABAL) new-run --minimize-conflict-set -j$(NCPUS) exe:xcffibgen --
 
 # you should have xcb-proto installed to run this
 xcffib: module/*.py xcffib.cabal $(shell find . -path ./test -prune -false -o -name \*.hs)
