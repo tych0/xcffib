@@ -290,7 +290,8 @@ structElemToPyUnpack :: Expr ()
                      -> Either (Maybe String, String)
                                (String, Either (Expr (), Expr ())
                                                ([(Expr (), [GenStructElem Type])]), Maybe Int)
-structElemToPyUnpack _ _ _ (Pad i) = Left (Nothing, mkPad i)
+structElemToPyUnpack _ _ _ (Pad PadBytes i) = Left (Nothing, mkPad i)
+structElemToPyUnpack _ _ _ (Pad PadAlignment _) = Left (Nothing, "")
 
 -- XXX: This is a cheap hack for noop, we should really do better.
 structElemToPyUnpack _ _ _ (Doc _ _ _) = Left (Nothing, "")
@@ -357,7 +358,7 @@ structElemToPyPack :: String
                    -> Either (Maybe String, String) [(String, Either (Maybe (Expr ()))
                                                                      [(Expr (), [GenStructElem Type])]
                                                     )]
-structElemToPyPack _ _ _ (Pad i) = Left (Nothing, mkPad i)
+structElemToPyPack _ _ _ (Pad _ i) = Left (Nothing, mkPad i)
 -- TODO: implement these?
 structElemToPyPack _ _ _ (Doc _ _ _) = Left (Nothing, "")
 structElemToPyPack _ _ _ (Fd _) = Left (Nothing, "")
@@ -654,7 +655,7 @@ mkSyntheticMethod membs = do
   if null names then [] else [Decorated [classmethod] synthetic ()]
     where
       getName :: GenStructElem Type -> Maybe String
-      getName (Pad _) = Nothing
+      getName (Pad _ _) = Nothing
       getName (X.List n _ _ _) = Just n
       getName (SField n _ _ _) = Just n
       getName (ExprField n _ _) = Just n
