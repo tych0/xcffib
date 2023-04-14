@@ -1,5 +1,5 @@
 name:                xcffib
-version:             1.2.0
+version:             1.3.0
 synopsis:            A cffi-based python binding for X
 homepage:            http://github.com/tych0/xcffib
 license:             OtherLicense
