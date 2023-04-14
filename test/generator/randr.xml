@@ -1,0 +1,53 @@
+<xcb header="randr" extension-xname="RANDR" extension-name="RandR"
+    major-version="1" minor-version="6">
+
+  <typedef oldname="INT32" newname="FIXED" />
+
+  <struct name="TRANSFORM">
+    <field type="FIXED" name="matrix11" />
+    <field type="FIXED" name="matrix12" />
+    <field type="FIXED" name="matrix13" />
+    <field type="FIXED" name="matrix21" />
+    <field type="FIXED" name="matrix22" />
+    <field type="FIXED" name="matrix23" />
+    <field type="FIXED" name="matrix31" />
+    <field type="FIXED" name="matrix32" />
+    <field type="FIXED" name="matrix33" />
+  </struct>
+
+	<xidtype name="MODE" />
+	<xidtype name="CRTC" />
+	<xidtype name="OUTPUT" />
+	<xidtype name="PROVIDER" />
+	<xidtype name="LEASE" />
+
+	<request name="GetCrtcTransform" opcode="27">
+		<field type="CRTC" name="crtc" />
+		<reply>
+			<pad bytes="1" />
+			<field type="TRANSFORM" name="pending_transform" />
+			<field type="BOOL" name="has_transforms" />
+			<pad bytes="3" />
+			<field type="TRANSFORM" name="current_transform" />
+			<pad bytes="4" />
+			<field type="CARD16" name="pending_len" />
+			<field type="CARD16" name="pending_nparams" />
+			<field type="CARD16" name="current_len" />
+			<field type="CARD16" name="current_nparams" />
+			<list type="char" name="pending_filter_name" >
+				<fieldref>pending_len</fieldref>
+			</list>
+			<pad align="4" />
+			<list type="FIXED" name="pending_params" >
+				<fieldref>pending_nparams</fieldref>
+			</list>
+			<list type="char" name="current_filter_name" >
+				<fieldref>current_len</fieldref>
+			</list>
+			<pad align="4" />
+			<list type="FIXED" name="current_params" >
+				<fieldref>current_nparams</fieldref>
+			</list>
+		</reply>
+	</request>
+</xcb>
