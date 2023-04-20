@@ -1,11 +1,6 @@
 # xcffib [![Build Status](https://github.com/tych0/xcffib/workflows/ci/badge.svg?branch=master)](https://github.com/tych0/xcffib/actions)
 
-`xcffib` is intended to be a (mostly) drop-in replacement for `xpyb`. `xpyb`
-has an inactive upstream, several memory leaks, is python2 only and doesn't
-have pypy support. `xcffib` is a binding which uses
-[cffi](https://cffi.readthedocs.org/), which mitigates some of the issues
-described above. `xcffib` also builds bindings for 27 of the 29 (xprint and xkb
-are missing) X extensions in 1.10.
+`xcffib` is intended to be a (mostly) drop-in replacement for `xpyb`, the original python binding for `xcb`.
 
 ## Installation
 
