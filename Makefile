@@ -82,7 +82,7 @@ else
 	sed -r -i -e "s/(^version = \s*)[\"0-9\.]*/\1\"${ver}\"/" setup.py
 	sed -r -i -e "s/(^version:\s*)[0-9\.]*/\1${ver}/" xcffib.cabal
 	echo "Release v${ver}" > /tmp/xcffib.releasemsg
-	git commit -a -s --allow-empty-message -t /tmp/xcffib.releasemsg
+	git commit -a -S -s --allow-empty-message -t /tmp/xcffib.releasemsg
 	git tag v${ver}
 	python3 setup.py sdist
 	twine upload dist/xcffib-${ver}.tar.gz
