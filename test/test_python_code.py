@@ -20,7 +20,7 @@ import xcffib.randr
 import os
 import struct
 import sys
-from xcffib._ffi import ffi
+from xcffib.ffi import ffi
 from xcffib.xproto import EventMask
 
 from .conftest import XcffibTest

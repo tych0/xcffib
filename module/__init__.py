@@ -22,10 +22,7 @@ import platform
 import struct
 import weakref
 
-try:
-    from xcffib._ffi import ffi
-except ImportError:
-    from xcffib.ffi_build import ffi
+from .ffi import ffi
 
 if platform.system() == "Darwin":
     soname = "libxcb.dylib"

@@ -50,10 +50,6 @@ if '_cffi_backend' in sys.builtin_module_names:
 else:
     requires_cffi = "cffi>=1.1.0"
 
-cffi_args = dict(
-    cffi_modules=["xcffib/ffi_build.py:ffi"]
-)
-
 version = "1.3.0"
 dependencies = [requires_cffi]
 
@@ -87,5 +83,4 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries'
     ],
-    **cffi_args
 )

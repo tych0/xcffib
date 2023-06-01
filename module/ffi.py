@@ -243,13 +243,4 @@ CDEF += """
 
 
 ffi = FFI()
-if hasattr(ffi, 'set_source'):  # PyPy < 2.6 compatibility hack
-    ffi.set_source("xcffib._ffi", None, libraries=['xcb'])
-    do_compile = True
-else:
-    do_compile = False
 ffi.cdef(CDEF)
-
-
-if __name__ == "__main__" and do_compile:
-    ffi.compile()
