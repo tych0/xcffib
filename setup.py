@@ -50,7 +50,7 @@ if '_cffi_backend' in sys.builtin_module_names:
 else:
     requires_cffi = "cffi>=1.1.0"
 
-version = "1.3.0"
+version = "1.4.0"
 dependencies = [requires_cffi]
 
 setup(
