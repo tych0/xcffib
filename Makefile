@@ -58,14 +58,18 @@ lint:
 htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
+# The --builtin=CW is a hack to work around:
+# https://lists.freedesktop.org/archives/xcb/2022-December/011427.html
+# when that lands and all tested versions have it, we can
+# drop this.
+#
+# In the meantime, we can work around this in the binding if someone really needs it.
+ifeq ($(shell printf "$(XCBVER)\n1.16.0" | sort -V | grep -c 1.16.0), 1)
+CW_HACK=--builtins=CW
+endif
+
 check: xcffib lint htests
-	# The --builtin=CW is a hack to work around:
-	# https://lists.freedesktop.org/archives/xcb/2022-December/011427.html
-	# when that lands and all tested versions have it, we can
-	# drop this.
-	#
-	# In the meantime, we can work around this in the binding if someone really needs it.
-	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py --builtins=CW
+	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py $(CW_HACK)
 	python3 -m compileall xcffib
 	pytest-3 -v --durations=3
 
