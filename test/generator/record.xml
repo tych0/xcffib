@@ -1,0 +1,33 @@
+<xcb header="record" extension-xname="RECORD" extension-name="Record"
+    major-version="1" minor-version="13">
+
+    <!-- Types -->
+    <xidtype name="CONTEXT" />
+
+    <struct name="Range8">
+    <field type="CARD8" name="first" />
+    <field type="CARD8" name="last" />
+    </struct>
+
+    <struct name="Range16">
+    <field type="CARD16" name="first" />
+    <field type="CARD16" name="last" />
+    </struct>
+
+    <struct name="ExtRange">
+    <field type="Range8" name="major" />
+    <field type="Range16" name="minor" />
+    </struct>
+
+    <struct name="Range">
+    <field type="Range8" name="core_requests" />
+    <field type="Range8" name="core_replies" />
+    <field type="ExtRange" name="ext_requests" />
+    <field type="ExtRange" name="ext_replies" />
+    <field type="Range8" name="delivered_events" />
+    <field type="Range8" name="device_events" />
+    <field type="Range8" name="errors" />
+    <field type="BOOL" name="client_started" />
+    <field type="BOOL" name="client_died" />
+    </struct>
+</xcb>
