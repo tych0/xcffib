@@ -23,7 +23,7 @@ jobs:
                   python-version: "${{ matrix.python-version }}"
             - uses: haskell-actions/setup@v2
               with:
-                  ghc-version: '9.2'
+                  ghc-version: '9.4'
                   cabal-version: latest
             - run: cabal update
             - run: sudo apt install x11-apps python3-pytest python3-cffi flake8
