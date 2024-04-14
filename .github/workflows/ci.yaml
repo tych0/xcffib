@@ -21,7 +21,7 @@ jobs:
               uses: actions/setup-python@v5
               with:
                   python-version: "${{ matrix.python-version }}"
-            - uses: haskell/actions/setup@v2
+            - uses: haskell-actions/setup@v2
               with:
                   ghc-version: '9.2'
                   cabal-version: latest
