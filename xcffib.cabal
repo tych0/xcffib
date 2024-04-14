@@ -25,13 +25,13 @@ source-repository head
 
 library
   build-depends: base ==4.*,
-                 xcb-types >= 0.13.0 && < 0.14,
+                 xcb-types >= 0.14.0 && < 0.15,
                  language-python >= 0.5.8 && < 0.6,
                  filepath >= 1.4.2 && < 1.5,
                  filemanip >= 0.3.6 && < 0.4,
                  split >= 0.2.3 && < 0.3,
                  containers >= 0.6.5 && < 0.7,
-                 mtl >= 2.2.2 && < 2.3,
+                 mtl >= 2.2.2 && < 2.4,
                  attoparsec >= 0.14.4 && < 0.15,
                  bytestring >= 0.11.3 && < 0.12,
                  either >= 5.0.2 && < 5.1
@@ -46,13 +46,13 @@ executable xcffibgen
   hs-source-dirs: generator
   build-depends: base ==4.*,
                  xcffib,
-                 xcb-types >= 0.13.0 && < 0.14,
+                 xcb-types >= 0.14.0 && < 0.15,
                  language-python >= 0.5.8 && < 0.6,
                  filepath >= 1.4.2 && < 1.5,
                  filemanip >= 0.3.6 && < 0.4,
                  split >= 0.2.3 && < 0.3,
                  containers >= 0.6.5 && < 0.7,
-                 mtl >= 2.2.2 && < 2.3,
+                 mtl >= 2.2.2 && < 2.4,
                  attoparsec >= 0.14.4 && < 0.15,
                  bytestring >= 0.11.3 && < 0.12,
                  either >= 5.0.2 && < 5.1,
@@ -81,7 +81,7 @@ test-suite GeneratorTests.hs
   type: exitcode-stdio-1.0
   build-depends: base ==4.*,
                  xcffib,
-                 xcb-types >= 0.13.0 && < 0.14,
+                 xcb-types >= 0.14.0 && < 0.15,
                  language-python >= 0.5.8 && < 0.6,
                  filepath >= 1.4.2 && < 1.5,
                  HUnit >= 1.6.2 && < 1.7,
