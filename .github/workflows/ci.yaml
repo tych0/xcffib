@@ -14,7 +14,7 @@ jobs:
             fail-fast: false
             matrix:
                 python-version: ["3.10", "3.11", "3.12", "pypy3.10"]
-                xcbver: [xcb-proto-1.15.2, xcb-proto-1.16.0, master]
+                xcbver: [xcb-proto-1.15.2, xcb-proto-1.16.0, xcb-proto-1.17.0, master]
         steps:
             - uses: actions/checkout@v4
             - name: Set up python "${{ matrix.python-version }}"
