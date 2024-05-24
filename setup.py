@@ -43,15 +43,8 @@ class binding_install(install):
             sys.exit(1)
         install.finalize_options(self)
 
-# Check if we're running PyPy, cffi can't be updated
-if '_cffi_backend' in sys.builtin_module_names:
-    import _cffi_backend
-    requires_cffi = "cffi==" + _cffi_backend.__version__
-else:
-    requires_cffi = "cffi>=1.1.0"
-
 version = "1.5.0"
-dependencies = [requires_cffi]
+dependencies = ["cffi>=1.1.0; python_implementation != 'PyPy'"]
 
 setup(
     name="xcffib",
