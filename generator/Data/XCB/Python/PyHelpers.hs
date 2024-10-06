@@ -34,6 +34,7 @@ module Data.XCB.Python.PyHelpers (
   mkMethod,
   mkReturn,
   mkIf,
+  notImplemented
   ) where
 
 import Data.List.Split
@@ -129,3 +130,6 @@ mkReturn = Return . Just
 
 mkIf :: Expr -> Suite -> Statement
 mkIf e s = Conditional e s []
+
+notImplemented :: Statement
+notImplemented = Raise "xcffib.XcffibNotImplemented"

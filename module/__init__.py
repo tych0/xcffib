@@ -178,6 +178,10 @@ class XcffibException(Exception):
     pass
 
 
+class XcffibNotImplemented(XcffibException, NotImplementedError):
+    pass
+
+
 class ConnectionException(XcffibException):
     REASONS = {
         lib.XCB_CONN_ERROR: (
@@ -457,6 +461,11 @@ class List(Protobj):
             return ''.join(chr(i[0]) for i in self)
         except TypeError:
             return ''.join(chr(i) for i in self)
+
+    def to_nullsep_string(self) -> list[str]:
+        """ A helper for converting a List of chars to a list of native
+        strings, starting a new string each time a null (i.e. \\x00) is seen. """
+        return self.to_string().split("\x00")
 
     def to_utf8(self):
         return b''.join(self).decode('utf-8')

@@ -308,12 +308,16 @@ structElemToPyUnpack _ _ _ (Switch name expr _ bitcases) =
                -> BitCase
                -> (Expr, [GenStructElem Type])
       mkSwitch cmp (BitCase Nothing bcCmp _ elems) =
-        let cmpVal = xExpressionToPyExpr id bcCmp
+        -- note: head here and below is a hack; i am not exactly sure the
+        -- semantics of the multi-expression BitCase, since it's "fake" and
+        -- "encoded only once" see b3b5e029e7ad ("XKB: Fix GetKbdByName") for
+        -- details. needs some wiresniffing to investigate.
+        let cmpVal = xExpressionToPyExpr id (head bcCmp)
             equality = BinaryOp BinaryAnd cmp cmpVal
         in (equality, elems)
 
       mkSwitch cmp (BitCase (Just _) bcCmp _ elems) =
-        let cmpVal = xExpressionToPyExpr id bcCmp
+        let cmpVal = xExpressionToPyExpr id (head bcCmp)
             equality = BinaryOp Equality cmp cmpVal
         in (equality, elems)
 
@@ -372,7 +376,8 @@ structElemToPyPack _ _ accessor (Switch n expr _ bitcases) =
                -> BitCase
                -> (Expr, [GenStructElem Type])
       mkSwitch cmp (BitCase _ bcCmp _ elems') =
-        let cmpVal = xExpressionToPyExpr accessor bcCmp
+        -- see comment above about head for BitCase
+        let cmpVal = xExpressionToPyExpr accessor (head bcCmp)
             equality = BinaryOp BinaryAnd cmp cmpVal
         in (equality, elems')
 structElemToPyPack ext m accessor (SField n typ _ _) =
@@ -757,11 +762,9 @@ processXDecl ext (XUnion name _ membs) = do
   let unpackF = structElemToPyUnpack unpackerCopy ext m
       (fields, listInfo) = span EC.isLeft $ map unpackF membs
       toUnpack = concat $ map (mkUnionUnpack . EC.fromLeft') fields
-      listInfo' = map (either mkBaseUnpack id) listInfo
-      (names, listOrSwitches, _) = unzip3 listInfo'
-      (exprs, _) = unzip $ map EC.fromLeft' listOrSwitches
-      lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
-      initMethod = lists ++ toUnpack
+      initMethod = if any EC.isLeft listInfo
+                   then [notImplemented]
+                   else (mkListUnpack listInfo) ++ toUnpack
       -- Here, we only want to pack the first member of the union, since every
       -- member is the same data and we don't want to repeatedly pack it.
       pack = mkPackMethod ext name m Nothing [head membs] Nothing
@@ -775,7 +778,12 @@ processXDecl ext (XUnion name _ membs) = do
     mkUnionUnpack (n, typ) =
       mkUnpackFrom unpackerCopy (maybeToList n) typ
 
-    mkBaseUnpack _ = error "xcffib: trailing base types unpack not implemented"
+    mkListUnpack listInfo =
+      let listInfo' = map EC.fromRight' listInfo
+          (names, listOrSwitches, _) = unzip3 listInfo'
+          (exprs, _) = unzip $ map EC.fromLeft' listOrSwitches
+          lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
+      in lists
 
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.

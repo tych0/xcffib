@@ -48,8 +48,3 @@ versions of xcb-types. Newer cabals require you to do something like:
     echo packages: ../xcb-types/xcb-types.cabal ./xcffib.cabal > cabal.project
 
 In order to find locally modified versions of xcb-types.
-
-## TODO
-
-* xkb support. This will require some non-trivial work in xcb-types, since it
-  won't parse xkb.xml correctly right now.

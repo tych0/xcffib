@@ -101,12 +101,13 @@ data Statement
     -- skip AnnotatedAssign, Decorated
     | Return
       { return_expr :: Maybe (Expr) }
-    -- skip Try, Raise, With, AsyncWith
+    -- skip Try, With, AsyncWith
     | Pass {}
     -- skip Break, Continue, Delete
     | StmtExpr
       { stmt_expr :: Expr }
     -- skip Global, NonLocal, Assert, Print, Exec
+    | Raise { raise_exception :: Ident }
     deriving (Eq, Ord, Show)
 
 data Expr
@@ -203,6 +204,7 @@ instance Pretty Statement where
     pretty (Return Nothing) = text "return"
     pretty Pass = text "pass"
     pretty (StmtExpr expr) = pretty expr
+    pretty (Raise exc) = text "raise" <+> pretty exc
 
 class PseudoExpr a where
   getExpr :: a -> Expr

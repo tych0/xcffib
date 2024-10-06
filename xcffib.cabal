@@ -25,7 +25,7 @@ source-repository head
 
 library
   build-depends: base ==4.*,
-                 xcb-types >= 0.14.0 && < 0.15,
+                 xcb-types >= 0.15.0 && < 0.16,
                  filepath >= 1.4.2 && < 1.5,
                  filemanip >= 0.3.6 && < 0.4,
                  split >= 0.2.3 && < 0.3,
@@ -47,7 +47,7 @@ executable xcffibgen
   hs-source-dirs: generator
   build-depends: base ==4.*,
                  xcffib,
-                 xcb-types >= 0.14.0 && < 0.15,
+                 xcb-types >= 0.15.0 && < 0.16,
                  filepath >= 1.4.2 && < 1.5,
                  filemanip >= 0.3.6 && < 0.4,
                  split >= 0.2.3 && < 0.3,
@@ -82,7 +82,7 @@ test-suite GeneratorTests.hs
   type: exitcode-stdio-1.0
   build-depends: base ==4.*,
                  xcffib,
-                 xcb-types >= 0.14.0 && < 0.15,
+                 xcb-types >= 0.15.0 && < 0.16,
                  filepath >= 1.4.2 && < 1.5,
                  HUnit >= 1.6.2 && < 1.7,
                  test-framework >= 0.8.2 && < 0.9,
