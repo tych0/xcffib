@@ -16,10 +16,10 @@
 
 import os
 import sys
+from distutils.command.build import build
 
 from setuptools import setup
 from setuptools.command.install import install
-from distutils.command.build import build
 
 
 class binding_build(build):
@@ -42,6 +42,7 @@ class binding_install(install):
             print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
         install.finalize_options(self)
+
 
 version = "1.5.0"
 dependencies = ["cffi>=1.1.0; python_implementation != 'PyPy'"]
@@ -72,4 +73,5 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries'
     ],
+    cffi_modules=["xcffib/ffi_build.py:build_ffi"]
 )
