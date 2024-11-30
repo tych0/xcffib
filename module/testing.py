@@ -103,8 +103,8 @@ class XvfbTest:
         # Delete our X lock file too, since we .kill() the process so it won't
         # clean up after itself.
         try:
-            self._display_lock.close()
             os.remove(lock_path(self._display))
+            self._display_lock.close()
         except OSError as e:
             # we don't care if it doesn't exist, maybe something crashed and
             # cleaned it up during a test.
