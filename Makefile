@@ -72,7 +72,7 @@ check: xcffib lint htests
 	cabal check
 	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py $(CW_HACK)
 	python3 -m compileall xcffib
-	pytest-3 -v --durations=3
+	pytest-3 -v --durations=3 -n auto
 
 # make release ver=0.99.99
 release: xcffib
