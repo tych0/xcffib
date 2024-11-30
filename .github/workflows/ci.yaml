@@ -26,6 +26,6 @@ jobs:
                   ghc-version: '9.6'
                   cabal-version: latest
             - run: cabal update
-            - run: sudo apt install x11-apps python3-pytest python3-cffi flake8
+            - run: sudo apt install x11-apps python3-pytest python3-cffi python3-pytest-xdist flake8
             - run: git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git proto && cd proto && git checkout ${{ matrix.xcbver }}
             - run: make XCBDIR=./proto/src check
