@@ -15,9 +15,8 @@
  -}
 module Main (main) where
 
-import Language.Python.Common
-
 import Data.XCB.Python.PyHelpers
+import Data.XCB.Python.AST
 
 import Test.Framework ( defaultMain, Test )
 import Test.Framework.Providers.HUnit
@@ -29,15 +28,15 @@ mkTest name t1 t2 = testCase name (assertEqual name t1 t2)
 testMkName :: Test
 testMkName =
   let result = mkName "self.foo.bar"
-      expected = (Dot (Dot (Var (Ident "self" ()) ())
-                           (Ident "foo" ()) ())
-                      (Ident "bar" ()) ())
+      expected = (Dot (Dot (Var "self")
+                           "foo")
+                      "bar")
   in mkTest "testMkName" expected result
 
 testReserves :: Test
 testReserves =
-  let result = mkName "None"
-      expected = (Var (Ident "_None" ()) ())
+  let result = prettyText (mkName "None")
+      expected = "_None"
   in mkTest "testReserves" expected result
 
 main :: IO ()

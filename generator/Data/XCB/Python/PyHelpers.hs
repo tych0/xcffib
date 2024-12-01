@@ -21,7 +21,6 @@ module Data.XCB.Python.PyHelpers (
   mkAssign,
   mkCall,
   noArgs,
-  mkArg,
   mkEnum,
   mkName,
   mkDot,
@@ -37,112 +36,64 @@ module Data.XCB.Python.PyHelpers (
   mkMethod,
   mkReturn,
   pyTruth,
-  mkParams,
-  ident,
-  pyNone,
   mkIf,
   repeatStr
   ) where
 
 import Data.List.Split
-import Data.Maybe
 
-import Language.Python.Common
+import Data.XCB.Python.AST (Expr(..), Op(..), Statement(..), Suite, Ident, PseudoExpr, getExpr)
 
-_reserved :: [String]
-_reserved = [ "None"
-            , "def"
-            , "class"
-            , "and"
-            , "or"
-            ]
-
-class PseudoExpr a where
-  getExpr :: a -> Expr ()
-
-instance PseudoExpr String where
-  getExpr s = mkName s
-instance PseudoExpr (Expr ()) where
-  getExpr = id
-
--- | Create and sanatize a python identifier.
-ident :: String -> Ident ()
-ident s | s `elem` _reserved = Ident ("_" ++ s) ()
-ident s | isInt s = Ident ("_" ++ s) ()
-  where
-    isInt str = isJust $ ((maybeRead str) :: Maybe Int)
-    maybeRead = fmap fst . listToMaybe . reads
-ident s = Ident s ()
-
--- Make a DottedName out of a string like "foo.bar" for use in imports.
-mkDottedName :: String -> DottedName ()
-mkDottedName = map ident . splitOn "."
-
-mkVar :: String -> Expr ()
-mkVar name = Var (ident name) ()
+mkVar :: String -> Expr
+mkVar name = Var name
 
 -- | Make an Expr out of a string like "foo.bar" describing the name.
-mkName :: String -> Expr ()
+mkName :: String -> Expr
 mkName s =
   let strings = splitOn "." s
   in foldl mkDot (mkVar $ head strings) (tail strings)
 
-mkDot :: PseudoExpr a => a -> String -> Expr ()
-mkDot e1 attr = Dot (getExpr e1) (ident attr) ()
+mkDot :: PseudoExpr a => a -> String -> Expr
+mkDot e1 attr = Dot (getExpr e1) attr
 
 -- | Make an attribute access, i.e. self.<string>.
-mkAttr :: String -> Expr ()
+mkAttr :: String -> Expr
 mkAttr s = mkName ("self." ++ s)
 
-mkImport :: String -> Statement ()
-mkImport name = Import [ImportItem (mkDottedName name) Nothing ()] ()
+mkImport :: String -> Statement
+mkImport name = Import name
 
-mkRelImport :: String -> Statement ()
-mkRelImport name = FromImport (ImportRelative 1 Nothing ()) (FromItems [FromItem (ident name) Nothing ()] ()) ()
+mkRelImport :: String -> Statement
+mkRelImport name = FromImport "." name
 
-mkInt :: Int -> Expr ()
-mkInt i = Int (toInteger i) (show i) ()
+mkInt :: Int -> Expr
+mkInt i = Int (toInteger i)
 
-mkAssign :: PseudoExpr a => a -> Expr () -> Statement ()
-mkAssign name expr = Assign [getExpr name] expr ()
+mkAssign :: PseudoExpr a => a -> Expr -> Statement
+mkAssign name expr = Assign (getExpr name) expr
 
-mkIncr :: String -> Expr () -> Statement ()
-mkIncr name expr = AugmentedAssign (mkName name) (PlusAssign ()) expr ()
+mkIncr :: String -> Expr -> Statement
+mkIncr name expr = AugmentedAssign (mkName name) Plus expr
 
-class PseudoArgument a where
-  getArgument :: a -> Argument ()
+mkCall :: PseudoExpr a => a -> [Expr] -> Expr
+mkCall name args = Call (getExpr name) args
 
-instance PseudoArgument (Expr ()) where
-  getArgument p = ArgExpr p ()
-instance PseudoArgument (Argument ()) where
-  getArgument = id
-
-mkCall :: (PseudoExpr a, PseudoArgument b) => a -> [b] -> Expr ()
-mkCall name args = Call (getExpr name) (map getArgument args) ()
-
-noArgs :: [Argument ()]
+noArgs :: [Expr]
 noArgs = []
 
-mkEnum :: String -> [(String, Expr ())] -> Statement ()
+mkEnum :: String -> [(String, Expr)] -> Statement
 mkEnum cname values =
   let body = map (uncurry mkAssign) values
-  in Class (Ident cname ()) [] body ()
+  in Class cname [] body
 
-mkParams :: [String] -> [Parameter ()]
-mkParams = map (\x -> Param (ident x) Nothing Nothing ())
-
-mkArg :: String -> Argument ()
-mkArg n = ArgExpr (mkName n) ()
-
-mkXClass :: String -> String -> Bool -> Suite () -> Suite () -> Statement ()
+mkXClass :: String -> String -> Bool -> Suite -> Suite -> Statement
 mkXClass clazz superclazz False [] [] = mkEmptyClass clazz superclazz
 mkXClass clazz superclazz xge constructor methods =
   let args = [ "self", "unpacker" ]
       super = mkCall (superclazz ++ ".__init__") $ map mkName args
-      body = eventToUnpacker : (StmtExpr super ()) : constructor
-      initParams = mkParams args
+      body = eventToUnpacker : (StmtExpr super) : constructor
       xgeexp = mkAssign "xge" (if xge then (mkName "True") else (mkName "False"))
-      initMethod = Fun (ident "__init__") initParams Nothing body ()
+      initMethod = Fun "__init__" args body
   in mkClass clazz superclazz $ xgeexp : initMethod : methods
 
     where
@@ -151,55 +102,52 @@ mkXClass clazz superclazz xge constructor methods =
       -- passed directly to __init__. Since we don't keep track of the
       -- underlying buffers after the event is created, we have to re-pack
       -- things so they can be unpacked again.
-      eventToUnpacker :: Statement ()
+      eventToUnpacker :: Statement
       eventToUnpacker = let newUnpacker = mkAssign "unpacker" (mkCall "xcffib.MemoryUnpacker"
                                                               [mkCall "unpacker.pack" noArgs])
                             cond = mkCall "isinstance" [mkName "unpacker", mkName "xcffib.Protobj"]
                         in mkIf cond [newUnpacker]
 
 
-mkEmptyClass :: String -> String -> Statement ()
-mkEmptyClass clazz superclazz = mkClass clazz superclazz [Pass ()]
+mkEmptyClass :: String -> String -> Statement
+mkEmptyClass clazz superclazz = mkClass clazz superclazz [Pass]
 
-mkClass :: String -> String -> Suite () -> Statement ()
-mkClass clazz superclazz body = Class (ident clazz) [mkArg superclazz] body ()
+mkClass :: String -> String -> Suite -> Statement
+mkClass clazz superclazz body = Class clazz [superclazz] body
 
-mkStr :: String -> Expr ()
-mkStr s = Strings ["\"", s, "\""] ()
+mkStr :: String -> Expr
+mkStr s = Strings ["\"", s, "\""]
 
-mkTuple :: [Expr ()] -> Expr ()
-mkTuple = flip Tuple ()
+mkTuple :: [Expr] -> Expr
+mkTuple = Tuple
 
-mkUnpackFrom :: PseudoExpr a => a -> [String] -> String -> Suite ()
+mkUnpackFrom :: PseudoExpr a => a -> [String] -> String -> Suite
 mkUnpackFrom unpacker names packs =
   let lhs = mkTuple $ map mkAttr names
       -- Don't spam with this default arg unless it is really necessary.
       unpackF = mkDot unpacker "unpack"
       rhs = mkCall unpackF [mkStr packs]
-      stmt = if length names > 0 then mkAssign lhs rhs else StmtExpr rhs ()
+      stmt = if length names > 0 then mkAssign lhs rhs else StmtExpr rhs
   in if length packs > 0 then [stmt] else []
 
-mkDict :: String -> Statement ()
-mkDict name = mkAssign name (Dictionary [] ())
+mkDict :: String -> Statement
+mkDict name = mkAssign name EmptyDict
 
-mkDictUpdate :: String -> Int -> String -> Statement ()
+mkDictUpdate :: String -> Int -> String -> Statement
 mkDictUpdate dict key value =
-  mkAssign (Subscript (mkName dict) (mkInt key) ()) (mkName value)
+  mkAssign (Subscript (mkName dict) (mkInt key)) (mkName value)
 
-mkMethod :: String -> [Parameter ()] -> Suite () -> Statement ()
-mkMethod name args body = Fun (ident name) args Nothing body ()
+mkMethod :: String -> [Ident] -> Suite -> Statement
+mkMethod name args body = Fun name args body
 
-mkReturn :: Expr () -> Statement ()
-mkReturn = flip Return () . Just
+mkReturn :: Expr -> Statement
+mkReturn = Return . Just
 
-pyTruth :: Bool -> Expr ()
-pyTruth = flip Bool ()
+pyTruth :: Bool -> Expr
+pyTruth = Bool
 
-pyNone :: Expr ()
-pyNone = None ()
+mkIf :: Expr -> Suite -> Statement
+mkIf e s = Conditional e s []
 
-mkIf :: Expr () -> Suite () -> Statement ()
-mkIf e s = Conditional [(e, s)] [] ()
-
-repeatStr :: String -> Expr () -> Expr ()
-repeatStr s i = BinaryOp (Multiply ()) (mkStr s) i ()
+repeatStr :: String -> Expr -> Expr
+repeatStr s i = BinaryOp Multiply (mkStr s) i

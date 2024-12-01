@@ -15,8 +15,7 @@
  -}
 module Main (main) where
 
-import Language.Python.Common
-
+import Data.XCB.Python.AST
 import Data.XCB.Python.Parse
 import Data.XCB.FromXML
 import Data.XCB.Types
