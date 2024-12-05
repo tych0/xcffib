@@ -206,8 +206,8 @@ xExpressionToNestedPyExpr acc xexpr =
   xExpressionToPyExpr acc xexpr
 
 xExpressionToPyExpr :: (String -> String) -> XExpression -> Expr
-xExpressionToPyExpr _ (Value i) = mkInt i
-xExpressionToPyExpr _ (Bit i) = BinaryOp ShiftLeft (mkInt 1) (mkInt i)
+xExpressionToPyExpr _ (Value i) = Int i
+xExpressionToPyExpr _ (Bit i) = BinaryOp ShiftLeft (Int 1) (Int i)
 xExpressionToPyExpr acc (FieldRef n) = mkName $ acc n
 xExpressionToPyExpr _ (EnumRef (UnQualType enum) n) = mkName $ enum ++ "." ++ n
 -- Currently xcb only uses unqualified types, not sure how qualtype should behave
@@ -256,7 +256,7 @@ xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] [0..]
     exprConv = xExpressionToPyExpr accessor
     conv :: [XEnumElem] -> [(String, Expr)] -> [Int] -> [(String, Expr)]
     conv ((EnumElem name expr) : els) acc is =
-      let expr' = fromMaybe (mkInt (head is)) $ fmap exprConv expr
+      let expr' = fromMaybe (Int (head is)) $ fmap exprConv expr
           is' = dropWhile (<= (fromIntegral (int_value expr'))) is
           acc' = (name, expr') : acc
       in conv els acc' is'
@@ -497,7 +497,7 @@ mkPackStmts ext name m accessor prefix membs =
             -> String
             -> Statement
       mkPop toPop n =
-        let pop = mkCall (mkDot toPop "pop") [mkInt 0]
+        let pop = mkCall (mkDot toPop "pop") [Int 0]
         in if null n then StmtExpr pop else mkAssign n pop
 
       mkBasePack (Nothing, "") = []
@@ -516,7 +516,7 @@ mkPackMethod ext name m prefixAndOp structElems minLen =
   let accessor = ((++) "self.")
       (prefix, op) = case prefixAndOp of
                         Just ('x' : rest, i) ->
-                          let packOpcode = mkCall "struct.pack" [mkStr "=B", mkInt i]
+                          let packOpcode = mkCall "struct.pack" [mkStr "=B", Int i]
                               write = mkCall "buf.write" [packOpcode]
                           in (rest, [StmtExpr write])
                         Just (rest, _) -> error ("internal API error: " ++ show rest)
@@ -526,8 +526,8 @@ mkPackMethod ext name m prefixAndOp structElems minLen =
         len <- maybeToList minLen
         let bufLen = mkName "buf_len"
             bufLenAssign = mkAssign bufLen $ mkCall "len" [mkCall "buf.getvalue" []]
-            test = (BinaryOp LessThan bufLen (mkInt len))
-            bufWriteLen = Paren (BinaryOp Minus (mkInt 32) bufLen)
+            test = (BinaryOp LessThan bufLen (Int len))
+            bufWriteLen = Paren (BinaryOp Minus (Int 32) bufLen)
             extraPackFmt = Paren (BinaryOp Modulo (mkStr "%dx") bufWriteLen)
             extra = mkCall "struct.pack" [extraPackFmt]
             writeExtra = [StmtExpr (mkCall "buf.write" [extra])]
@@ -693,7 +693,7 @@ processXDecl ext (XStruct n _ membs) = do
       synthetic = mkSyntheticMethod membs
       fixedLength = maybeToList $ do
         theLen <- len
-        let rhs = mkInt theLen
+        let rhs = Int theLen
         return $ mkAssign "fixed_size" rhs
   modify $ mkModify ext n (CompositeType ext n)
   return $ Declaration [mkXClass n "xcffib.Struct" False statements (pack : fixedLength ++ synthetic)]
@@ -749,7 +749,7 @@ processXDecl ext (XRequest name opcode _ membs reply) = do
       -- checkedParam = Param (ident "is_checked") Nothing (Just isChecked)
       checkedParam = "is_checked=" ++ (show (isJust reply))
       allArgs = ("self" : (filter (not . null) args)) ++ [checkedParam]
-      ret = mkReturn $ mkCall "self.send_request" ([ mkInt opcode
+      ret = mkReturn $ mkCall "self.send_request" ([ Int opcode
                                                    , mkName "buf"
                                                    ]
                                                    ++ hasReply
@@ -812,7 +812,7 @@ mkVersion header =
   in major ++ minor
   where
     ver :: String -> Maybe Int -> Suite
-    ver target i = maybeToList $ fmap (\x -> mkAssign target (mkInt x)) i
+    ver target i = maybeToList $ fmap (\x -> mkAssign target (Int x)) i
 
 mkKey :: XHeader -> Maybe (Statement)
 mkKey header = do

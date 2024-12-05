@@ -112,7 +112,7 @@ data Statement
 
 data Expr
     = Var { var :: Ident }
-    | Int { int_value :: Integer }
+    | Int { int_value :: Int }
     | Bool { bool_value :: Bool }
     | None
     | Strings { strings_strings :: [String] }
@@ -219,7 +219,7 @@ addCommas exprs = hsep $ punctuate (text ",") (map (pretty . getExpr) exprs)
 
 instance Pretty Expr where
     pretty (Var v) = pretty v
-    pretty (Int i) = integer i
+    pretty (Int i) = integer (toInteger i)
     pretty (Bool True) = text "True"
     pretty (Bool False) = text "False"
     pretty None = text "None"

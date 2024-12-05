@@ -16,7 +16,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Data.XCB.Python.PyHelpers (
   mkRelImport,
-  mkInt,
   mkAssign,
   mkCall,
   mkEnum,
@@ -56,9 +55,6 @@ mkAttr s = mkName ("self." ++ s)
 
 mkRelImport :: String -> Statement
 mkRelImport name = FromImport "." name
-
-mkInt :: Int -> Expr
-mkInt i = Int (toInteger i)
 
 mkAssign :: PseudoExpr a => a -> Expr -> Statement
 mkAssign name expr = Assign (getExpr name) expr
@@ -120,7 +116,7 @@ mkDict name = mkAssign name EmptyDict
 
 mkDictUpdate :: String -> Int -> String -> Statement
 mkDictUpdate dict key value =
-  mkAssign (Subscript (mkName dict) (mkInt key)) (mkName value)
+  mkAssign (Subscript (mkName dict) (Int key)) (mkName value)
 
 mkMethod :: String -> [Ident] -> Suite -> Statement
 mkMethod name args body = Fun name args body
