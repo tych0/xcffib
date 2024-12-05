@@ -15,7 +15,6 @@
  -}
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Data.XCB.Python.PyHelpers (
-  mkImport,
   mkRelImport,
   mkInt,
   mkAssign,
@@ -54,9 +53,6 @@ mkDot e1 attr = Dot (getExpr e1) attr
 -- | Make an attribute access, i.e. self.<string>.
 mkAttr :: String -> Expr
 mkAttr s = mkName ("self." ++ s)
-
-mkImport :: String -> Statement
-mkImport name = Import name
 
 mkRelImport :: String -> Statement
 mkRelImport name = FromImport "." name
