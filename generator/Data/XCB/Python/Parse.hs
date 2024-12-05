@@ -523,7 +523,8 @@ mkPackMethod ext name m prefixAndOp structElems minLen =
             bufLenAssign = mkAssign bufLen $ mkCall "len" [mkCall "buf.getvalue" noArgs]
             test = (BinaryOp LessThan bufLen (mkInt len))
             bufWriteLen = Paren (BinaryOp Minus (mkInt 32) bufLen)
-            extra = mkCall "struct.pack" [repeatStr "x" bufWriteLen]
+            extraPackFmt = Paren (BinaryOp Modulo (mkStr "%dx") bufWriteLen)
+            extra = mkCall "struct.pack" [extraPackFmt]
             writeExtra = [StmtExpr (mkCall "buf.write" [extra])]
         return $ [bufLenAssign, mkIf test writeExtra]
       ret = [mkReturn $ mkCall "buf.getvalue" noArgs]

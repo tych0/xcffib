@@ -36,7 +36,6 @@ module Data.XCB.Python.PyHelpers (
   mkMethod,
   mkReturn,
   mkIf,
-  repeatStr
   ) where
 
 import Data.List.Split
@@ -138,6 +137,3 @@ mkReturn = Return . Just
 
 mkIf :: Expr -> Suite -> Statement
 mkIf e s = Conditional e s []
-
-repeatStr :: String -> Expr -> Expr
-repeatStr s i = BinaryOp Multiply (mkStr s) i

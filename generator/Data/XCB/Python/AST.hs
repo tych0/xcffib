@@ -52,6 +52,7 @@ data Op
    | Invert
    | Equality
    | LessThan
+   | Modulo
    deriving (Eq, Ord, Show)
 
 data Statement
@@ -162,6 +163,7 @@ instance Pretty Op where
     pretty Invert = text "~"
     pretty Equality = text "=="
     pretty LessThan = text "<"
+    pretty Modulo = text "%"
 
 _reserved :: [String]
 _reserved = [ "None"

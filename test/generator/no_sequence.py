@@ -19,7 +19,7 @@ class KeymapNotifyEvent(xcffib.Event):
         buf.write(xcffib.pack_list(self.keys, "B"))
         buf_len = len(buf.getvalue())
         if buf_len < 32:
-            buf.write(struct.pack("x" * (32 - buf_len)))
+            buf.write(struct.pack(("%dx" % (32 - buf_len))))
         return buf.getvalue()
     @classmethod
     def synthetic(cls, keys):
