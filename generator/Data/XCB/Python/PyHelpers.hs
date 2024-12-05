@@ -114,12 +114,9 @@ mkClass clazz superclazz body = Class clazz [superclazz] body
 mkStr :: String -> Expr
 mkStr s = Strings ["\"", s, "\""]
 
-mkTuple :: [Expr] -> Expr
-mkTuple = Tuple
-
 mkUnpackFrom :: PseudoExpr a => a -> [String] -> String -> Suite
 mkUnpackFrom unpacker names packs =
-  let lhs = mkTuple $ map mkAttr names
+  let lhs = Tuple $ map mkAttr names
       -- Don't spam with this default arg unless it is really necessary.
       unpackF = mkDot unpacker "unpack"
       rhs = mkCall unpackF [mkStr packs]
