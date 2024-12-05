@@ -19,7 +19,6 @@ module Data.XCB.Python.PyHelpers (
   mkInt,
   mkAssign,
   mkCall,
-  noArgs,
   mkEnum,
   mkName,
   mkDot,
@@ -69,9 +68,6 @@ mkIncr name expr = AugmentedAssign (mkName name) Plus expr
 mkCall :: PseudoExpr a => a -> [Expr] -> Expr
 mkCall name args = Call (getExpr name) args
 
-noArgs :: [Expr]
-noArgs = []
-
 mkEnum :: String -> [(String, Expr)] -> Statement
 mkEnum cname values =
   let body = map (uncurry mkAssign) values
@@ -95,7 +91,7 @@ mkXClass clazz superclazz xge constructor methods =
       -- things so they can be unpacked again.
       eventToUnpacker :: Statement
       eventToUnpacker = let newUnpacker = mkAssign "unpacker" (mkCall "xcffib.MemoryUnpacker"
-                                                              [mkCall "unpacker.pack" noArgs])
+                                                              [mkCall "unpacker.pack" []])
                             cond = mkCall "isinstance" [mkName "unpacker", mkName "xcffib.Protobj"]
                         in mkIf cond [newUnpacker]
 

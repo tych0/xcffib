@@ -381,10 +381,10 @@ structElemToPyPack ext m accessor (SField n typ _ _) =
        BaseType c -> Left (Just name, c)
        CompositeType tExt typNam ->
          let cond = mkCall "hasattr" [mkName name, (mkStr "pack")]
-             trueB = mkCall (name ++ ".pack") noArgs
+             trueB = mkCall (name ++ ".pack") []
              typNam' = if ext == tExt then typNam else tExt ++ "." ++ typNam
              synthetic = mkCall (typNam' ++ ".synthetic") [mkName ("*" ++ name)]
-             falseB = mkCall (mkDot synthetic "pack") noArgs
+             falseB = mkCall (mkDot synthetic "pack") []
          in Right $ [(name
                     , Left (Just (CondExpr trueB cond falseB))
                     )]
@@ -420,7 +420,7 @@ structElemToPyPack _ m accessor (ExprField name typ expr) =
                                                                 ]))
                              )]
        CompositeType _ _ -> Right $ [(name'
-                                    , Left (Just (mkCall (mkDot e "pack") noArgs))
+                                    , Left (Just (mkCall (mkDot e "pack") []))
                                     )]
 
 -- As near as I can tell here the padding param is unused.
@@ -436,7 +436,7 @@ structElemToPyPack _ m accessor (ValueParam typ mask _ list) =
       "ValueParams other than CARD{16,32} not allowed.")
 
 buf :: Suite
-buf = [mkAssign "buf" (mkCall "io.BytesIO" noArgs)]
+buf = [mkAssign "buf" (mkCall "io.BytesIO" [])]
 
 mkPackStmts :: String
             -> String
@@ -520,14 +520,14 @@ mkPackMethod ext name m prefixAndOp structElems minLen =
       extend = concat $ do
         len <- maybeToList minLen
         let bufLen = mkName "buf_len"
-            bufLenAssign = mkAssign bufLen $ mkCall "len" [mkCall "buf.getvalue" noArgs]
+            bufLenAssign = mkAssign bufLen $ mkCall "len" [mkCall "buf.getvalue" []]
             test = (BinaryOp LessThan bufLen (mkInt len))
             bufWriteLen = Paren (BinaryOp Minus (mkInt 32) bufLen)
             extraPackFmt = Paren (BinaryOp Modulo (mkStr "%dx") bufWriteLen)
             extra = mkCall "struct.pack" [extraPackFmt]
             writeExtra = [StmtExpr (mkCall "buf.write" [extra])]
         return $ [bufLenAssign, mkIf test writeExtra]
-      ret = [mkReturn $ mkCall "buf.getvalue" noArgs]
+      ret = [mkReturn $ mkCall "buf.getvalue" []]
   in mkMethod "pack" ["self"] $ buf ++ op ++ packStmts ++ extend ++ ret
 
 data StructUnpackState = StructUnpackState {
@@ -769,7 +769,7 @@ processXDecl ext (XUnion name _ membs) = do
   modify $ mkModify ext name (CompositeType ext name)
   return $ Declaration decl
   where
-    unpackerCopy = mkCall "unpacker.copy" noArgs
+    unpackerCopy = mkCall "unpacker.copy" []
     mkUnionUnpack :: (Maybe String, String)
                   -> Suite
     mkUnionUnpack (n, typ) =
