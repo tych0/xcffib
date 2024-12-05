@@ -51,5 +51,5 @@ In order to find locally modified versions of xcb-types.
 
 ## TODO
 
-* xprint and xkb support. These will require some non-trivial work in
-  xcb-types, since it won't parse them correctly.
+* xkb support. This will require some non-trivial work in xcb-types, since it
+  won't parse xkb.xml correctly right now.

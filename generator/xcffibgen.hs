@@ -42,7 +42,6 @@ options = Xcffibgen
 -- Headers we can't emit right now. Obviously we want to get rid of this :-)
 badHeaders :: [String]
 badHeaders = [ "xkb"
-             , "xprint"
              ]
 
 run :: Xcffibgen -> IO ()
