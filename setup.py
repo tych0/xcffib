@@ -49,8 +49,8 @@ dependencies = ["cffi>=1.1.0; python_implementation != 'PyPy'"]
 setup(
     name="xcffib",
     version=version,
-    description="A drop in replacement for xpyb, an XCB python binding",
-    keywords="xcb xpyb cffi x11 x windows",
+    description="xcffib is the XCB binding for python",
+    keywords="xcb cffi x11 x windows",
     license="Apache License 2.0",
     url="http://github.com/tych0/xcffib",
     author="Tycho Andersen",
