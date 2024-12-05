@@ -35,7 +35,6 @@ module Data.XCB.Python.PyHelpers (
   mkDictUpdate,
   mkMethod,
   mkReturn,
-  pyTruth,
   mkIf,
   repeatStr
   ) where
@@ -142,9 +141,6 @@ mkMethod name args body = Fun name args body
 
 mkReturn :: Expr -> Statement
 mkReturn = Return . Just
-
-pyTruth :: Bool -> Expr
-pyTruth = Bool
 
 mkIf :: Expr -> Suite -> Statement
 mkIf e s = Conditional e s []
