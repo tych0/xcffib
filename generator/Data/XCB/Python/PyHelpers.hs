@@ -43,14 +43,11 @@ import Data.List.Split
 
 import Data.XCB.Python.AST (Expr(..), Op(..), Statement(..), Suite, Ident, PseudoExpr, getExpr)
 
-mkVar :: String -> Expr
-mkVar name = Var name
-
 -- | Make an Expr out of a string like "foo.bar" describing the name.
 mkName :: String -> Expr
 mkName s =
   let strings = splitOn "." s
-  in foldl mkDot (mkVar $ head strings) (tail strings)
+  in foldl mkDot (Var $ head strings) (tail strings)
 
 mkDot :: PseudoExpr a => a -> String -> Expr
 mkDot e1 attr = Dot (getExpr e1) attr
