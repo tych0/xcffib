@@ -1,5 +1,5 @@
 import xcffib
-import xcffib.xproto
+import xcffib.xkb
 
 def test_query_rules_names(xproto_test):
     setup = xproto_test.conn.get_setup()
@@ -17,3 +17,13 @@ def test_query_rules_names(xproto_test):
     assert strings[0] == "evdev"
     assert strings[1] == "pc105"
     assert strings[2] == "us"
+
+
+def test_query_rules_names(xproto_test):
+    setup = xproto_test.conn.get_setup()
+    root = xproto_test.default_screen.root
+    xkb = xproto_test.conn(xcffib.xkb.key)
+
+    m = xkb.GetMap().reply()
+    print(m)
+    assert False
