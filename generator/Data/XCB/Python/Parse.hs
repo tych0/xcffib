@@ -760,15 +760,17 @@ processXDecl ext (XRequest name opcode _ membs reply) = do
 processXDecl ext (XUnion name _ membs) = do
   m <- get
   let unpackF = structElemToPyUnpack unpackerCopy ext m
-      (fields, listInfo) = span EC.isLeft $ map unpackF membs
-      toUnpack = concat $ map (mkUnionUnpack . EC.fromLeft') fields
-      initMethod = if any EC.isLeft listInfo
-                   then [notImplemented]
-                   else (mkListUnpack listInfo) ++ toUnpack
+      (_, stmts) = span EC.isLeft $ map unpackF membs
+      -- not exactly correct, same problem as in commit
+      -- 64168007c20e80dd58e2456d8dac74e71d7f6b96 or
+      -- d2d521fd117f2d2698f8d4ef1fd4792a4ef1c088, i.e. we shouldn't partition
+      -- these, we should render them in order. (hilariously, those commits
+      -- mention partitionEithers, which is equivalent to (span EC.isLeft)...
+      initMethodStmts = concat $ map (either mkUnionUnpack mkUnionListUnpack) stmts
       -- Here, we only want to pack the first member of the union, since every
       -- member is the same data and we don't want to repeatedly pack it.
       pack = mkPackMethod ext name m Nothing [head membs] Nothing
-      decl = [mkXClass name "xcffib.Union" False initMethod [pack]]
+      decl = [mkXClass name "xcffib.Union" False initMethodStmts [pack]]
   modify $ mkModify ext name (CompositeType ext name)
   return $ Declaration decl
   where
@@ -778,12 +780,10 @@ processXDecl ext (XUnion name _ membs) = do
     mkUnionUnpack (n, typ) =
       mkUnpackFrom unpackerCopy (maybeToList n) typ
 
-    mkListUnpack listInfo =
-      let listInfo' = map EC.fromRight' listInfo
-          (names, listOrSwitches, _) = unzip3 listInfo'
-          (exprs, _) = unzip $ map EC.fromLeft' listOrSwitches
-          lists = map (uncurry mkAssign) $ zip (map mkAttr names) exprs
-      in lists
+    mkUnionListUnpack :: (String, Either (Expr, Expr) ([(Expr, [GenStructElem Type])]), Maybe Int) -> Suite
+    mkUnionListUnpack (n, listOrSwitches, _) =
+      let (expr, _) = EC.fromLeft' listOrSwitches
+      in [mkAssign (mkAttr n) expr]
 
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.
