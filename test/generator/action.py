@@ -153,7 +153,15 @@ class Action(xcffib.Union):
         if isinstance(unpacker, xcffib.Protobj):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Union.__init__(self, unpacker)
-        raise xcffib.XcffibNotImplemented
+        self.noaction = SANoAction(unpacker.copy())
+        self.setmods = SASetMods(unpacker.copy())
+        self.lockmods = SASetMods(unpacker.copy())
+        self.setgroup = SASetGroup(unpacker.copy())
+        self.lockgroup = SASetGroup(unpacker.copy())
+        self.moveptr = SAMovePtr(unpacker.copy())
+        self.ptrbtn = SAPtrBtn(unpacker.copy())
+        self.lockptrbtn = SALockPtrBtn(unpacker.copy())
+        self.type, = unpacker.copy().unpack("B")
     def pack(self):
         buf = io.BytesIO()
         buf.write(self.noaction.pack() if hasattr(self.noaction, "pack") else SANoAction.synthetic(*self.noaction).pack())
