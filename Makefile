@@ -6,7 +6,7 @@ ifneq ($(XCBDIR),$(shell pkg-config --variable=xcbincludedir xcb-proto))
 else
 	XCBVER=$(shell pkg-config --modversion xcb-proto)
 endif
-NCPUS=$(shell grep -c processor /proc/cpuinfo)
+NCPUS=$(shell nproc)
 PARALLEL=$(shell which parallel)
 CABAL=cabal --config-file=./cabal.config
 GEN=$(CABAL) new-run --minimize-conflict-set -j$(NCPUS) exe:xcffibgen --
@@ -16,7 +16,7 @@ xcffib: module/*.py xcffib.cabal $(shell find . -path ./test -prune -false -o -n
 	$(GEN) --input $(XCBDIR) --output ./xcffib
 	cp ./module/*py ./xcffib/
 	touch ./xcffib/py.typed
-	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
+	sed -i -e "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
 
 .PHONY: xcffib-fmt
 xcffib-fmt: module/*.py
