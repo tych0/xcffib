@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+from setuptools.errors import CCompilerError, ExecError, PlatformError
 from warnings import warn
 
 from cffi import FFI
@@ -277,7 +277,7 @@ def build_ffi():
         ffi_api = ffi_for_mode("api")
         ffi_api.compile(verbose=True)
         return ffi_api
-    except (CCompilerError, DistutilsExecError, DistutilsPlatformError,
+    except (CCompilerError, ExecError, PlatformError,
             VerificationError) as e:
         warn("Falling back to precompiled python mode: {}".format(str(e)))
 
