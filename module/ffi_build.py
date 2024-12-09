@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+from setuptools.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 from warnings import warn
 
 from cffi import FFI
