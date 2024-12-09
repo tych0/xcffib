@@ -24,10 +24,10 @@ import struct
 import weakref
 
 
-# Attempt api mode if installed
+# Attempt api mode, then precompiled abi mode, then import time abi
 cffi_mode = "(unknown)"
 try:
-    # Note in ABI mode lib will be missing
+    # Note in ABI mode lib is already available, no dlopen() needed
     from _xcffib import ffi, lib
     cffi_mode = "api"
 except ImportError:
