@@ -59,9 +59,20 @@ htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
 check: xcffib lint htests
+	# Warning this removes setup products
+	-rm _xcffib*.{py,c,o,so}
 	cabal check
 	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py
+	# check abi mode
 	python3 -m compileall xcffib
+	pytest-3 -v --durations=3 -n auto
+	# check abi precompiled mode
+	CC=/bin/false python3 xcffib/ffi_build.py
+	python3 -c "import xcffib; assert xcffib.cffi_mode == 'abi_precompiled'"
+	pytest-3 -v --durations=3 -n auto
+	# check api mode
+	python3 xcffib/ffi_build.py
+	python3 -c "import xcffib; assert xcffib.cffi_mode == 'api'"
 	pytest-3 -v --durations=3 -n auto
 
 # make release ver=0.99.99
