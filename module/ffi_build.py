@@ -13,9 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 from warnings import warn
 
 from cffi import FFI
+from cffi.error import VerificationError
 
 
 CONSTANTS = [
@@ -275,8 +277,9 @@ def build_ffi():
         ffi_api = ffi_for_mode("api")
         ffi_api.compile(verbose=True)
         return ffi_api
-    except Exception:
-        warn("Falling back to precompiled python mode")
+    except (CCompilerError, DistutilsExecError, DistutilsPlatformError,
+            VerificationError) as e:
+        warn("Falling back to precompiled python mode: {}".format(str(e)))
 
         ffi_abi = ffi_for_mode("abi")
         ffi_abi.compile(verbose=True)
