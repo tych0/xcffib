@@ -18,7 +18,6 @@ from __future__ import absolute_import, division
 import ctypes.util
 import functools
 import io
-import os
 import platform
 import struct
 import weakref
