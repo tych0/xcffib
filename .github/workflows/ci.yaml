@@ -27,4 +27,4 @@ jobs:
                   cabal-version: latest
             - run: sudo apt install x11-apps
             - run: git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git proto && cd proto && git checkout ${{ matrix.xcbver }}
-            - run: make XCBDIR=./proto/src check
+            - run: make -j XCBDIR=./proto/src check
