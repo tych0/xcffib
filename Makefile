@@ -10,6 +10,9 @@ NCPUS=$(shell grep -c processor /proc/cpuinfo)
 PARALLEL=$(shell which parallel)
 CABAL=cabal --config-file=./cabal.config
 GEN=$(CABAL) new-run --minimize-conflict-set -j$(NCPUS) exe:xcffibgen --
+VENV=xcffib_venv
+PYTHON=$(VENV)/bin/python3
+FLAKE=$(VENV)/bin/flake8
 
 # you should have xcb-proto installed to run this
 xcffib: module/*.py xcffib.cabal $(shell find . -path ./test -prune -false -o -name \*.hs)
@@ -36,7 +39,7 @@ gen: dist-newstyle
 .PHONY: clean
 clean:
 	-$(CABAL) new-clean
-	-rm -rf xcffib
+	-rm -rf xcffib xcffib_venv
 	-rm -rf module/*pyc module/__pycache__
 	-rm -rf test/*pyc test/__pycache__
 	-rm -rf build *egg* *deb .pybuild dist
@@ -51,18 +54,23 @@ newtests:
 
 # These are all split out so make -j3 check goes as fast as possible.
 .PHONY: lint
-lint:
-	flake8 --config=./test/flake8.cfg ./module
+lint: $(VENV)
+	$(FLAKE) --config=./test/flake8.cfg ./module
 
 .PHONY: htests
 htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
-check: xcffib lint htests
+$(VENV): requirements.txt
+	# the python in $PATH in CI is the python from the matrix, so it is the
+	# "right" python to start with
+	python3 -m venv $(VENV)
+	$(PYTHON) -m pip install -r requirements.txt
+
+check: xcffib htests $(VENV) lint
 	cabal check
-	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py
-	python3 -m compileall xcffib
-	pytest-3 -v --durations=3 -n auto
+	$(PYTHON) -m compileall xcffib
+	$(PYTHON) -m pytest -v --durations=3 -n $(NCPUS)
 
 # make release ver=0.99.99
 release: xcffib
