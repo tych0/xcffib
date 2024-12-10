@@ -13,11 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools.errors import CCompilerError, ExecError, PlatformError
+import shutil
+import tempfile
 from warnings import warn
 
 from cffi import FFI
 from cffi.error import PkgConfigError, VerificationError
+from setuptools.errors import CCompilerError, ExecError, PlatformError
 
 
 CONSTANTS = [
@@ -252,7 +254,7 @@ def ffi_for_mode(mode):
     ffi.cdef(CDEF)
     if mode == "api":
         ffi.set_source_pkgconfig(
-            '_xcffib',
+            'xcffib._xcffib',
             ['xcb'],
             r"""
                 #include "xcb/xcb.h"
@@ -262,7 +264,7 @@ def ffi_for_mode(mode):
             """)
     else:
         ffi.set_source(
-            '_xcffib',
+            'xcffib._xcffib',
             None)
     return ffi
 
@@ -275,14 +277,16 @@ def build_ffi():
     """
     try:
         ffi_api = ffi_for_mode("api")
-        ffi_api.compile(verbose=True)
+        file = ffi_api.compile(verbose=True, tmpdir=tempfile.gettempdir())
+        shutil.copy(file, "xcffib")
         return ffi_api
     except (CCompilerError, ExecError, PlatformError,
             PkgConfigError, VerificationError) as e:
         warn("Falling back to precompiled python mode: {}".format(str(e)))
 
         ffi_abi = ffi_for_mode("abi")
-        ffi_abi.compile(verbose=True)
+        file = ffi_abi.compile(verbose=True, tmpdir=tempfile.gettempdir())
+        shutil.copy(file, "xcffib")
         return ffi_abi
 
 
