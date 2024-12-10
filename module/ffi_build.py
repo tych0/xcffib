@@ -13,7 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import shutil
+import tempfile
+from warnings import warn
+
 from cffi import FFI
+from cffi.error import PkgConfigError, VerificationError
+from setuptools.errors import CCompilerError, ExecError, PlatformError
+
 
 CONSTANTS = [
     ("X_PROTOCOL", 11),
@@ -234,7 +241,7 @@ CDEF += """
     xcb_generic_error_t *xcb_request_check(xcb_connection_t *c, xcb_void_cookie_t cookie);
 """
 
-CDEF += """
+CDEF += r"""
     unsigned int xcb_send_request(xcb_connection_t *c, int flags, struct iovec *vector, const xcb_protocol_request_t *request);
     void *xcb_wait_for_reply(xcb_connection_t *c, unsigned int request, xcb_generic_error_t **e);
     int xcb_poll_for_reply(xcb_connection_t *c, unsigned int request, void **reply, xcb_generic_error_t **error);
@@ -242,5 +249,46 @@ CDEF += """
 """
 
 
-ffi = FFI()
-ffi.cdef(CDEF)
+def ffi_for_mode(mode):
+    ffi = FFI()
+    ffi.cdef(CDEF)
+    if mode == "api":
+        ffi.set_source_pkgconfig(
+            'xcffib._xcffib',
+            ['xcb'],
+            r"""
+                #include "xcb/xcb.h"
+                #include "xcb/xproto.h"
+                #include "xcb/xcbext.h"
+                #include "xcb/render.h"
+            """)
+    else:
+        ffi.set_source(
+            'xcffib._xcffib',
+            None)
+    return ffi
+
+
+def build_ffi():
+    """
+    This will be called from setup() to return an FFI
+    which it will compile - work out here which type is
+    possible and return it.
+    """
+    try:
+        ffi_api = ffi_for_mode("api")
+        file = ffi_api.compile(verbose=True, tmpdir=tempfile.gettempdir())
+        shutil.copy(file, "xcffib")
+        return ffi_api
+    except (CCompilerError, ExecError, PlatformError,
+            PkgConfigError, VerificationError) as e:
+        warn("Falling back to precompiled python mode: {}".format(str(e)))
+
+        ffi_abi = ffi_for_mode("abi")
+        file = ffi_abi.compile(verbose=True, tmpdir=tempfile.gettempdir())
+        shutil.copy(file, "xcffib")
+        return ffi_abi
+
+
+if __name__ == "__main__":
+    build_ffi()

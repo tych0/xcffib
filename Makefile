@@ -6,7 +6,7 @@ ifneq ($(XCBDIR),$(shell pkg-config --variable=xcbincludedir xcb-proto))
 else
 	XCBVER=$(shell pkg-config --modversion xcb-proto)
 endif
-NCPUS=$(shell grep -c processor /proc/cpuinfo)
+NCPUS=$(shell nproc)
 PARALLEL=$(shell which parallel)
 CABAL=cabal --config-file=./cabal.config
 GEN=$(CABAL) new-run --minimize-conflict-set -j$(NCPUS) exe:xcffibgen --
@@ -16,7 +16,7 @@ xcffib: module/*.py xcffib.cabal $(shell find . -path ./test -prune -false -o -n
 	$(GEN) --input $(XCBDIR) --output ./xcffib
 	cp ./module/*py ./xcffib/
 	touch ./xcffib/py.typed
-	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
+	sed -i -e "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
 
 .PHONY: xcffib-fmt
 xcffib-fmt: module/*.py
@@ -59,9 +59,20 @@ htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
 check: xcffib lint htests
+	# Warning this removes setup products
+	-rm _xcffib*.{py,c,o,so}
 	cabal check
 	flake8 -j$(NCPUS) --ignore=E128,E231,E251,E301,E302,E305,E501,F401,E402,W503,E741,E999 xcffib/*.py
+	# check abi mode
 	python3 -m compileall xcffib
+	pytest-3 -v --durations=3 -n auto
+	# check abi precompiled mode
+	CC=/bin/false python3 xcffib/ffi_build.py
+	python3 -c "import xcffib; assert xcffib.cffi_mode == 'abi_precompiled'"
+	pytest-3 -v --durations=3 -n auto
+	# check api mode
+	python3 xcffib/ffi_build.py
+	python3 -c "import xcffib; assert xcffib.cffi_mode == 'api'"
 	pytest-3 -v --durations=3 -n auto
 
 # make release ver=0.99.99
