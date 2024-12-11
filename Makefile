@@ -6,7 +6,7 @@ ifneq ($(XCBDIR),$(shell pkg-config --variable=xcbincludedir xcb-proto))
 else
 	XCBVER=$(shell pkg-config --modversion xcb-proto)
 endif
-NCPUS=$(shell grep -c processor /proc/cpuinfo)
+NCPUS=$(shell nproc)
 PARALLEL=$(shell which parallel)
 CABAL=flock xcffib.cabal cabal
 GEN=$(CABAL) new-run --minimize-conflict-set -j$(NCPUS) exe:xcffibgen --
@@ -14,8 +14,11 @@ VENV=xcffib_venv
 PYTHON=$(VENV)/bin/python3
 FLAKE=$(VENV)/bin/flake8
 
+GENERATOR_FILES=$(shell find . -path ./test -prune -false -o -name \*.hs)
+HANDWRITTEN_MODULE_FILES=$(shell find ./module -name \*.py)
+
 # you should have xcb-proto installed to run this
-xcffib: module/*.py xcffib.cabal $(shell find . -path ./test -prune -false -o -name \*.hs)
+xcffib: xcffib.cabal $(GENERATOR_FILES) $(HANDWRITTEN_MODULE_FILES)
 	$(GEN) --input $(XCBDIR) --output ./xcffib
 	cp ./module/*py ./xcffib/
 	touch ./xcffib/py.typed
@@ -46,7 +49,7 @@ clean:
 	-rm -rf .pc cabal.project.local*
 
 valgrind: xcffib
-	valgrind --leak-check=full --show-leak-kinds=definite pytest-3 -v
+	valgrind --leak-check=full --show-leak-kinds=definite $(PYTHON) -m pytest -v
 
 newtests:
 	$(GEN) --input ./test/generator/ --output ./test/generator/
@@ -64,13 +67,15 @@ htests:
 $(VENV): requirements.txt
 	# the python in $PATH in CI is the python from the matrix, so it is the
 	# "right" python to start with
-	python3 -m venv $(VENV)
+	python -m venv $(VENV)
 	$(PYTHON) -m pip install -r requirements.txt
 
-check: xcffib htests $(VENV) lint
+check-mode-%: xcffib requirements.txt
+	./test/test_mode.sh $*
+
+check: xcffib htests lint check-mode-api check-mode-abi
 	$(CABAL) check
 	$(PYTHON) -m compileall xcffib
-	$(PYTHON) -m pytest -v --durations=3 -n $(NCPUS)
 
 # make release ver=0.99.99
 release: xcffib
