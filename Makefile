@@ -72,7 +72,7 @@ $(VENV): requirements.txt
 		python -m venv $(VENV)
 		$(PYTHON) -m pip install -r requirements.txt
 
-check-abi:
+check-abi: xcffib
 	# check abi precompiled mode
 	# make a temporary env to test install and ensure we cd somewhere
 	# we won't pick up the local source xcffib module
@@ -83,7 +83,7 @@ check-abi:
 	${TMPLOC}/bin/python -c "import os; os.chdir(\""${TMPLOC}"\"); import xcffib; assert xcffib.cffi_mode == 'abi_precompiled'" && \
 	${TMPLOC}/bin/python -m pytest -v --durations=3 -n auto
 
-check-api:
+check-api: xcffib
 	# check abi precompiled mode
 	# make a temporary env to test install and ensure we cd somewhere
 	# we won't pick up the local source xcffib module
