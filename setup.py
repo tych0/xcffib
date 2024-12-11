@@ -73,4 +73,5 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries'
     ],
+    cffi_modules=["xcffib/ffi_build.py:build_ffi"]
 )
