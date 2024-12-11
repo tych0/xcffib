@@ -80,9 +80,7 @@ check-abi:
 	python -m venv $(TMPLOC)
 	CC=/bin/false ${TMPLOC}/bin/python -m pip install -v .
 	${TMPLOC}/bin/python -m pip install pytest pytest-xdist
-	pushd ${TMPLOC} && \
-		${TMPLOC}/bin/python -c "import xcffib; assert xcffib.cffi_mode == 'abi_precompiled'" && \
-		popd
+	${TMPLOC}/bin/python -c "import os; os.chdir(\""${TMPLOC}"\"); import xcffib; assert xcffib.cffi_mode == 'abi_precompiled'" && \
 	${TMPLOC}/bin/python -m pytest -v --durations=3 -n auto
 
 check-api:
@@ -93,9 +91,7 @@ check-api:
 	python -m venv ${TMPLOC}
 	${TMPLOC}/bin/python -m pip install -v .
 	${TMPLOC}/bin/python -m pip install pytest pytest-xdist
-	pushd ${TMPLOC} && \
-		${TMPLOC}/bin/python -c "import xcffib; assert xcffib.cffi_mode == 'api'" && \
-		popd
+	${TMPLOC}/bin/python -c "import os; os.chdir(\""${TMPLOC}"\"); import xcffib; assert xcffib.cffi_mode == 'api'" && \
 	${TMPLOC}/bin/python -m pytest -v --durations=3 -n auto \
 
 check: xcffib htests $(VENV) lint check-api check-abi
