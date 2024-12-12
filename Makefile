@@ -72,27 +72,27 @@ $(VENV): requirements.txt
 		python -m venv $(VENV)
 		$(PYTHON) -m pip install -r requirements.txt
 
-check-abi: xcffib
+check-abi: xcffib $(VENV)
 	# check abi precompiled mode
 	# make a temporary env to test install and ensure we cd somewhere
 	# we won't pick up the local source xcffib module
 	$(eval TMPLOC=$(shell mktemp -d))
 	python -m venv $(TMPLOC)
-	CC=/bin/false ${TMPLOC}/bin/python -m pip install -v .
+	CC=/bin/false ${TMPLOC}/bin/python -m pip install --no-cache -v .
 	${TMPLOC}/bin/python -m pip install pytest pytest-xdist
-	${TMPLOC}/bin/python -c "import os; os.chdir(\""${TMPLOC}"\"); import xcffib; assert xcffib.cffi_mode == 'abi_precompiled'" && \
+	${TMPLOC}/bin/python -c "import os; os.chdir('${TMPLOC}'); import xcffib; print(xcffib.cffi_mode); assert xcffib.cffi_mode == 'abi_precompiled'"
 	${TMPLOC}/bin/python -m pytest -v --durations=3 -n auto
 
-check-api: xcffib
+check-api: xcffib $(VENV)
 	# check abi precompiled mode
 	# make a temporary env to test install and ensure we cd somewhere
 	# we won't pick up the local source xcffib module
 	$(eval TMPLOC=$(shell mktemp -d))
 	python -m venv ${TMPLOC}
-	${TMPLOC}/bin/python -m pip install -v .
+	${TMPLOC}/bin/python -m pip install -v --no-cache .
 	${TMPLOC}/bin/python -m pip install pytest pytest-xdist
-	${TMPLOC}/bin/python -c "import os; os.chdir(\""${TMPLOC}"\"); import xcffib; assert xcffib.cffi_mode == 'api'" && \
-	${TMPLOC}/bin/python -m pytest -v --durations=3 -n auto \
+	${TMPLOC}/bin/python -c "import os; os.chdir('${TMPLOC}'); import xcffib; print(xcffib.cffi_mode); assert xcffib.cffi_mode == 'api'"
+	${TMPLOC}/bin/python -m pytest -v --durations=3 -n auto
 
 check: xcffib htests $(VENV) lint check-api check-abi
 	cabal check
