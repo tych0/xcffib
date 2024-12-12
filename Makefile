@@ -6,7 +6,7 @@ ifneq ($(XCBDIR),$(shell pkg-config --variable=xcbincludedir xcb-proto))
 else
 	XCBVER=$(shell pkg-config --modversion xcb-proto)
 endif
-NCPUS=$(shell grep -c processor /proc/cpuinfo)
+NCPUS=$(shell nproc)
 PARALLEL=$(shell which parallel)
 CABAL=flock xcffib.cabal cabal --config-file=./cabal.config
 GEN=$(CABAL) new-run --minimize-conflict-set -j$(NCPUS) exe:xcffibgen --
@@ -15,11 +15,16 @@ PYTHON=$(VENV)/bin/python3
 FLAKE=$(VENV)/bin/flake8
 
 # you should have xcb-proto installed to run this
-xcffib: module/*.py xcffib.cabal $(shell find . -path ./test -prune -false -o -name \*.hs)
+xcffib: xcffib_py_files xcffib.cabal $(shell find . -path ./test -prune -false -o -name \*.hs)
 	$(GEN) --input $(XCBDIR) --output ./xcffib
-	cp ./module/*py ./xcffib/
 	touch ./xcffib/py.typed
-	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
+	sed -i -e "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
+
+xcffib_py_files: $(addprefix xcffib/, $(notdir $(wildcard module/*.py)))
+
+xcffib/%.py: module/%.py
+	mkdir -p xcffib/
+	cp $^ $@
 
 .PHONY: xcffib-fmt
 xcffib-fmt: module/*.py
@@ -46,7 +51,7 @@ clean:
 	-rm -rf .pc cabal.project.local*
 
 valgrind: xcffib
-	valgrind --leak-check=full --show-leak-kinds=definite pytest-3 -v
+	valgrind --leak-check=full --show-leak-kinds=definite $(PYTHON) -m pytest -v
 
 newtests:
 	$(GEN) --input ./test/generator/ --output ./test/generator/
@@ -62,12 +67,34 @@ htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
 $(VENV): requirements.txt
-	# the python in $PATH in CI is the python from the matrix, so it is the
-	# "right" python to start with
-	python3 -m venv $(VENV)
-	$(PYTHON) -m pip install -r requirements.txt
+		# the python in $PATH in CI is the python from the matrix, so it is the
+		# "right" python to start with
+		python -m venv $(VENV)
+		$(PYTHON) -m pip install -r requirements.txt
 
-check: xcffib htests $(VENV) lint
+check-abi: xcffib $(VENV)
+	# check abi precompiled mode
+	# make a temporary env to test install and ensure we cd somewhere
+	# we won't pick up the local source xcffib module
+	$(eval TMPLOC=$(shell mktemp -d))
+	python -m venv $(TMPLOC)
+	CC=/bin/false ${TMPLOC}/bin/python -m pip install --no-cache -v .
+	${TMPLOC}/bin/python -m pip install pytest pytest-xdist
+	${TMPLOC}/bin/python -c "import os; os.chdir('${TMPLOC}'); import xcffib; print(xcffib.cffi_mode); assert xcffib.cffi_mode == 'abi_precompiled'"
+	${TMPLOC}/bin/python -m pytest -v --durations=3 -n auto
+
+check-api: xcffib $(VENV)
+	# check abi precompiled mode
+	# make a temporary env to test install and ensure we cd somewhere
+	# we won't pick up the local source xcffib module
+	$(eval TMPLOC=$(shell mktemp -d))
+	python -m venv ${TMPLOC}
+	${TMPLOC}/bin/python -m pip install -v --no-cache .
+	${TMPLOC}/bin/python -m pip install pytest pytest-xdist
+	${TMPLOC}/bin/python -c "import os; os.chdir('${TMPLOC}'); import xcffib; print(xcffib.cffi_mode); assert xcffib.cffi_mode == 'api'"
+	${TMPLOC}/bin/python -m pytest -v --durations=3 -n auto
+
+check: xcffib htests $(VENV) lint check-api check-abi
 	cabal check
 	$(PYTHON) -m compileall xcffib
 	$(PYTHON) -m pytest -v --durations=3 -n $(NCPUS)

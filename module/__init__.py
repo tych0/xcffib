@@ -15,24 +15,12 @@
 
 from __future__ import absolute_import, division
 
-import ctypes.util
 import functools
 import io
-import platform
 import struct
 import weakref
 
-from .ffi import ffi
-
-if platform.system() == "Darwin":
-    soname = "libxcb.dylib"
-elif platform.system() == "Windows":
-    soname = "libxcb.dll"
-else:
-    soname = ctypes.util.find_library("xcb")
-    if soname is None:
-        soname = "libxcb.so"
-lib = ffi.dlopen(soname)
+from .ffi import ffi, lib, cffi_mode   # noqa: F401
 
 __xcb_proto_version__ = 'placeholder'
 __version__ = 'placeholder'

@@ -182,7 +182,7 @@ class TestPythonCode:
 
         # Pass the reply to our hoist_event method
         event = xcffib_test.conn.hoist_event(generic_reply)
-        
+
         assert isinstance(event, xcffib.xinput.BarrierHitEvent)
         assert event.root_x >> 16 == 100
         assert event.root_y >> 16 == 200
