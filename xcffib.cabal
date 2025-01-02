@@ -21,7 +21,7 @@ extra-source-files: test/generator/*.py,
 
 source-repository head
   type:              git
-  location:          git://github.com/tych0/xcffib.git
+  location:          ssh://github.com/tych0/xcffib.git
 
 library
   build-depends: base ==4.*,
