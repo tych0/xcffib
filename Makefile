@@ -8,7 +8,7 @@ else
 endif
 NCPUS=$(shell grep -c processor /proc/cpuinfo)
 PARALLEL=$(shell which parallel)
-CABAL=flock xcffib.cabal cabal --config-file=./cabal.config
+CABAL=flock xcffib.cabal cabal
 GEN=$(CABAL) new-run --minimize-conflict-set -j$(NCPUS) exe:xcffibgen --
 VENV=xcffib_venv
 PYTHON=$(VENV)/bin/python3
