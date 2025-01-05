@@ -68,7 +68,7 @@ $(VENV): requirements.txt
 	$(PYTHON) -m pip install -r requirements.txt
 
 check: xcffib htests $(VENV) lint
-	cabal check
+	$(CABAL) check
 	$(PYTHON) -m compileall xcffib
 	$(PYTHON) -m pytest -v --durations=3 -n $(NCPUS)
 
