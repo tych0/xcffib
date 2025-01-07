@@ -57,6 +57,7 @@ setup(
     author_email="tycho@tycho.pizza",
     install_requires=dependencies,
     setup_requires=dependencies,
+    python_requires = ">=3.9",
     packages=['xcffib'],
     package_data={'xcffib': ['py.typed']},
     zip_safe=False,
