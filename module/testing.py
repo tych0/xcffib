@@ -133,7 +133,16 @@ class XvfbTest:
             try:
                 conn = Connection(os.environ['DISPLAY'])
                 conn.invalid()
-                return conn
+
+                # xvfb creates a screen with a default width, and then resizes it.
+                # we wait here for the resize event, so that the actual test only
+                # ever sees a screen that is the right size.
+                setup = conn.get_setup()
+                screen = setup.roots[0]
+                if screen.width_in_pixels == self.width and screen.height_in_pixels == self.height:
+                    return conn
+                conn.disconnect()
             except ConnectionException:
                 time.sleep(0.2)
+                continue
         assert False, "couldn't connect to xvfb"
