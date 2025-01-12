@@ -253,12 +253,12 @@ def _add_ext(key, value, events, errors):
 
 
 class ExtensionKey(object):
-    """This definitely isn't needed, but we keep it around for compatibility
-    with xpyb.
-    """
-
     def __init__(self, name):
         self.name = name
+        self.c_key = ffi.new("struct xcb_extension_t *")
+        self.c_name = ffi.new("char[]", self.name.encode())
+        self.c_key.name = self.c_name
+        self.c_key.global_id = 0
 
     def __hash__(self):
         return hash(self.name)
@@ -268,15 +268,6 @@ class ExtensionKey(object):
 
     def __ne__(self, o):
         return self.name != o.name
-
-    def to_cffi(self):
-        c_key = ffi.new("struct xcb_extension_t *")
-        c_key.name = name = ffi.new("char[]", self.name.encode())
-        cffi_explicit_lifetimes[c_key] = name
-        # xpyb doesn't ever set global_id, which seems wrong, but whatever.
-        c_key.global_id = 0
-
-        return c_key
 
 
 class Protobj(object):
@@ -355,9 +346,7 @@ class Extension(object):
         if key is None:
             self.c_key = ffi.NULL
         else:
-            c_key = key.to_cffi()
-            cffi_explicit_lifetimes[self] = c_key
-            self.c_key = c_key
+            self.c_key = key.c_key
 
     def send_request(
         self, opcode, data, cookie=VoidCookie, reply=None, is_checked=False
@@ -559,10 +548,7 @@ class Connection(object):
 
     def _setup_extensions(self):
         for key, (_, events, errors) in extensions.items():
-            # We're explicitly not putting this as an argument to the next call
-            # as a hack for lifetime management.
-            c_ext = key.to_cffi()
-            reply = lib.xcb_get_extension_data(self._conn, c_ext)
+            reply = lib.xcb_get_extension_data(self._conn, key.c_key)
             self._event_offsets.add(reply.first_event, reply.major_opcode, events)
             self._error_offsets.add(reply.first_error, reply.major_opcode, errors)
 
