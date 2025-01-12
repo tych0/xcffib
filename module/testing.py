@@ -25,7 +25,7 @@ from . import Connection, ConnectionException
 
 
 def lock_path(display):
-    return '/tmp/.X%d-lock' % display
+    return "/tmp/.X%d-lock" % display
 
 
 def find_display():
@@ -45,10 +45,9 @@ def find_display():
 
 
 class XvfbTest:
-
-    """ A helper class for testing things with nosetests. This class will run
+    """A helper class for testing things with nosetests. This class will run
     each test in its own fresh xvfb, leaving you with an xcffib connection to
-    that X session as `self.conn` for use in testing. """
+    that X session as `self.conn` for use in testing."""
 
     # Set this to true if you'd like to get xtrace output to stdout of each
     # test.
@@ -60,26 +59,26 @@ class XvfbTest:
         self.depth = depth
 
     def spawn(self, cmd):
-        """ Spawn a command but swallow its output. """
+        """Spawn a command but swallow its output."""
         return subprocess.Popen(cmd)
 
     def _restore_display(self):
         if self._old_display is None:
-            del os.environ['DISPLAY']
+            del os.environ["DISPLAY"]
         else:
-            os.environ['DISPLAY'] = self._old_display
+            os.environ["DISPLAY"] = self._old_display
 
     def setUp(self):
-        self._old_display = os.environ.get('DISPLAY')
+        self._old_display = os.environ.get("DISPLAY")
         self._display, self._display_lock = find_display()
-        os.environ['DISPLAY'] = ':%d' % self._display
+        os.environ["DISPLAY"] = ":%d" % self._display
         self._xvfb = self.spawn(self._xvfb_command())
 
         if self.xtrace:
-            subprocess.Popen(['xtrace', '-n'])
+            subprocess.Popen(["xtrace", "-n"])
             # xtrace's default display is :9; obviously this won't work
             # concurrently, but it's not the default so...
-            os.environ['DISPLAY'] = ':9'
+            os.environ["DISPLAY"] = ":9"
         try:
             self.conn = self._connect_to_xvfb()
         except AssertionError:
@@ -121,17 +120,17 @@ class XvfbTest:
         self.tearDown()
 
     def _xvfb_command(self):
-        """ You can override this if you have some extra args for Xvfb or
+        """You can override this if you have some extra args for Xvfb or
         whatever. At this point, os.environ['DISPLAY'] is set to something Xvfb
-        can use. """
-        screen = '%sx%sx%s' % (self.width, self.height, self.depth)
-        return ['Xvfb', os.environ['DISPLAY'], '-screen', '0', screen]
+        can use."""
+        screen = "%sx%sx%s" % (self.width, self.height, self.depth)
+        return ["Xvfb", os.environ["DISPLAY"], "-screen", "0", screen]
 
     def _connect_to_xvfb(self):
         # sometimes it takes a while for Xvfb to start
         for _ in range(100):
             try:
-                conn = Connection(os.environ['DISPLAY'])
+                conn = Connection(os.environ["DISPLAY"])
                 conn.invalid()
 
                 # xvfb creates a screen with a default width, and then resizes it.

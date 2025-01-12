@@ -27,23 +27,22 @@ from .conftest import XcffibTest
 
 
 class TestPythonCode:
-
     def test_struct_pack_uses_List(self):
         # suppose we have a list of ints...
         ints = struct.pack("=IIII", *range(4))
 
         # Unpacker wants a cffi.cdata
-        cffi_ints = xcffib.ffi.new('char[]', ints)
+        cffi_ints = xcffib.ffi.new("char[]", ints)
 
-        l = xcffib.List(xcffib.CffiUnpacker(cffi_ints), "I", count=4)
-        ints2 = struct.pack("=IIII", *l)
+        data = xcffib.List(xcffib.CffiUnpacker(cffi_ints), "I", count=4)
+        ints2 = struct.pack("=IIII", *data)
 
         # after packing and unpacking, we should still have those ints
         assert ints == ints2
 
     def test_union_pack(self):
         data = struct.pack("=" + ("b" * 20), *range(20))
-        cffi_data = xcffib.ffi.new('char[]', data)
+        cffi_data = xcffib.ffi.new("char[]", data)
 
         cm = xcffib.xproto.ClientMessageData(xcffib.CffiUnpacker(cffi_data))
 
@@ -53,11 +52,11 @@ class TestPythonCode:
         if sys.byteorder == "little":
             assert cm.data32[0] == 0x03020100
             assert cm.data32[1] == 0x07060504
-            assert cm.data32[2] == 0x0b0a0908
+            assert cm.data32[2] == 0x0B0A0908
         elif sys.byteorder == "big":
             assert cm.data32[0] == 0x00010203
             assert cm.data32[1] == 0x04050607
-            assert cm.data32[2] == 0x08090a0b
+            assert cm.data32[2] == 0x08090A0B
         else:
             raise Exception("unknown byte order?")
 
@@ -96,10 +95,7 @@ class TestPythonCode:
         wm_delete_window = xcffib_test.intern("WM_DELETE_WINDOW")
 
         e = xcffib.xproto.ClientMessageEvent.synthetic(
-            format=32,
-            window=wid,
-            type=wm_protocols,
-            data=union
+            format=32, window=wid, type=wm_protocols, data=union
         )
 
         xcffib_test.xproto.SendEvent(False, wid, EventMask.NoEvent, e.pack())
@@ -126,13 +122,10 @@ class TestPythonCode:
 
         union = xcffib.xproto.ClientMessageData.synthetic(data, "I" * 5)
         e = xcffib.xproto.ClientMessageEvent.synthetic(
-            format=32,
-            window=wid,
-            type=wm_protocols,
-            data=union
+            format=32, window=wid, type=wm_protocols, data=union
         )
 
-        e2 = xcffib.xproto.ClientMessageEvent(e)
+        _ = xcffib.xproto.ClientMessageEvent(e)
 
     def test_get_image(self, xcffib_test):
         # adapted from: https://gist.github.com/liftoff/4741790
@@ -144,9 +137,10 @@ class TestPythonCode:
 
         # GetImage requires an output format as the first arg.  We want ZPixmap:
         output_format = xcffib.xproto.ImageFormat.ZPixmap
-        plane_mask = 2**32 - 1 # No idea what this is but it works!
+        plane_mask = 2**32 - 1  # No idea what this is but it works!
         reply = xcffib_test.conn.core.GetImage(
-            output_format, root, 0, 0, width, height, plane_mask).reply()
+            output_format, root, 0, 0, width, height, plane_mask
+        ).reply()
         reply.data.buf()
 
     def test_ge_generic_event_hoist(self, xcffib_test):
@@ -173,7 +167,7 @@ class TestPythonCode:
             100 << 16,  # root_x
             200 << 16,  # root_y
             0,  # dx
-            0  # dy
+            0,  # dy
         )
 
         # Create cdata from the bytearray and cast it to a generic reply
@@ -182,7 +176,7 @@ class TestPythonCode:
 
         # Pass the reply to our hoist_event method
         event = xcffib_test.conn.hoist_event(generic_reply)
-        
+
         assert isinstance(event, xcffib.xinput.BarrierHitEvent)
         assert event.root_x >> 16 == 100
         assert event.root_y >> 16 == 200
@@ -196,22 +190,20 @@ class TestPythonCode:
                 for output in scrn_rsrcs.outputs:
                     info = xrandr.GetOutputInfo(output, xcffib.XCB_CURRENT_TIME).reply()
                     print(info.name.to_string())
-                    assert info.name.to_string() == 'screen'
+                    assert info.name.to_string() == "screen"
         finally:
             xcffib_test.conn.disconnect()
 
 
-
 class TestXcffibTestGenerator:
-
     def test_XcffibTest_generator(self):
         try:
-            old_display = os.environ['DISPLAY']
+            old_display = os.environ["DISPLAY"]
         except KeyError:
             old_display = ""
         # use some non-default width/height
         with XcffibTest(width=1001, height=502) as test:
-            assert os.environ['DISPLAY'] != old_display
+            assert os.environ["DISPLAY"] != old_display
             setup = test.conn.get_setup()
             screen = setup.roots[0]
             width = screen.width_in_pixels

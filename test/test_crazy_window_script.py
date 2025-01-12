@@ -21,8 +21,9 @@
 # SOFTWARE.
 
 """
-    This is mostly stolen from qtile's tests/scripts/window.py
+This is mostly stolen from qtile's tests/scripts/window.py
 """
+
 import os
 import sys
 import struct

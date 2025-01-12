@@ -34,8 +34,8 @@ else:
         soname = "libxcb.so"
 lib = ffi.dlopen(soname)
 
-__xcb_proto_version__ = 'placeholder'
-__version__ = 'placeholder'
+__xcb_proto_version__ = "placeholder"
+__version__ = "placeholder"
 
 X_PROTOCOL = lib.X_PROTOCOL
 X_PROTOCOL_REVISION = lib.X_PROTOCOL_REVISION
@@ -83,7 +83,6 @@ def visualtype_to_c_struct(vt):
 
 
 class Unpacker(object):
-
     def __init__(self, known_max=None):
         self.size = 0
         self.offset = 0
@@ -131,7 +130,6 @@ class Unpacker(object):
 
 
 class CffiUnpacker(Unpacker):
-
     def __init__(self, cdata, known_max=None):
         self.cdata = cdata
         Unpacker.__init__(self, known_max)
@@ -151,7 +149,6 @@ class CffiUnpacker(Unpacker):
 
 
 class MemoryUnpacker(Unpacker):
-
     def __init__(self, buf):
         self.buf = buf
         Unpacker.__init__(self, len(self.buf))
@@ -169,12 +166,12 @@ class MemoryUnpacker(Unpacker):
 
 
 def popcount(n):
-    return bin(n).count('1')
+    return bin(n).count("1")
 
 
 class XcffibException(Exception):
+    """Generic XcbException; replaces xcb.Exception."""
 
-    """ Generic XcbException; replaces xcb.Exception. """
     pass
 
 
@@ -185,28 +182,33 @@ class XcffibNotImplemented(XcffibException, NotImplementedError):
 class ConnectionException(XcffibException):
     REASONS = {
         lib.XCB_CONN_ERROR: (
-            'xcb connection errors because of socket, '
-            'pipe and other stream errors.'),
+            "xcb connection errors because of socket, pipe and other stream errors."
+        ),
         lib.XCB_CONN_CLOSED_EXT_NOTSUPPORTED: (
-            'xcb connection shutdown because extension not supported'),
+            "xcb connection shutdown because extension not supported"
+        ),
         lib.XCB_CONN_CLOSED_MEM_INSUFFICIENT: (
-            'malloc(), calloc() and realloc() error upon failure, '
-            'for eg ENOMEM'),
+            "malloc(), calloc() and realloc() error upon failure, for eg ENOMEM"
+        ),
         lib.XCB_CONN_CLOSED_REQ_LEN_EXCEED: (
-            'Connection closed, exceeding request length that server '
-            'accepts.'),
+            "Connection closed, exceeding request length that server accepts."
+        ),
         lib.XCB_CONN_CLOSED_PARSE_ERR: (
-            'Connection closed, error during parsing display string.'),
+            "Connection closed, error during parsing display string."
+        ),
         lib.XCB_CONN_CLOSED_INVALID_SCREEN: (
-            'Connection closed because the server does not have a screen '
-            'matching the display.'),
+            "Connection closed because the server does not have a screen "
+            "matching the display."
+        ),
         lib.XCB_CONN_CLOSED_FDPASSING_FAILED: (
-            'Connection closed because some FD passing operation failed'),
+            "Connection closed because some FD passing operation failed"
+        ),
     }
 
     def __init__(self, err):
         XcffibException.__init__(
-            self, self.REASONS.get(err, "Unknown connection error."))
+            self, self.REASONS.get(err, "Unknown connection error.")
+        )
 
 
 class ProtocolException(XcffibException):
@@ -229,8 +231,7 @@ extensions = {}
 
 def _add_core(value, __setup, events, errors):
     if not issubclass(value, Extension):
-        raise XcffibException(
-            "Extension type not derived from xcffib.Extension")
+        raise XcffibException("Extension type not derived from xcffib.Extension")
     if not issubclass(__setup, Struct):
         raise XcffibException("Setup type not derived from xcffib.Struct")
 
@@ -247,14 +248,12 @@ def _add_core(value, __setup, events, errors):
 
 def _add_ext(key, value, events, errors):
     if not issubclass(value, Extension):
-        raise XcffibException(
-            "Extension type not derived from xcffib.Extension")
+        raise XcffibException("Extension type not derived from xcffib.Extension")
     extensions[key] = (value, events, errors)
 
 
 class ExtensionKey(object):
-
-    """ This definitely isn't needed, but we keep it around for compatibility
+    """This definitely isn't needed, but we keep it around for compatibility
     with xpyb.
     """
 
@@ -272,7 +271,7 @@ class ExtensionKey(object):
 
     def to_cffi(self):
         c_key = ffi.new("struct xcb_extension_t *")
-        c_key.name = name = ffi.new('char[]', self.name.encode())
+        c_key.name = name = ffi.new("char[]", self.name.encode())
         cffi_explicit_lifetimes[c_key] = name
         # xpyb doesn't ever set global_id, which seems wrong, but whatever.
         c_key.global_id = 0
@@ -281,8 +280,7 @@ class ExtensionKey(object):
 
 
 class Protobj(object):
-
-    """ Note: Unlike xcb.Protobj, this does NOT implement the sequence
+    """Note: Unlike xcb.Protobj, this does NOT implement the sequence
     protocol. I found this behavior confusing: Protobj would implement the
     sequence protocol on self.buf, and then List would go and implement it on
     List.
@@ -337,7 +335,8 @@ class Cookie(object):
     def check(self):
         # Request is not void and checked.
         assert self.is_checked and self.reply_type is None, (
-            "Request is not void and checked")
+            "Request is not void and checked"
+        )
         self.conn.request_check(self.sequence)
 
     def discard_reply(self):
@@ -345,13 +344,11 @@ class Cookie(object):
 
 
 class VoidCookie(Cookie):
-
     def reply(self):
         raise XcffibException("No reply for this message type")
 
 
 class Extension(object):
-
     def __init__(self, conn, key=None):
         self.conn = conn
 
@@ -362,8 +359,9 @@ class Extension(object):
             cffi_explicit_lifetimes[self] = c_key
             self.c_key = c_key
 
-    def send_request(self, opcode, data, cookie=VoidCookie, reply=None,
-                     is_checked=False):
+    def send_request(
+        self, opcode, data, cookie=VoidCookie, reply=None, is_checked=False
+    ):
         data = data.getvalue()
 
         assert len(data) > 3, "xcb_send_request data must be ast least 4 bytes"
@@ -383,7 +381,7 @@ class Extension(object):
 
         # Here we need this iov_base to keep this memory alive until the end of
         # the function.
-        xcb_parts[2].iov_base = iov_base = ffi.new('char[]', data)  # noqa
+        xcb_parts[2].iov_base = iov_base = ffi.new("char[]", data)  # noqa
         xcb_parts[2].iov_len = len(data)
         xcb_parts[3].iov_base = ffi.NULL
         xcb_parts[3].iov_len = -len(data) & 3  # is this really necessary?
@@ -396,10 +394,10 @@ class Extension(object):
 
     def __getattr__(self, name):
         if name.endswith("Checked"):
-            real = name[:-len("Checked")]
+            real = name[: -len("Checked")]
             is_checked = True
         elif name.endswith("Unchecked"):
-            real = name[:-len("Unchecked")]
+            real = name[: -len("Unchecked")]
             is_checked = False
         else:
             raise AttributeError(name)
@@ -410,7 +408,6 @@ class Extension(object):
 
 
 class List(Protobj):
-
     def __init__(self, unpacker, typ, count=None):
         Protobj.__init__(self, unpacker)
 
@@ -431,7 +428,7 @@ class List(Protobj):
 
         self.bufsize = unpacker.offset - old
 
-        self.raw = bytes(unpacker.buf[old:old + self.bufsize])
+        self.raw = bytes(unpacker.buf[old : old + self.bufsize])
 
         assert count is None or count == len(self.list)
 
@@ -454,25 +451,25 @@ class List(Protobj):
         del self.list[key]
 
     def to_string(self):
-        """ A helper for converting a List of chars to a native string. Dies if
+        """A helper for converting a List of chars to a native string. Dies if
         the list contents are not something that could be reasonably converted
-        to a string. """
+        to a string."""
         try:
-            return ''.join(chr(i[0]) for i in self)
+            return "".join(chr(i[0]) for i in self)
         except TypeError:
-            return ''.join(chr(i) for i in self)
+            return "".join(chr(i) for i in self)
 
     def to_nullsep_string(self) -> list[str]:
-        """ A helper for converting a List of chars to a list of native
-        strings, starting a new string each time a null (i.e. \\x00) is seen. """
+        """A helper for converting a List of chars to a list of native
+        strings, starting a new string each time a null (i.e. \\x00) is seen."""
         return self.to_string().split("\x00")
 
     def to_utf8(self):
-        return b''.join(self).decode('utf-8')
+        return b"".join(self).decode("utf-8")
 
     def to_atoms(self):
-        """ A helper for converting a List of chars to an array of atoms """
-        return struct.unpack("<" + "%dI" % (len(self) // 4), b''.join(self))
+        """A helper for converting a List of chars to an array of atoms"""
+        return struct.unpack("<" + "%dI" % (len(self) // 4), b"".join(self))
 
     def buf(self):
         return self.raw
@@ -488,7 +485,6 @@ class List(Protobj):
 
 
 class OffsetMap(object):
-
     def __init__(self, core):
         self.offsets = [(0, 0, core)]
 
@@ -498,31 +494,35 @@ class OffsetMap(object):
 
     def get_extension_item(self, extension, item):
         try:
-            _, _, things = next((k, opcode, v) for k, opcode, v in self.offsets if opcode == extension)
+            _, _, things = next(
+                (k, opcode, v) for k, opcode, v in self.offsets if opcode == extension
+            )
             return things[item]
         except StopIteration:
             raise IndexError(item)
 
     def __getitem__(self, item):
         try:
-            offset, _, things = next((k, opcode, v) for k, opcode, v in self.offsets if item >= k)
+            offset, _, things = next(
+                (k, opcode, v) for k, opcode, v in self.offsets if item >= k
+            )
             return things[item - offset]
         except StopIteration:
             raise IndexError(item)
 
 
 class Connection(object):
+    """`auth` here should be '<name>:<data>', a format bequeathed to us from
+    xpyb."""
 
-    """ `auth` here should be '<name>:<data>', a format bequeathed to us from
-    xpyb. """
     def __init__(self, display=None, fd=-1, auth=None):
         if auth is not None:
-            [name, data] = auth.split(b':')
+            [name, data] = auth.split(b":")
 
             c_auth = ffi.new("xcb_auth_info_t *")
-            c_auth.name = ffi.new('char[]', name)
+            c_auth.name = ffi.new("char[]", name)
             c_auth.namelen = len(name)
-            c_auth.data = ffi.new('char[]', data)
+            c_auth.data = ffi.new("char[]", data)
             c_auth.datalen = len(data)
         else:
             c_auth = ffi.NULL
@@ -530,7 +530,7 @@ class Connection(object):
         if display is None:
             display = ffi.NULL
         else:
-            display = display.encode('latin1')
+            display = display.encode("latin1")
 
         i = ffi.new("int *")
 
@@ -546,8 +546,9 @@ class Connection(object):
 
     def _init_x(self):
         if core is None:
-            raise XcffibException("No core protocol object has been set.  "
-                                  "Did you import xcffib.xproto?")
+            raise XcffibException(
+                "No core protocol object has been set.  Did you import xcffib.xproto?"
+            )
 
         self.core = core(self)
         self.setup = self.get_setup()
@@ -580,6 +581,7 @@ class Connection(object):
         Check that the connection is valid both before and
         after the function is invoked.
         """
+
         @functools.wraps(f)
         def wrapper(*args):
             self = args[0]
@@ -588,6 +590,7 @@ class Connection(object):
                 return f(*args)
             finally:
                 self.invalid()
+
         return wrapper
 
     @ensure_connected
@@ -698,7 +701,7 @@ class Connection(object):
         self._process_error(err)
 
     def hoist_event(self, e):
-        """ Hoist an xcb_generic_event_t to the right xcffib structure. """
+        """Hoist an xcb_generic_event_t to the right xcffib structure."""
         if e.response_type == 0:
             return self._process_error(ffi.cast("xcb_generic_error_t *", e))
 
@@ -706,7 +709,7 @@ class Connection(object):
         # this bit set. We don't actually care where the event came from, so we
         # just throw this away. Maybe we could expose this, if anyone actually
         # cares about it.
-        response_type = e.response_type & 0x7f
+        response_type = e.response_type & 0x7F
 
         buf = CffiUnpacker(e)
         event = None
@@ -742,7 +745,6 @@ connect = Connection
 
 
 class Response(Protobj):
-
     def __init__(self, unpacker):
         Protobj.__init__(self, unpacker)
 
@@ -763,7 +765,6 @@ class Response(Protobj):
 
 
 class Reply(Response):
-
     def __init__(self, unpacker):
         Response.__init__(self, unpacker)
 
@@ -773,7 +774,6 @@ class Reply(Response):
 
 
 class Event(Response):
-
     def __init__(self, unpacker):
         # This is here for debugging purposes!
         self.unpacker = unpacker
@@ -782,11 +782,12 @@ class Event(Response):
 
         # If this is a xcb_ge_generic_event_t (response type 35) then we need a few more fields
         if self.xge and isinstance(unpacker, CffiUnpacker):
-            self.extension, self.length, self.event_type, self.full_sequence = unpacker.unpack("xB2xIH22xI")
+            self.extension, self.length, self.event_type, self.full_sequence = (
+                unpacker.unpack("xB2xIH22xI")
+            )
 
             # There's some extra work to do if the event has data past the 32 byte boundary
             if self.length:
-
                 # Calculate the size of the original buffer. This is 4 bytes short as it seems to omit the `full_sequence` field
                 buffer_size = 32 + (self.length * 4) + 4
 
@@ -794,7 +795,7 @@ class Event(Response):
                 buffer = ffi.buffer(unpacker.cdata, buffer_size)
 
                 # Copy the event to the new buffer and skip the `full_sequence` field
-                buffer[32:buffer_size - 5] = buffer[36: buffer_size - 1]
+                buffer[32 : buffer_size - 5] = buffer[36 : buffer_size - 1]
 
                 # Provide the resized buffer to the unpacker
                 unpacker.buf = buffer
@@ -805,15 +806,14 @@ class Event(Response):
 
 
 class Error(Response, XcffibException):
-
     def __init__(self, unpacker):
         Response.__init__(self, unpacker)
         XcffibException.__init__(self)
-        self.code = unpacker.unpack('B', increment=False)
+        self.code = unpacker.unpack("B", increment=False)
 
 
 def pack_list(from_, pack_type):
-    """ Return the wire packed version of `from_`. `pack_type` should be some
+    """Return the wire packed version of `from_`. `pack_type` should be some
     subclass of `xcffib.Struct`, or a string that can be passed to
     `struct.pack`. You must pass `size` if `pack_type` is a struct.pack string.
     """
@@ -821,7 +821,7 @@ def pack_list(from_, pack_type):
     if len(from_) == 0:
         return bytes()
 
-    if pack_type == 'c':
+    if pack_type == "c":
         if isinstance(from_, bytes):
             # Catch Python 3 bytes and Python 2 strings
             # PY3 is "helpful" in that when you do tuple(b'foo') you get
@@ -832,7 +832,7 @@ def pack_list(from_, pack_type):
             # Catch Python 3 strings and Python 2 unicode strings, both of
             # which we encode to bytes as utf-8
             # Here we create the tuple of bytes from the encoded string
-            from_ = [bytes((b,)) for b in bytearray(from_, 'utf-8')]
+            from_ = [bytes((b,)) for b in bytearray(from_, "utf-8")]
         elif isinstance(from_[0], int):
             # Pack from_ as char array, where from_ may be an array of ints
             # possibly greater than 256
@@ -840,6 +840,7 @@ def pack_list(from_, pack_type):
                 for _ in range(4):
                     v, r = divmod(v, 256)
                     yield r
+
             from_ = [bytes((b,)) for i in from_ for b in to_bytes(i)]
 
     if isinstance(pack_type, str):
@@ -858,7 +859,7 @@ def pack_list(from_, pack_type):
 
 
 def wrap(ptr):
-    c_conn = ffi.cast('xcb_connection_t *', ptr)
+    c_conn = ffi.cast("xcb_connection_t *", ptr)
     conn = Connection.__new__(Connection)
     conn._conn = c_conn
     conn._init_x()

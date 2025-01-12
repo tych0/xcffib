@@ -21,6 +21,9 @@ jobs:
               uses: actions/setup-python@v5
               with:
                   python-version: "${{ matrix.python-version }}"
+            - uses: astral-sh/ruff-action@v3
+              with:
+                  args: "check --exclude ./test/generator/"
             - uses: haskell-actions/setup@v2
               with:
                   ghc-version: '9.6'

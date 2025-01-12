@@ -28,7 +28,9 @@ class TestConnection:
         visual = setup.roots[0].root_visual
         black = setup.roots[0].black_pixel
         conn.render = conn(xcffib.render.key)
-        conn.render.QueryVersion(xcffib.render.MAJOR_VERSION, xcffib.render.MINOR_VERSION)
+        conn.render.QueryVersion(
+            xcffib.render.MAJOR_VERSION, xcffib.render.MINOR_VERSION
+        )
 
         window = conn.generate_id()
         conn.core.CreateWindow(
@@ -65,12 +67,16 @@ class TestConnection:
                 conn.render.CreateLinearGradientChecked(
                     pic_gradient,
                     xcffib.render.POINTFIX.synthetic(0, 0),
-                    xcffib.render.POINTFIX.synthetic(double_to_fixed(WIDTH), double_to_fixed(HEIGHT)),
+                    xcffib.render.POINTFIX.synthetic(
+                        double_to_fixed(WIDTH), double_to_fixed(HEIGHT)
+                    ),
                     2,
                     [0, double_to_fixed(1)],
                     [
-                        xcffib.render.COLOR.synthetic(0, 0, 0, 0xffff),  # Solid black
-                        xcffib.render.COLOR.synthetic(0xffff, 0xffff, 0xffff, 0xffff),  # Solid white
+                        xcffib.render.COLOR.synthetic(0, 0, 0, 0xFFFF),  # Solid black
+                        xcffib.render.COLOR.synthetic(
+                            0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF
+                        ),  # Solid white
                     ],
                 ).check()
 
@@ -80,18 +86,24 @@ class TestConnection:
                     pic_gradient,
                     0,
                     pic_window,
-                    0, 0,
-                    0, 0,
-                    0, 0,
-                    WIDTH, HEIGHT
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    WIDTH,
+                    HEIGHT,
                 )
 
                 img = conn.core.GetImage(
                     xcffib.xproto.ImageFormat.ZPixmap,
                     window,
-                    0, 0,
-                    WIDTH, HEIGHT,
-                    0xffffffff
+                    0,
+                    0,
+                    WIDTH,
+                    HEIGHT,
+                    0xFFFFFFFF,
                 ).reply()
 
                 conn.flush()
