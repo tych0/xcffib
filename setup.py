@@ -27,8 +27,9 @@ class binding_build(build):
     print a helpful message if they have not been generated yet.  We only need
     to check this when we are actually building or installing.
     """
+
     def finalize_options(self):
-        if not os.path.exists('./xcffib'):
+        if not os.path.exists("./xcffib"):
             print("It looks like you need to generate the binding.")
             print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
@@ -37,7 +38,7 @@ class binding_build(build):
 
 class binding_install(install):
     def finalize_options(self):
-        if not os.path.exists('./xcffib'):
+        if not os.path.exists("./xcffib"):
             print("It looks like you need to generate the binding.")
             print("please run 'make xcffib' or 'make check'.")
             sys.exit(1)
@@ -57,20 +58,17 @@ setup(
     author_email="tycho@tycho.pizza",
     install_requires=dependencies,
     setup_requires=dependencies,
-    python_requires = ">=3.10",
-    packages=['xcffib'],
-    package_data={'xcffib': ['py.typed']},
+    python_requires=">=3.10",
+    packages=["xcffib"],
+    package_data={"xcffib": ["py.typed"]},
     zip_safe=False,
-    cmdclass={
-        'build': binding_build,
-        'install': binding_install
-    },
+    cmdclass={"build": binding_build, "install": binding_install},
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy',
-        'Topic :: Software Development :: Libraries'
+        "Development Status :: 5 - Production/Stable",
+        "License :: OSI Approved :: Apache Software License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
+        "Topic :: Software Development :: Libraries",
     ],
 )

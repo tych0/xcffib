@@ -33,7 +33,7 @@ def xproto_test(xcffib_test):
 
 
 class XcffibTest(XvfbTest):
-    """ A home for common functions needed for xcffib testing. """
+    """A home for common functions needed for xcffib testing."""
 
     def setUp(self):
         XvfbTest.setUp(self)
@@ -54,16 +54,16 @@ class XcffibTest(XvfbTest):
             self.default_screen.root_depth,
             wid,
             self.default_screen.root,
-            x, y, w, h,
+            x,
+            y,
+            w,
+            h,
             0,
             xcffib.xproto.WindowClass.InputOutput,
             self.default_screen.root_visual,
             xcffib.xproto.CW.BackPixel | xcffib.xproto.CW.EventMask,
-            [
-                self.default_screen.black_pixel,
-                xcffib.xproto.EventMask.StructureNotify
-            ],
-            is_checked=is_checked
+            [self.default_screen.black_pixel, xcffib.xproto.EventMask.StructureNotify],
+            is_checked=is_checked,
         )
 
     def xeyes(self):
@@ -72,13 +72,13 @@ class XcffibTest(XvfbTest):
             self.default_screen.root,
             xcffib.xproto.CW.EventMask,
             [
-                EventMask.SubstructureNotify |
-                EventMask.StructureNotify |
-                EventMask.SubstructureRedirect
-            ]
+                EventMask.SubstructureNotify
+                | EventMask.StructureNotify
+                | EventMask.SubstructureRedirect
+            ],
         ).check()
 
-        self.spawn(['xeyes'])
+        self.spawn(["xeyes"])
 
     def intern(self, name):
         return self.xproto.InternAtom(False, len(name), name).reply().atom

@@ -184,7 +184,7 @@ class TestConnection:
         utf8_string = xproto_test.intern("UTF8_STRING")
 
         title_bytes = b"test\xc2\xb7"
-        title_string = "test\u00B7"
+        title_string = "test\u00b7"
 
         # First check with an object already encoded as bytes
         xproto_test.xproto.ChangeProperty(
@@ -198,7 +198,7 @@ class TestConnection:
         )
 
         reply = xproto_test.xproto.GetProperty(
-            False, wid, net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, (2 ** 32) - 1
+            False, wid, net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, (2**32) - 1
         ).reply()
 
         print(reply.value.buf())
@@ -218,7 +218,7 @@ class TestConnection:
         )
 
         reply = xproto_test.xproto.GetProperty(
-            False, wid, net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, (2 ** 32) - 1
+            False, wid, net_wm_name, xcffib.xproto.GetPropertyType.Any, 0, (2**32) - 1
         ).reply()
 
         assert reply.value.buf() == title_bytes
