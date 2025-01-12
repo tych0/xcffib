@@ -43,7 +43,7 @@ class binding_install(install):
             sys.exit(1)
         install.finalize_options(self)
 
-version = "1.6.2"
+version = "1.7.0"
 dependencies = ["cffi>=1.1.0; python_implementation != 'PyPy'"]
 
 setup(
