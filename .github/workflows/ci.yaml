@@ -25,6 +25,6 @@ jobs:
               with:
                   ghc-version: '9.6'
                   cabal-version: latest
-            - run: sudo apt install x11-apps libxcb1-dev libxcb-render0-dev
+            - run: sudo apt install x11-apps
             - run: git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git proto && cd proto && git checkout ${{ matrix.xcbver }}
             - run: make -j XCBDIR=./proto/src check
