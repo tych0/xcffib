@@ -549,6 +549,13 @@ class Connection(object):
     def _setup_extensions(self):
         for key, (_, events, errors) in extensions.items():
             reply = lib.xcb_get_extension_data(self._conn, key.c_key)
+            # although it does not say so in the man page,
+            # xcb_get_extension_data() will return NULL if the connection has
+            # an error. let's guard against this, and do our own connection
+            # checking in this case.
+            if reply == ffi.NULL:
+                self.invalid()
+                raise XcffibException("uh oh... connection valid but xcb_get_extension_data() returned NULL?")
             self._event_offsets.add(reply.first_event, reply.major_opcode, events)
             self._error_offsets.add(reply.first_error, reply.major_opcode, errors)
 
