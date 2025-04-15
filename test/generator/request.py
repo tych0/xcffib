@@ -1,8 +1,10 @@
 import xcffib
 import struct
 import io
+from dataclasses import dataclass
 _events = {}
 _errors = {}
+@dataclass(init=False)
 class requestExtension(xcffib.Extension):
     def CreateWindow(self, depth, wid, parent, x, y, width, height, border_width, _class, visual, value_mask, value_list, is_checked=False):
         buf = io.BytesIO()

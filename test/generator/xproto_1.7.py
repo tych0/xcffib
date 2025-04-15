@@ -1,11 +1,13 @@
 import xcffib
 import struct
 import io
+from dataclasses import dataclass
 MAJOR_VERSION = 0
 MINOR_VERSION = 11
 key = xcffib.ExtensionKey("XPROTO")
 _events = {}
 _errors = {}
+@dataclass(init=False)
 class Atom:
     _None = 0
     Any = 0

@@ -1,8 +1,10 @@
 import xcffib
 import struct
 import io
+from dataclasses import dataclass
 _events = {}
 _errors = {}
+@dataclass(init=False)
 class CHARINFO(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -27,6 +29,7 @@ class CHARINFO(xcffib.Struct):
         self.descent = descent
         self.attributes = attributes
         return self
+@dataclass(init=False)
 class FONTPROP(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -47,6 +50,7 @@ class FONTPROP(xcffib.Struct):
         self.name = name
         self.value = value
         return self
+@dataclass(init=False)
 class ListFontsWithInfoReply(xcffib.Reply):
     xge = False
     def __init__(self, unpacker):
@@ -65,8 +69,10 @@ class ListFontsWithInfoReply(xcffib.Reply):
         unpacker.pad("c")
         self.name = xcffib.List(unpacker, "c", self.name_len)
         self.bufsize = unpacker.offset - base
+@dataclass(init=False)
 class ListFontsWithInfoCookie(xcffib.Cookie):
     reply_type = ListFontsWithInfoReply
+@dataclass(init=False)
 class type_padExtension(xcffib.Extension):
     def ListFontsWithInfo(self, max_names, pattern_len, pattern, is_checked=True):
         buf = io.BytesIO()
