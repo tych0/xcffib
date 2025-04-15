@@ -1,8 +1,10 @@
 import xcffib
 import struct
 import io
+from dataclasses import dataclass
 _events = {}
 _errors = {}
+@dataclass(init=False)
 class KeymapNotifyEvent(xcffib.Event):
     xge = False
     def __init__(self, unpacker):

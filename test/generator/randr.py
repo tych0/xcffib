@@ -1,11 +1,13 @@
 import xcffib
 import struct
 import io
+from dataclasses import dataclass
 MAJOR_VERSION = 1
 MINOR_VERSION = 6
 key = xcffib.ExtensionKey("RANDR")
 _events = {}
 _errors = {}
+@dataclass(init=False)
 class TRANSFORM(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -33,6 +35,7 @@ class TRANSFORM(xcffib.Struct):
         self.matrix32 = matrix32
         self.matrix33 = matrix33
         return self
+@dataclass(init=False)
 class GetCrtcTransformReply(xcffib.Reply):
     xge = False
     def __init__(self, unpacker):
@@ -55,8 +58,10 @@ class GetCrtcTransformReply(xcffib.Reply):
         unpacker.pad("i")
         self.current_params = xcffib.List(unpacker, "i", self.current_nparams)
         self.bufsize = unpacker.offset - base
+@dataclass(init=False)
 class GetCrtcTransformCookie(xcffib.Cookie):
     reply_type = GetCrtcTransformReply
+@dataclass(init=False)
 class randrExtension(xcffib.Extension):
     def GetCrtcTransform(self, crtc, is_checked=True):
         buf = io.BytesIO()

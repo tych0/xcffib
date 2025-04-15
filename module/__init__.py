@@ -399,6 +399,7 @@ class Extension(object):
 class List(Protobj):
     def __init__(self, unpacker, typ, count=None):
         Protobj.__init__(self, unpacker)
+        self.typ = typ
 
         self.list = []
         old = unpacker.offset
@@ -438,6 +439,15 @@ class List(Protobj):
 
     def __delitem__(self, key):
         del self.list[key]
+
+    def __repr__(self):
+        # the spec uses both CHAR8 and VOID to indicate strings, we stringify
+        # both here. this is of course a heuristic, because it uses VOID to
+        # mean other things, but this just debug code, so it's probably fine...
+        if self.typ in ["c", "B"]:
+            return "\"" + self.to_string() + "\""
+        else:
+            return "[" + ", ".join(repr(i) for i in self) + "]"
 
     def to_string(self):
         """A helper for converting a List of chars to a native string. Dies if

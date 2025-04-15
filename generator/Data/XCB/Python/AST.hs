@@ -195,8 +195,8 @@ instance Pretty Statement where
     pretty (Fun name args bod) = text "def" <+> pretty name <> (parens (addCommas args)) <> colon
                                  $+$ indent (pretty bod)
     pretty (Decorated decorator name args bod) = text "@" <> text decorator $+$ pretty (Fun name args bod)
-    pretty (Class name [] body) = text "class" <+> pretty name <> colon $+$ indent (pretty body)
-    pretty (Class name superclasses body) = text "class" <+> pretty name <> parens (addCommas superclasses) <> colon $+$ indent (pretty body)
+    pretty (Class name [] body) = text "@dataclass(init=False)" $+$ text "class" <+> pretty name <> colon $+$ indent (pretty body)
+    pretty (Class name superclasses body) = text "@dataclass(init=False)" $+$ text "class" <+> pretty name <> parens (addCommas superclasses) <> colon $+$ indent (pretty body)
     pretty (Conditional cond if_ else_) = text "if" <+> pretty cond <> colon $+$ indent (pretty if_) $+$ pretty else_
     pretty (Assign to expr) = pretty to <+> text "=" <+> pretty expr
     pretty (AugmentedAssign to op expr) = pretty to <+> pretty op <> text "=" <+> pretty expr

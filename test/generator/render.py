@@ -1,11 +1,13 @@
 import xcffib
 import struct
 import io
+from dataclasses import dataclass
 MAJOR_VERSION = 0
 MINOR_VERSION = 11
 key = xcffib.ExtensionKey("RENDER")
 _events = {}
 _errors = {}
+@dataclass(init=False)
 class COLOR(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -28,6 +30,7 @@ class COLOR(xcffib.Struct):
         self.blue = blue
         self.alpha = alpha
         return self
+@dataclass(init=False)
 class RECTANGLE(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -50,6 +53,7 @@ class RECTANGLE(xcffib.Struct):
         self.width = width
         self.height = height
         return self
+@dataclass(init=False)
 class renderExtension(xcffib.Extension):
     def FillRectangles(self, op, dst, color, rects_len, rects, is_checked=False):
         buf = io.BytesIO()
