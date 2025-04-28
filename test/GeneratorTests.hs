@@ -42,6 +42,7 @@ pyTests = [ "event"
           , "render"
           , "randr"
           , "eventstruct"
+          , "action"
           ]
 
 mkFname :: String -> FilePath

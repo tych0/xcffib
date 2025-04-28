@@ -1,0 +1,76 @@
+<!-- based on xkb -->
+<xcb header="action">
+	<struct name="SANoAction">
+		<field name="type" type="CARD8" enum="SAType" />
+		<pad bytes="7" />
+	</struct>
+
+	<struct name="SASetMods">
+		<field name="type" type="CARD8" enum="SAType" />
+		<field name="flags" type="CARD8" mask="SA" />
+		<field name="mask" type="CARD8" mask="ModMask" />
+		<field name="realMods" type="CARD8" mask="ModMask" />
+		<field name="vmodsHigh" type="CARD8" mask="VModsHigh" />
+		<field name="vmodsLow" type="CARD8" mask="VModsLow" />
+		<pad bytes="2" />
+	</struct>
+
+	<typedef oldname="SASetMods" newname="SALatchMods" />
+
+	<typedef oldname="SASetMods" newname="SALockMods" />
+
+	<struct name="SASetGroup">
+		<field name="type" type="CARD8" enum="SAType" />
+		<field name="flags" type="CARD8" mask="SA" />
+		<field name="group" type="INT8" />
+		<pad bytes="5" />
+	</struct>
+
+	<typedef oldname="SASetGroup" newname="SALatchGroup" />
+
+	<typedef oldname="SASetGroup" newname="SALockGroup" />
+
+	<enum name="SAMovePtrFlag">
+		<item name="NoAcceleration"> <bit>0</bit> </item>
+		<item name="MoveAbsoluteX">  <bit>1</bit> </item>
+		<item name="MoveAbsoluteY">  <bit>2</bit> </item>
+	</enum>
+
+	<struct name="SAMovePtr">
+		<field name="type" type="CARD8" enum="SAType" />
+		<field name="flags" type="CARD8" mask="SAMovePtrFlag" />
+		<field name="xHigh" type="INT8" />
+		<field name="xLow" type="CARD8" />
+		<field name="yHigh" type="INT8" />
+		<field name="yLow" type="CARD8" />
+		<pad bytes="2" />
+	</struct>
+
+	<struct name="SAPtrBtn">
+		<field name="type" type="CARD8" enum="SAType" />
+		<field name="flags" type="CARD8" />
+		<field name="count" type="CARD8" />
+		<field name="button" type="CARD8" />
+		<pad bytes="4" />
+	</struct>
+
+	<struct name="SALockPtrBtn">
+		<field name="type" type="CARD8" enum="SAType" />
+		<field name="flags" type="CARD8" />
+		<pad bytes="1" />
+		<field name="button" type="CARD8" />
+		<pad bytes="4" />
+	</struct>
+
+	<union name="Action">
+		<field name="noaction" type="SANoAction" />
+		<field name="setmods" type="SASetMods" />
+		<field name="lockmods" type="SALockMods" />
+		<field name="setgroup" type="SASetGroup" />
+		<field name="lockgroup" type="SALockGroup" />
+		<field name="moveptr" type="SAMovePtr" />
+		<field name="ptrbtn" type="SAPtrBtn" />
+		<field name="lockptrbtn" type="SALockPtrBtn" />
+		<field name="type" type="CARD8" enum="SAType" />
+	</union>
+</xcb>
