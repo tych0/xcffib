@@ -63,7 +63,7 @@ $(VENV): requirements.txt
 check: xcffib htests $(VENV) lint
 	$(CABAL) check
 	$(PYTHON) -m compileall xcffib
-	$(PYTHON) -m pytest -v --durations=3 -n $(NCPUS)
+	$(PYTHON) -m pytest -v --durations=3
 
 # make release ver=0.99.99
 release: xcffib
