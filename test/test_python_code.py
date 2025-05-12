@@ -194,6 +194,22 @@ class TestPythonCode:
         finally:
             xcffib_test.conn.disconnect()
 
+    def test_replies_are_hashable(self, xcffib_test):
+        # I have written code that relied on replies being hash()-able, and
+        # we have broken that. So let's generate a reply and hash() it and make
+        # sure that works.
+        setup = xcffib_test.conn.get_setup()
+        hash(setup)
+
+    def test_protobj_repr_is_reasonable(self, xcffib_test):
+        # make sure that repr() does something reasonable
+        setup = xcffib_test.conn.get_setup()
+        assert "FORMAT(bits_per_pixel=1, bufsize=8, depth=1, fixed_size=8, scanline_pad=32, xge=False)" == repr(setup.pixmap_formats[0])
+
+    def test_list_repr_of_chars_is_reasonable(self, xcffib_test):
+        setup = xcffib_test.conn.get_setup()
+        assert "\"The X.Org Foundation\"" == repr(setup.vendor)
+
 
 class TestXcffibTestGenerator:
     def test_XcffibTest_generator(self):

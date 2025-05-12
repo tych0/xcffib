@@ -1,13 +1,11 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 MAJOR_VERSION = 1
 MINOR_VERSION = 4
 key = xcffib.ExtensionKey("EVENT")
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class ScreenChangeNotifyEvent(xcffib.Event):
     xge = False
     def __init__(self, unpacker):

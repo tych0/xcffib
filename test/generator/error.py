@@ -1,13 +1,11 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 MAJOR_VERSION = 2
 MINOR_VERSION = 2
 key = xcffib.ExtensionKey("ERROR")
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class RequestError(xcffib.Error):
     xge = False
     def __init__(self, unpacker):

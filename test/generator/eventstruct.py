@@ -1,13 +1,10 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class EventForSend(xcffib.Buffer):
     pass
-@dataclass(init=False)
 class eventstructExtension(xcffib.Extension):
     def SendExtensionEvent(self, device_id, propagate, num_classes, num_events, events, classes, is_checked=False):
         buf = io.BytesIO()

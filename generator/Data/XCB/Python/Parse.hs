@@ -90,7 +90,7 @@ xform = map buildPython . dependencyOrder
     processXHeader :: XHeader
                    -> State TypeInfoMap (String, Suite)
     processXHeader header = do
-      let imports = [Import "xcffib", Import "struct", Import "io", FromImport "dataclasses" "dataclass"]
+      let imports = [Import "xcffib", Import "struct", Import "io"]
           version = mkVersion header
           key = maybeToList $ mkKey header
           globals = [mkDict "_events", mkDict "_errors"]

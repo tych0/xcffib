@@ -1,10 +1,8 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class SANoAction(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -24,7 +22,6 @@ class SANoAction(xcffib.Struct):
         self = cls.__new__(cls)
         self.type = type
         return self
-@dataclass(init=False)
 class SASetMods(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -49,7 +46,6 @@ class SASetMods(xcffib.Struct):
         self.vmodsHigh = vmodsHigh
         self.vmodsLow = vmodsLow
         return self
-@dataclass(init=False)
 class SASetGroup(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -71,12 +67,10 @@ class SASetGroup(xcffib.Struct):
         self.flags = flags
         self.group = group
         return self
-@dataclass(init=False)
 class SAMovePtrFlag:
     NoAcceleration = 1 << 0
     MoveAbsoluteX = 1 << 1
     MoveAbsoluteY = 1 << 2
-@dataclass(init=False)
 class SAMovePtr(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -101,7 +95,6 @@ class SAMovePtr(xcffib.Struct):
         self.yHigh = yHigh
         self.yLow = yLow
         return self
-@dataclass(init=False)
 class SAPtrBtn(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -124,7 +117,6 @@ class SAPtrBtn(xcffib.Struct):
         self.count = count
         self.button = button
         return self
-@dataclass(init=False)
 class SALockPtrBtn(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -146,7 +138,6 @@ class SALockPtrBtn(xcffib.Struct):
         self.flags = flags
         self.button = button
         return self
-@dataclass(init=False)
 class Action(xcffib.Union):
     xge = False
     def __init__(self, unpacker):

@@ -1,13 +1,11 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 MAJOR_VERSION = 1
 MINOR_VERSION = 13
 key = xcffib.ExtensionKey("RECORD")
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class Range8(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -28,7 +26,6 @@ class Range8(xcffib.Struct):
         self.first = first
         self.last = last
         return self
-@dataclass(init=False)
 class Range16(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -49,7 +46,6 @@ class Range16(xcffib.Struct):
         self.first = first
         self.last = last
         return self
-@dataclass(init=False)
 class ExtRange(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -72,7 +68,6 @@ class ExtRange(xcffib.Struct):
         self.major = major
         self.minor = minor
         return self
-@dataclass(init=False)
 class Range(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
