@@ -1,13 +1,11 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 MAJOR_VERSION = 0
 MINOR_VERSION = 11
 key = xcffib.ExtensionKey("RENDER")
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class PictOp:
     Clear = 0
     Src = 1

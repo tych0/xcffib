@@ -1,17 +1,14 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class DeviceUse:
     IsXPointer = 0
     IsXKeyboard = 1
     IsXExtensionDevice = 2
     IsXExtensionKeyboard = 3
     IsXExtensionPointer = 4
-@dataclass(init=False)
 class EventMask:
     NoEvent = 0
     KeyPress = 1 << 0

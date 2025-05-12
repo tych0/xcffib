@@ -1,10 +1,8 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class AxisInfo(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -26,7 +24,6 @@ class AxisInfo(xcffib.Struct):
         self.minimum = minimum
         self.maximum = maximum
         return self
-@dataclass(init=False)
 class ValuatorInfo(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):

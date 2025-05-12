@@ -1,10 +1,8 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class STR(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -26,7 +24,6 @@ class STR(xcffib.Struct):
         self.name_len = name_len
         self.name = name
         return self
-@dataclass(init=False)
 class ListExtensionsReply(xcffib.Reply):
     xge = False
     def __init__(self, unpacker):
@@ -37,10 +34,8 @@ class ListExtensionsReply(xcffib.Reply):
         self.names_len, = unpacker.unpack("xB2x4x24x")
         self.names = xcffib.List(unpacker, STR, self.names_len)
         self.bufsize = unpacker.offset - base
-@dataclass(init=False)
 class ListExtensionsCookie(xcffib.Cookie):
     reply_type = ListExtensionsReply
-@dataclass(init=False)
 class request_replyExtension(xcffib.Extension):
     def ListExtensions(self, is_checked=True):
         buf = io.BytesIO()

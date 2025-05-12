@@ -292,6 +292,21 @@ class Protobj(object):
         if unpacker.known_max is not None:
             self.bufsize = unpacker.known_max
 
+    def __repr__(self):
+        guts = []
+        for k in dir(self):
+            # skip all the python generated gunk
+            if k.startswith("__"):
+                continue
+
+            attr = getattr(self, k)
+            # skip synthetic(), pack(), etc.
+            if callable(attr):
+                continue
+
+            guts.append(f"{k}={attr}")
+        return f"{self.__class__.__qualname__}({', '.join(guts)})"
+
 
 class Buffer(Protobj):
     def __init__(self, unpacker):

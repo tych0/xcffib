@@ -1,10 +1,8 @@
 import xcffib
 import struct
 import io
-from dataclasses import dataclass
 _events = {}
 _errors = {}
-@dataclass(init=False)
 class INT64(xcffib.Struct):
     xge = False
     def __init__(self, unpacker):
@@ -25,7 +23,6 @@ class INT64(xcffib.Struct):
         self.hi = hi
         self.lo = lo
         return self
-@dataclass(init=False)
 class GetPropertyReply(xcffib.Reply):
     xge = False
     def __init__(self, unpacker):
@@ -41,10 +38,8 @@ class GetPropertyReply(xcffib.Reply):
         if self.format & PropertyFormat._32Bits:
             self.data32 = xcffib.List(unpacker, "I", self.num_items)
         self.bufsize = unpacker.offset - base
-@dataclass(init=False)
 class GetPropertyCookie(xcffib.Cookie):
     reply_type = GetPropertyReply
-@dataclass(init=False)
 class GetPropertyWithPadReply(xcffib.Reply):
     xge = False
     def __init__(self, unpacker):
@@ -64,10 +59,8 @@ class GetPropertyWithPadReply(xcffib.Reply):
             unpacker.pad("I")
             self.data32 = xcffib.List(unpacker, "I", self.num_items)
         self.bufsize = unpacker.offset - base
-@dataclass(init=False)
 class GetPropertyWithPadCookie(xcffib.Cookie):
     reply_type = GetPropertyWithPadReply
-@dataclass(init=False)
 class switchExtension(xcffib.Extension):
     def GetProperty(self, value_mask, items, is_checked=True):
         buf = io.BytesIO()
