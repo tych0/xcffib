@@ -44,7 +44,7 @@ class binding_install(install):
             sys.exit(1)
         install.finalize_options(self)
 
-version = "1.8.0"
+version = "1.9.0"
 dependencies = ["cffi>=1.1.0; python_implementation != 'PyPy'"]
 
 setup(
