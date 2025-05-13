@@ -1,17 +1,15 @@
-name: "tagged-release"
+name: "action-gh-release"
 
 on:
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
 
 jobs:
-  tagged-release:
-    name: "Tagged Release"
-    runs-on: "ubuntu-latest"
-
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Release
+        uses: softprops/action-gh-release@v2
