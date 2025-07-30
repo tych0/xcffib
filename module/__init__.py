@@ -34,6 +34,10 @@ else:
         soname = "libxcb.so"
 lib = ffi.dlopen(soname)
 
+# Add this for portable access to C's free()
+c_lib = ffi.dlopen(None)  # Loads the global symbol table (works on Unix/BSD)
+c_free = c_lib.free
+
 __xcb_proto_version__ = "placeholder"
 __version__ = "placeholder"
 
@@ -638,7 +642,7 @@ class Connection(object):
     @ensure_connected
     def wait_for_event(self):
         e = lib.xcb_wait_for_event(self._conn)
-        e = ffi.gc(e, lib.free)
+        e = ffi.gc(e, c_free)
         self.invalid()
         return self.hoist_event(e)
 
@@ -690,13 +694,13 @@ class Connection(object):
     def wait_for_reply(self, sequence):
         error_p = ffi.new("xcb_generic_error_t **")
         data = lib.xcb_wait_for_reply(self._conn, sequence, error_p)
-        data = ffi.gc(data, lib.free)
+        data = ffi.gc(data, c_free)
 
         try:
             self._process_error(error_p[0])
         finally:
             if error_p[0] != ffi.NULL:
-                lib.free(error_p[0])
+                c_free(error_p[0])
 
         if data == ffi.NULL:
             # No data and no error => bad sequence number
