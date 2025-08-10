@@ -54,11 +54,11 @@ lint: $(VENV)
 htests:
 	$(CABAL) new-test -j$(NCPUS) --enable-tests
 
-$(VENV): requirements.txt
+$(VENV): pyproject.toml
 	# the python in $PATH in CI is the python from the matrix, so it is the
 	# "right" python to start with
 	python3 -m venv $(VENV)
-	$(PYTHON) -m pip install -r requirements.txt
+	$(PYTHON) -m pip install .[dev]
 
 check: xcffib htests $(VENV) lint
 	$(CABAL) check
@@ -72,9 +72,8 @@ ifeq (${ver},)
 else ifneq ($(wildcard ./xcffib.egg-info*),)
 	@echo "xcffib.egg-info exists, not releasing."
 else
-	sed -i "s/version = .*/version = \"${ver}\"/" setup.py
 	sed -i "s/__version__ = .*/__version__ = \"${ver}\"/" xcffib/__init__.py
-	sed -r -i -e "s/(^version = \s*)[\"0-9\.]*/\1\"${ver}\"/" setup.py
+	sed -r -i -e "s/(^version = \s*)[\"0-9\.]*/\1\"${ver}\"/" pyproject.toml
 	sed -r -i -e "s/(^version:\s*)[0-9\.]*/\1${ver}/" xcffib.cabal
 	echo "Release v${ver}" > /tmp/xcffib.releasemsg
 	git commit -a -S -s --allow-empty-message -t /tmp/xcffib.releasemsg

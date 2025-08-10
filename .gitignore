@@ -22,3 +22,4 @@ debian/python3-xcffib*
 cabal.sandbox.config
 cabal.project.local*
 .ghc.environment*
+uv.lock

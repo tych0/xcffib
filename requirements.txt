@@ -1,2 +1,0 @@
-pytest
-cffi >= 1.6
