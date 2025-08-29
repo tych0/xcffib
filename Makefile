@@ -78,7 +78,7 @@ else
 	echo "Release v${ver}" > /tmp/xcffib.releasemsg
 	git commit -a -S -s --allow-empty-message -t /tmp/xcffib.releasemsg
 	git tag v${ver}
-	python3 setup.py sdist
+	python3 -m build --sdist
 	twine upload dist/xcffib-${ver}.tar.gz
 	cabal new-sdist
 	cabal upload --publish dist-newstyle/sdist/xcffib-${ver}.tar.gz
