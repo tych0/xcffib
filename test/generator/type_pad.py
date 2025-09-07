@@ -73,4 +73,6 @@ class type_padExtension(xcffib.Extension):
         buf.write(struct.pack("=xx2xxHH", max_names, pattern_len))
         buf.write(xcffib.pack_list(pattern, "c"))
         return self.send_request(50, buf, ListFontsWithInfoCookie, is_checked=is_checked)
+    def ListFontsWithInfoUnchecked(self, max_names, pattern_len, pattern):
+        return self.ListFontsWithInfo(max_names, pattern_len, pattern, is_checked=False)
 xcffib._add_ext(key, type_padExtension, _events, _errors)

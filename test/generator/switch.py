@@ -78,8 +78,12 @@ class switchExtension(xcffib.Extension):
             events = items.pop(0)
             buf.write(struct.pack("=I", events))
         return self.send_request(59, buf, GetPropertyCookie, is_checked=is_checked)
+    def GetPropertyUnchecked(self, value_mask, items):
+        return self.GetProperty(value_mask, items, is_checked=False)
     def GetPropertyWithPad(self, is_checked=True):
         buf = io.BytesIO()
         buf.write(struct.pack("=xx2x"))
         return self.send_request(60, buf, GetPropertyWithPadCookie, is_checked=is_checked)
+    def GetPropertyWithPadUnchecked(self):
+        return self.GetPropertyWithPad(is_checked=False)
 xcffib._add_ext(key, switchExtension, _events, _errors)
