@@ -96,8 +96,9 @@ xform = map buildPython . dependencyOrder
           globals = [mkDict "_events", mkDict "_errors"]
           name = xheader_header header
           add = [mkAddExt header]
-      parts <- mapM (processXDecl name) $ xheader_decls header
-      let (requests, decls) = collectBindings parts
+      partsList <- mapM (processXDecl name) $ xheader_decls header
+      let parts = concat partsList
+          (requests, decls) = collectBindings parts
           ext = if length requests > 0
                 then [mkClass (name ++ "Extension") "xcffib.Extension" requests]
                 else []
@@ -674,18 +675,18 @@ mkSyntheticMethod membs = do
 
 processXDecl :: String
              -> XDecl
-             -> State TypeInfoMap BindingPart
+             -> State TypeInfoMap [BindingPart]
 processXDecl ext (XTypeDef name typ) =
   do modify $ \m -> mkModify ext name (m M.! typ) m
-     return Noop
+     return [Noop]
 processXDecl ext (XidType name) =
   -- http://www.markwitmer.com/guile-xcb/doc/guile-xcb/XIDs.html
   do modify $ mkModify ext name (BaseType "I")
-     return Noop
+     return [Noop]
 processXDecl _ (XImport n) =
-  return $ Declaration [ mkRelImport n]
+  return [Declaration [ mkRelImport n]]
 processXDecl _ (XEnum name membs) =
-  return $ Declaration [mkEnum name $ xEnumElemsToPyEnum id membs]
+  return [Declaration [mkEnum name $ xEnumElemsToPyEnum id membs]]
 processXDecl ext (XStruct n _ membs) = do
   m <- get
   let (statements, len) = mkStructStyleUnpack "" ext m membs
@@ -696,7 +697,7 @@ processXDecl ext (XStruct n _ membs) = do
         let rhs = Int theLen
         return $ mkAssign "fixed_size" rhs
   modify $ mkModify ext n (CompositeType ext n)
-  return $ Declaration [mkXClass n "xcffib.Struct" False statements (pack : fixedLength ++ synthetic)]
+  return [Declaration [mkXClass n "xcffib.Struct" False statements (pack : fixedLength ++ synthetic)]]
 processXDecl ext (XEvent name opcode _ xge membs noSequence) = do
   m <- get
   let cname = name ++ "Event"
@@ -707,9 +708,9 @@ processXDecl ext (XEvent name opcode _ xge membs noSequence) = do
       eventsUpd = mkDictUpdate "_events" opcode cname
       isxge = fromMaybe False xge
       -- xgeexp = mkAssign "xge" (if fromMaybe False xge then (mkName "True") else (mkName "False"))
-  return $ Declaration [ mkXClass cname "xcffib.Event" isxge statements (pack : synthetic)
+  return [Declaration [ mkXClass cname "xcffib.Event" isxge statements (pack : synthetic)
                        , eventsUpd
-                       ]
+                       ]]
 processXDecl ext (XError name opcode _ membs) = do
   m <- get
   let cname = name ++ "Error"
@@ -718,10 +719,10 @@ processXDecl ext (XError name opcode _ membs) = do
       (statements, _) = mkStructStyleUnpack prefix ext m membs
       errorsUpd = mkDictUpdate "_errors" opcode cname
       alias = mkAssign ("Bad" ++ name) (mkName cname)
-  return $ Declaration [ mkXClass cname "xcffib.Error" False statements [pack]
+  return [Declaration [ mkXClass cname "xcffib.Error" False statements [pack]
                        , alias
                        , errorsUpd
-                       ]
+                       ]]
 processXDecl ext (XRequest name opcode _ membs reply) = do
   m <- get
   let
@@ -756,7 +757,17 @@ processXDecl ext (XRequest name opcode _ membs reply) = do
                                                    ++ [argChecked])
       requestBody = buf ++ packStmts ++ [ret]
       request = mkMethod name allArgs requestBody
-  return $ Request request replyDecl
+
+      -- Generate the non-default variant method
+      baseArgs = ("self" : (filter (not . null) args))
+      isCheckedDefault = isJust reply
+      (variantName, variantCall) =
+        if isCheckedDefault
+        then ("Unchecked", mkReturn $ mkCall ("self." ++ name) (map mkName (tail baseArgs) ++ [mkName "is_checked=False"]))
+        else ("Checked", mkReturn $ mkCall ("self." ++ name) (map mkName (tail baseArgs) ++ [mkName "is_checked=True"]))
+      variantMethod = mkMethod (name ++ variantName) baseArgs [variantCall]
+
+  return [Request request replyDecl, Request variantMethod []]
 processXDecl ext (XUnion name _ membs) = do
   m <- get
   let unpackF = structElemToPyUnpack unpackerCopy ext m
@@ -772,7 +783,7 @@ processXDecl ext (XUnion name _ membs) = do
       pack = mkPackMethod ext name m Nothing [head membs] Nothing
       decl = [mkXClass name "xcffib.Union" False initMethodStmts [pack]]
   modify $ mkModify ext name (CompositeType ext name)
-  return $ Declaration decl
+  return [Declaration decl]
   where
     unpackerCopy = mkCall "unpacker.copy" []
     mkUnionUnpack :: (Maybe String, String)
@@ -788,7 +799,7 @@ processXDecl ext (XUnion name _ membs) = do
 processXDecl ext (XidUnion name _) =
   -- These are always unions of only XIDs.
   do modify $ mkModify ext name (BaseType "I")
-     return Noop
+     return [Noop]
 
 -- EventStruct basically describes a set of possible events that could be
 -- represented by this one member. Slated to land in 1.13, it is only used in
@@ -803,7 +814,7 @@ processXDecl ext (XidUnion name _) =
 -- again.
 processXDecl ext (XEventStruct name _) = do
   modify $ mkModify ext name (CompositeType ext name)
-  return $ Declaration $ [mkXClass name "xcffib.Buffer" False [] []]
+  return [Declaration $ [mkXClass name "xcffib.Buffer" False [] []]]
 
 mkVersion :: XHeader -> Suite
 mkVersion header =

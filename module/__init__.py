@@ -400,19 +400,6 @@ class Extension(object):
 
         return cookie(self.conn, seq, is_checked)
 
-    def __getattr__(self, name):
-        if name.endswith("Checked"):
-            real = name[: -len("Checked")]
-            is_checked = True
-        elif name.endswith("Unchecked"):
-            real = name[: -len("Unchecked")]
-            is_checked = False
-        else:
-            raise AttributeError(name)
-
-        real = getattr(self, real)
-
-        return functools.partial(real, is_checked=is_checked)
 
 
 class List(Protobj):
