@@ -13,7 +13,7 @@ class TRANSFORM(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.matrix11, self.matrix12, self.matrix13, self.matrix21, self.matrix22, self.matrix23, self.matrix31, self.matrix32, self.matrix33 = unpacker.unpack("iiiiiiiii")
+        self.matrix11, self.matrix12, self.matrix13, self.matrix21, self.matrix22, self.matrix23, self.matrix31, self.matrix32, self.matrix33 = unpacker.unpack("=iiiiiiiii")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -40,12 +40,12 @@ class GetCrtcTransformReply(xcffib.Reply):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Reply.__init__(self, unpacker)
         base = unpacker.offset
-        unpacker.unpack("xx2x4x")
+        unpacker.unpack("=xx2x4x")
         self.pending_transform = TRANSFORM(unpacker)
-        self.has_transforms, = unpacker.unpack("B3x")
+        self.has_transforms, = unpacker.unpack("=B3x")
         unpacker.pad(TRANSFORM)
         self.current_transform = TRANSFORM(unpacker)
-        self.pending_len, self.pending_nparams, self.current_len, self.current_nparams = unpacker.unpack("4xHHHH")
+        self.pending_len, self.pending_nparams, self.current_len, self.current_nparams = unpacker.unpack("=4xHHHH")
         unpacker.pad("c")
         self.pending_filter_name = xcffib.List(unpacker, "c", self.pending_len)
         unpacker.pad("i")

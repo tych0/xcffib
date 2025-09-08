@@ -10,7 +10,7 @@ class KeymapNotifyEvent(xcffib.Event):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Event.__init__(self, unpacker)
         base = unpacker.offset
-        unpacker.unpack("x")
+        unpacker.unpack("=x")
         self.keys = xcffib.List(unpacker, "B", 31)
         self.bufsize = unpacker.offset - base
     def pack(self):

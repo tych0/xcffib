@@ -10,7 +10,7 @@ class STR(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.name_len, = unpacker.unpack("B")
+        self.name_len, = unpacker.unpack("=B")
         self.name = xcffib.List(unpacker, "c", self.name_len)
         self.bufsize = unpacker.offset - base
     def pack(self):
@@ -31,7 +31,7 @@ class ListExtensionsReply(xcffib.Reply):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Reply.__init__(self, unpacker)
         base = unpacker.offset
-        self.names_len, = unpacker.unpack("xB2x4x24x")
+        self.names_len, = unpacker.unpack("=xB2x4x24x")
         self.names = xcffib.List(unpacker, STR, self.names_len)
         self.bufsize = unpacker.offset - base
 class ListExtensionsCookie(xcffib.Cookie):

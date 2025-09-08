@@ -10,7 +10,7 @@ class SANoAction(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.type, = unpacker.unpack("B7x")
+        self.type, = unpacker.unpack("=B7x")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -29,7 +29,7 @@ class SASetMods(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.type, self.flags, self.mask, self.realMods, self.vmodsHigh, self.vmodsLow = unpacker.unpack("BBBBBB2x")
+        self.type, self.flags, self.mask, self.realMods, self.vmodsHigh, self.vmodsLow = unpacker.unpack("=BBBBBB2x")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -53,7 +53,7 @@ class SASetGroup(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.type, self.flags, self.group = unpacker.unpack("BBb5x")
+        self.type, self.flags, self.group = unpacker.unpack("=BBb5x")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -78,7 +78,7 @@ class SAMovePtr(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.type, self.flags, self.xHigh, self.xLow, self.yHigh, self.yLow = unpacker.unpack("BBbBbB2x")
+        self.type, self.flags, self.xHigh, self.xLow, self.yHigh, self.yLow = unpacker.unpack("=BBbBbB2x")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -102,7 +102,7 @@ class SAPtrBtn(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.type, self.flags, self.count, self.button = unpacker.unpack("BBBB4x")
+        self.type, self.flags, self.count, self.button = unpacker.unpack("=BBBB4x")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -124,7 +124,7 @@ class SALockPtrBtn(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.type, self.flags, self.button = unpacker.unpack("BBxB4x")
+        self.type, self.flags, self.button = unpacker.unpack("=BBxB4x")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -152,7 +152,7 @@ class Action(xcffib.Union):
         self.moveptr = SAMovePtr(unpacker.copy())
         self.ptrbtn = SAPtrBtn(unpacker.copy())
         self.lockptrbtn = SALockPtrBtn(unpacker.copy())
-        self.type, = unpacker.copy().unpack("B")
+        self.type, = unpacker.copy().unpack("=B")
     def pack(self):
         buf = io.BytesIO()
         buf.write(self.noaction.pack() if hasattr(self.noaction, "pack") else SANoAction.synthetic(*self.noaction).pack())

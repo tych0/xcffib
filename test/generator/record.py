@@ -13,7 +13,7 @@ class Range8(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.first, self.last = unpacker.unpack("BB")
+        self.first, self.last = unpacker.unpack("=BB")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -33,7 +33,7 @@ class Range16(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.first, self.last = unpacker.unpack("HH")
+        self.first, self.last = unpacker.unpack("=HH")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -88,7 +88,7 @@ class Range(xcffib.Struct):
         self.device_events = Range8(unpacker)
         unpacker.pad(Range8)
         self.errors = Range8(unpacker)
-        self.client_started, self.client_died = unpacker.unpack("BB")
+        self.client_started, self.client_died = unpacker.unpack("=BB")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()

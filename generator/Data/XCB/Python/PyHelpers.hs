@@ -106,7 +106,8 @@ mkUnpackFrom unpacker names packs =
   let lhs = Tuple $ map mkAttr names
       -- Don't spam with this default arg unless it is really necessary.
       unpackF = mkDot unpacker "unpack"
-      rhs = mkCall unpackF [mkStr packs]
+      packs' = if null packs then packs else '=' : packs
+      rhs = mkCall unpackF [mkStr packs']
       stmt = if length names > 0 then mkAssign lhs rhs else StmtExpr rhs
   in if length packs > 0 then [stmt] else []
 

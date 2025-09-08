@@ -10,7 +10,7 @@ class INT64(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.hi, self.lo = unpacker.unpack("iI")
+        self.hi, self.lo = unpacker.unpack("=iI")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -30,7 +30,7 @@ class GetPropertyReply(xcffib.Reply):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Reply.__init__(self, unpacker)
         base = unpacker.offset
-        self.num_items, self.format = unpacker.unpack("xx2x4xIB")
+        self.num_items, self.format = unpacker.unpack("=xx2x4xIB")
         if self.format & PropertyFormat._8Bits:
             self.data8 = xcffib.List(unpacker, "B", self.num_items)
         if self.format & PropertyFormat._16Bits:
@@ -47,7 +47,7 @@ class GetPropertyWithPadReply(xcffib.Reply):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Reply.__init__(self, unpacker)
         base = unpacker.offset
-        self.num_items, self.format = unpacker.unpack("xx2x4xIB")
+        self.num_items, self.format = unpacker.unpack("=xx2x4xIB")
         self.names = xcffib.List(unpacker, "B", self.num_items)
         if self.format & PropertyFormat._8Bits:
             unpacker.pad("B")
