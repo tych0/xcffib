@@ -13,7 +13,7 @@ class COLOR(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.red, self.green, self.blue, self.alpha = unpacker.unpack("HHHH")
+        self.red, self.green, self.blue, self.alpha = unpacker.unpack("=HHHH")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
@@ -35,7 +35,7 @@ class RECTANGLE(xcffib.Struct):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Struct.__init__(self, unpacker)
         base = unpacker.offset
-        self.x, self.y, self.width, self.height = unpacker.unpack("hhHH")
+        self.x, self.y, self.width, self.height = unpacker.unpack("=hhHH")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()

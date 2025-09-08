@@ -106,7 +106,6 @@ class Unpacker(object):
         self.offset += type_pad(size, self.offset)
 
     def unpack(self, fmt, increment=True):
-        fmt = "=" + fmt
         size = struct.calcsize(fmt)
         if size > self.size - self.offset:
             self._resize(size)
@@ -411,7 +410,7 @@ class List(Protobj):
         old = unpacker.offset
 
         if isinstance(typ, str):
-            self.list = list(unpacker.unpack("%d%s" % (count, typ)))
+            self.list = list(unpacker.unpack("=%d%s" % (count, typ)))
         elif count is not None:
             for _ in range(count):
                 item = typ(unpacker)
@@ -727,7 +726,7 @@ class Connection(object):
         # extension event.
         if response_type == 35:
             # Extract the extension opcode and event
-            extension, _, event_type, _ = buf.unpack("xB2xIH22xI", increment=False)
+            extension, _, event_type, _ = buf.unpack("=xB2xIH22xI", increment=False)
             try:
                 # Try to find matching event. If this fails, an IndexError is raised and
                 # we'll fall back to raising an GeGenericEvent
@@ -792,7 +791,7 @@ class Event(Response):
         # If this is a xcb_ge_generic_event_t (response type 35) then we need a few more fields
         if self.xge and isinstance(unpacker, CffiUnpacker):
             self.extension, self.length, self.event_type, self.full_sequence = (
-                unpacker.unpack("xB2xIH22xI")
+                unpacker.unpack("=xB2xIH22xI")
             )
 
             # There's some extra work to do if the event has data past the 32 byte boundary
@@ -818,7 +817,7 @@ class Error(Response, XcffibException):
     def __init__(self, unpacker):
         Response.__init__(self, unpacker)
         XcffibException.__init__(self)
-        self.code = unpacker.unpack("B", increment=False)
+        self.code = unpacker.unpack("=B", increment=False)
 
 
 def pack_list(from_, pack_type):

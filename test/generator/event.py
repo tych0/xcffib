@@ -13,7 +13,7 @@ class ScreenChangeNotifyEvent(xcffib.Event):
             unpacker = xcffib.MemoryUnpacker(unpacker.pack())
         xcffib.Event.__init__(self, unpacker)
         base = unpacker.offset
-        self.rotation, self.timestamp, self.config_timestamp, self.root, self.request_window, self.sizeID, self.subpixel_order, self.width, self.height, self.mwidth, self.mheight = unpacker.unpack("xB2xIIIIHHHHHH")
+        self.rotation, self.timestamp, self.config_timestamp, self.root, self.request_window, self.sizeID, self.subpixel_order, self.width, self.height, self.mwidth, self.mheight = unpacker.unpack("=xB2xIIIIHHHHHH")
         self.bufsize = unpacker.offset - base
     def pack(self):
         buf = io.BytesIO()
