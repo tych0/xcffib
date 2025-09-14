@@ -16,7 +16,6 @@
 # others who want to test things using xcffib.
 
 import errno
-import fcntl
 import os
 import subprocess
 import time
@@ -31,17 +30,32 @@ def lock_path(display):
 def find_display():
     display = 10
     while True:
+        lock_file = lock_path(display)
+
         try:
-            f = open(lock_path(display), "w+")
+            with open(lock_file, 'r') as f:
+                pid = int(f.read().strip())
+
             try:
-                fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except OSError:
-                f.close()
-                raise
-        except OSError:
+                os.kill(pid, 0)
+                display += 1
+                continue
+            except (OSError, ProcessLookupError):
+                try:
+                    os.remove(lock_file)
+                except FileNotFoundError:
+                    pass
+
+        except (FileNotFoundError, ValueError, OSError):
+            pass
+
+        try:
+            fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            os.write(fd, str(os.getpid()).encode())
+            return display, fd
+        except FileExistsError:
             display += 1
             continue
-        return display, f
 
 
 class XvfbTest:
@@ -103,7 +117,7 @@ class XvfbTest:
         # clean up after itself.
         try:
             os.remove(lock_path(self._display))
-            self._display_lock.close()
+            os.close(self._display_lock)
         except OSError as e:
             # we don't care if it doesn't exist, maybe something crashed and
             # cleaned it up during a test.
