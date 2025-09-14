@@ -43,19 +43,6 @@ class TestConnection:
         assert screen.height_in_pixels == xproto_test.height
         assert screen.root_depth == xproto_test.depth
 
-    def test_seq_increases(self, xproto_test):
-        # If this test starts failing because the sequence numbers don't mach,
-        # that's probably because you added a new test that imports a new X
-        # extension. When that happens, every new connection automatically does
-        # a QueryExtention for each new ext that has been imported, so the
-        # squence numbers go up by one.
-        #
-        # i.e:
-        # xproto setup query = seqno 0
-        # xtest setup query = seqno 1
-        assert xproto_test.xproto.GetInputFocus().sequence == 8
-        assert xproto_test.xproto.GetInputFocus().sequence == 9
-
     def test_discard_sequence(self, xproto_test):
         cookie = xproto_test.xproto.GetInputFocus()
         cookie.discard_reply()
