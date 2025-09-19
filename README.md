@@ -1,4 +1,4 @@
-# xcffib [![Build Status](https://github.com/tych0/xcffib/workflows/ci/badge.svg?branch=master)](https://github.com/tych0/xcffib/actions)
+# xcffib [![Build Status](https://github.com/tych0/xcffib/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/tych0/xcffib/actions)
 
 `xcffib` is the XCB binding for Python.
 
