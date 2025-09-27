@@ -12,6 +12,4 @@ class eventstructExtension(xcffib.Extension):
         buf.write(xcffib.pack_list(events, EventForSend))
         buf.write(xcffib.pack_list(classes, "B"))
         return self.send_request(31, buf, is_checked=is_checked)
-    def SendExtensionEventChecked(self, device_id, propagate, num_classes, num_events, events, classes):
-        return self.SendExtensionEvent(device_id, propagate, num_classes, num_events, events, classes, is_checked=True)
 xcffib._add_ext(key, eventstructExtension, _events, _errors)

@@ -62,6 +62,4 @@ class randrExtension(xcffib.Extension):
         buf = io.BytesIO()
         buf.write(struct.pack("=xx2xI", crtc))
         return self.send_request(27, buf, GetCrtcTransformCookie, is_checked=is_checked)
-    def GetCrtcTransformUnchecked(self, crtc):
-        return self.GetCrtcTransform(crtc, is_checked=False)
 xcffib._add_ext(key, randrExtension, _events, _errors)

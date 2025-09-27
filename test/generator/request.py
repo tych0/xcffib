@@ -10,6 +10,4 @@ class requestExtension(xcffib.Extension):
         buf.write(struct.pack("=I", value_mask))
         buf.write(xcffib.pack_list(value_list, "I"))
         return self.send_request(1, buf, is_checked=is_checked)
-    def CreateWindowChecked(self, depth, wid, parent, x, y, width, height, border_width, _class, visual, value_mask, value_list):
-        return self.CreateWindow(depth, wid, parent, x, y, width, height, border_width, _class, visual, value_mask, value_list, is_checked=True)
 xcffib._add_ext(key, requestExtension, _events, _errors)
