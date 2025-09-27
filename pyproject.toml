@@ -38,5 +38,4 @@ xcffib = ["py.typed"]
 [project.optional-dependencies]
 dev = [
     "pytest>=8.4",
-    "pytest-xdist",
 ]
