@@ -63,7 +63,7 @@ $(VENV): pyproject.toml
 check: xcffib htests $(VENV) lint
 	$(CABAL) check
 	$(PYTHON) -m compileall xcffib
-	$(PYTHON) -m pytest -v --durations=3
+	$(PYTHON) -m pytest -v --durations=3 -n auto
 
 # make release ver=0.99.99
 release: xcffib

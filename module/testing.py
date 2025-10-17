@@ -16,7 +16,6 @@
 # others who want to test things using xcffib.
 
 import errno
-import fcntl
 import os
 import subprocess
 import time
@@ -27,22 +26,18 @@ from . import Connection, ConnectionException
 def lock_path(display):
     return "/tmp/.X%d-lock" % display
 
+display_count = 0
 
 def find_display():
-    display = 10
-    while True:
-        try:
-            f = open(lock_path(display), "w+")
-            try:
-                fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except OSError:
-                f.close()
-                raise
-        except OSError:
-            display += 1
-            continue
-        return display, f
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
+    offset = int(worker_id[2:]) if worker_id.startswith("gw") else 0
 
+    display_offset = 100 + (offset * 10)  # Each worker gets range: 10-19, 20-29, etc.
+    global display_count
+    display = display_offset + display_count
+    display_count += 1
+    display_count %= 10
+    return display
 
 class XvfbTest:
     """A helper class for testing things with nosetests. This class will run
@@ -70,7 +65,7 @@ class XvfbTest:
 
     def setUp(self):
         self._old_display = os.environ.get("DISPLAY")
-        self._display, self._display_lock = find_display()
+        self._display = find_display()
         os.environ["DISPLAY"] = ":%d" % self._display
         self._xvfb = self.spawn(self._xvfb_command())
 
@@ -103,7 +98,6 @@ class XvfbTest:
         # clean up after itself.
         try:
             os.remove(lock_path(self._display))
-            self._display_lock.close()
         except OSError as e:
             # we don't care if it doesn't exist, maybe something crashed and
             # cleaned it up during a test.
