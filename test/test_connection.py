@@ -315,3 +315,17 @@ class TestConnection:
         c2 = xcffib.wrap(xcffib.ffi.cast("long", c._conn))
         c2.invalid()
         c2.disconnect()
+
+    def test_unmap_window_unchecked(self, xproto_test):
+        wid = xproto_test.conn.generate_id()
+        xproto_test.create_window(wid=wid)
+        reply = xproto_test.xproto.QueryTree(xproto_test.default_screen.root).reply()
+        assert wid in reply.children
+
+        cookie = xproto_test.xproto.UnmapWindowUnchecked(wid)
+        with pytest.raises(AssertionError):
+            cookie.check()
+
+        xproto_test.conn.flush()
+        reply = xproto_test.xproto.QueryTree(xproto_test.default_screen.root).reply()
+        assert wid in reply.children
