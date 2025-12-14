@@ -1,6 +1,6 @@
 cabal-version:       2.4
 name:                xcffib
-version:             1.11.2
+version:             1.12.0
 synopsis:            A cffi-based python binding for X
 homepage:            http://github.com/tych0/xcffib
 license:             Apache-2.0
