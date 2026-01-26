@@ -16,7 +16,6 @@
 # others who want to test things using xcffib.
 
 import errno
-import fcntl
 import os
 import subprocess
 import time
@@ -28,20 +27,88 @@ def lock_path(display):
     return "/tmp/.X%d-lock" % display
 
 
-def find_display():
-    display = 10
-    while True:
+def socket_path(display):
+    return "/tmp/.X11-unix/X%d" % display
+
+
+def _is_pid_alive(pid):
+    """Check if a process with the given PID is still running."""
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError as e:
+        if e.errno == errno.ESRCH:
+            return False
+        elif e.errno == errno.EPERM:
+            # Process exists but we don't have permission to signal it
+            return True
+        raise
+
+
+def _try_acquire_lock(display):
+    """Try to atomically create a lock file for the given display.
+
+    Returns (fd, True) if lock acquired, (None, False) otherwise.
+    Uses O_CREAT | O_EXCL for atomic creation, which is safe across processes.
+    """
+    path = lock_path(display)
+
+    # First, check if there's a stale lock file
+    try:
+        with open(path, "r") as f:
+            content = f.read().strip()
+            if content:
+                try:
+                    pid = int(content)
+                    if _is_pid_alive(pid):
+                        # Lock is held by a running process
+                        return None, False
+                    # Process is dead, try to remove stale lock
+                except ValueError:
+                    pass  # Invalid content, try to remove
+                try:
+                    os.unlink(path)
+                except OSError:
+                    return None, False
+    except FileNotFoundError:
+        pass  # No existing lock file, good
+
+    # Try to atomically create the lock file
+    try:
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        # Another process created it between our check and create
+        return None, False
+    except OSError:
+        return None, False
+
+    # Write our PID to the lock file
+    try:
+        os.write(fd, ("%d\n" % os.getpid()).encode())
+    except OSError:
+        os.close(fd)
         try:
-            f = open(lock_path(display), "w+")
-            try:
-                fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except OSError:
-                f.close()
-                raise
+            os.unlink(path)
         except OSError:
-            display += 1
-            continue
-        return display, f
+            pass
+        return None, False
+
+    return fd, True
+
+
+def find_display():
+    """Find an available display number and acquire its lock.
+
+    Returns (display_number, lock_fd) on success.
+    """
+    display = 10
+    max_display = 100  # Prevent infinite loop
+    while display < max_display:
+        fd, acquired = _try_acquire_lock(display)
+        if acquired:
+            return display, fd
+        display += 1
+    raise RuntimeError("Could not find an available display (tried :10 through :%d)" % max_display)
 
 
 class XvfbTest:
@@ -99,11 +166,24 @@ class XvfbTest:
         self._xvfb.wait()
         self._xvfb = None
 
-        # Delete our X lock file too, since we .kill() the process so it won't
-        # clean up after itself.
+        # Wait for the X server socket to be cleaned up before releasing the lock.
+        # This prevents another worker from trying to use the same display before
+        # the socket is fully released.
+        sock_path = socket_path(self._display)
+        for _ in range(50):  # Wait up to 5 seconds
+            if not os.path.exists(sock_path):
+                break
+            time.sleep(0.1)
+
+        # Close the lock file descriptor first, then remove the lock file.
+        # This order is important: close releases our hold, then we clean up.
+        try:
+            os.close(self._display_lock)
+        except OSError:
+            pass
+
         try:
             os.remove(lock_path(self._display))
-            self._display_lock.close()
         except OSError as e:
             # we don't care if it doesn't exist, maybe something crashed and
             # cleaned it up during a test.
