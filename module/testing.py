@@ -82,8 +82,22 @@ class XvfbTest:
         try:
             self.conn = self._connect_to_xvfb()
         except AssertionError:
-            self._restore_display()
+            self.release_display()
             raise
+
+    def release_display(self):
+        # Delete our X lock file too, since we .kill() the process so it won't
+        # clean up after itself.
+        try:
+            os.remove(lock_path(self._display))
+        except OSError as e:
+            # we don't care if it doesn't exist, maybe something crashed and
+            # cleaned it up during a test.
+            if e.errno != errno.ENOENT:
+                raise
+        finally:
+            self._display_lock.close()
+            self._restore_display()
 
     def tearDown(self):
         try:
@@ -99,18 +113,7 @@ class XvfbTest:
         self._xvfb.wait()
         self._xvfb = None
 
-        # Delete our X lock file too, since we .kill() the process so it won't
-        # clean up after itself.
-        try:
-            os.remove(lock_path(self._display))
-            self._display_lock.close()
-        except OSError as e:
-            # we don't care if it doesn't exist, maybe something crashed and
-            # cleaned it up during a test.
-            if e.errno != errno.ENOENT:
-                raise
-        finally:
-            self._restore_display()
+        self.release_display()
 
     def __enter__(self):
         self.setUp()
