@@ -18,12 +18,12 @@ jobs:
                 python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "pypy3.11"]
                 xcbver: [xcb-proto-1.16.0, xcb-proto-1.17.0, master]
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - name: Set up python "${{ matrix.python-version }}"
-              uses: actions/setup-python@v5
+              uses: actions/setup-python@v7
               with:
                   python-version: "${{ matrix.python-version }}"
-            - uses: astral-sh/ruff-action@v3
+            - uses: astral-sh/ruff-action@v4.1.0
               with:
                   version: "latest"
                   args: "check --exclude ./test/generator/"
