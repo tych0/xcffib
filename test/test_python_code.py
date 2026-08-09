@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import xcffib
-import xcffib.xproto
-import xcffib.xinput
-import xcffib.randr
 import os
 import struct
 import sys
+
+import xcffib
+import xcffib.randr
+import xcffib.xinput
+import xcffib.xproto
 from xcffib.ffi import ffi
 from xcffib.xproto import EventMask
 
@@ -58,7 +59,7 @@ class TestPythonCode:
             assert cm.data32[1] == 0x04050607
             assert cm.data32[2] == 0x08090A0B
         else:
-            raise Exception("unknown byte order?")
+            raise ValueError("unknown byte order?")
 
     def test_offset_map(self):
         om = xcffib.OffsetMap({0: "Event0,0"})

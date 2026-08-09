@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import, division
 
 import ctypes.util
 import functools
@@ -21,6 +20,7 @@ import io
 import platform
 import struct
 import weakref
+from typing import ClassVar
 
 from .ffi import ffi
 
@@ -86,7 +86,7 @@ def visualtype_to_c_struct(vt):
     return s
 
 
-class Unpacker(object):
+class Unpacker:
     def __init__(self, known_max=None):
         self.size = 0
         self.offset = 0
@@ -169,13 +169,11 @@ class MemoryUnpacker(Unpacker):
 
 
 def popcount(n):
-    return bin(n).count("1")
+    return n.bit_count()
 
 
 class XcffibException(Exception):
     """Generic XcbException; replaces xcb.Exception."""
-
-    pass
 
 
 class XcffibNotImplemented(XcffibException, NotImplementedError):
@@ -183,7 +181,7 @@ class XcffibNotImplemented(XcffibException, NotImplementedError):
 
 
 class ConnectionException(XcffibException):
-    REASONS = {
+    REASONS: ClassVar = {
         lib.XCB_CONN_ERROR: (
             "xcb connection errors because of socket, pipe and other stream errors."
         ),
@@ -255,7 +253,7 @@ def _add_ext(key, value, events, errors):
     extensions[key] = (value, events, errors)
 
 
-class ExtensionKey(object):
+class ExtensionKey:
     def __init__(self, name):
         self.name = name
         self.c_key = ffi.new("struct xcb_extension_t *")
@@ -273,7 +271,7 @@ class ExtensionKey(object):
         return self.name != o.name
 
 
-class Protobj(object):
+class Protobj:
     """Note: Unlike xcb.Protobj, this does NOT implement the sequence
     protocol. I found this behavior confusing: Protobj would implement the
     sequence protocol on self.buf, and then List would go and implement it on
@@ -323,13 +321,15 @@ class Struct(Protobj):
 
 class Union(Protobj):
     @classmethod
-    def synthetic(cls, data=[], fmt=""):
+    def synthetic(cls, data=None, fmt=""):
+        if data is None:
+            data = []
         self = cls.__new__(cls)
         self.__init__(MemoryUnpacker(struct.pack(fmt, *data)))
         return self
 
 
-class Cookie(object):
+class Cookie:
     reply_type = None
 
     def __init__(self, conn, sequence, is_checked):
@@ -357,7 +357,7 @@ class VoidCookie(Cookie):
         raise XcffibException("No reply for this message type")
 
 
-class Extension(object):
+class Extension:
     def __init__(self, conn, key=None):
         self.conn = conn
 
@@ -410,7 +410,7 @@ class List(Protobj):
         old = unpacker.offset
 
         if isinstance(typ, str):
-            self.list = list(unpacker.unpack("=%d%s" % (count, typ)))
+            self.list = list(unpacker.unpack(f"={count}{typ}"))
         elif count is not None:
             for _ in range(count):
                 item = typ(unpacker)
@@ -473,7 +473,7 @@ class List(Protobj):
 
     def to_atoms(self):
         """A helper for converting a List of chars to an array of atoms"""
-        return struct.unpack("<" + "%dI" % (len(self) // 4), b"".join(self))
+        return struct.unpack(f"<{len(self) // 4}I", b"".join(self))
 
     def buf(self):
         return self.raw
@@ -488,7 +488,7 @@ class List(Protobj):
         return self
 
 
-class OffsetMap(object):
+class OffsetMap:
     def __init__(self, core):
         self.offsets = [(0, 0, core)]
 
@@ -515,7 +515,7 @@ class OffsetMap(object):
             raise IndexError(item)
 
 
-class Connection(object):
+class Connection:
     """`auth` here should be '<name>:<data>', a format bequeathed to us from
     xpyb."""
 
@@ -621,7 +621,7 @@ class Connection(object):
 
         screens = [root_iter.data]
         for i in range(self._setup.roots_len - 1):
-            lib.xcb_screen_next(ffi.addressof((root_iter)))
+            lib.xcb_screen_next(ffi.addressof(root_iter))
             screens.append(root_iter.data)
         return screens
 
@@ -690,7 +690,7 @@ class Connection(object):
 
         if data == ffi.NULL:
             # No data and no error => bad sequence number
-            raise XcffibException("Bad sequence number %d" % sequence)
+            raise XcffibException(f"Bad sequence number {sequence}")
 
         reply = ffi.cast("xcb_generic_reply_t *", data)
 
@@ -827,7 +827,7 @@ def pack_list(from_, pack_type):
     """
     # We need from_ to not be empty
     if len(from_) == 0:
-        return bytes()
+        return b""
 
     if pack_type == "c":
         if isinstance(from_, bytes):
@@ -852,7 +852,7 @@ def pack_list(from_, pack_type):
             from_ = [bytes((b,)) for i in from_ for b in to_bytes(i)]
 
     if isinstance(pack_type, str):
-        return struct.pack("=%d%s" % (len(from_), pack_type), *from_)
+        return struct.pack(f"={len(from_)}{pack_type}", *from_)
     else:
         buf = io.BytesIO()
         for item in from_:

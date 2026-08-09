@@ -38,7 +38,7 @@ CONSTANTS = [
 
 
 # constants
-CDEF = '\n'.join("#define %s %d" % (c, v) for c, v in CONSTANTS)
+CDEF = '\n'.join(f"#define {c} {v}" for c, v in CONSTANTS)
 
 # types
 CDEF += """

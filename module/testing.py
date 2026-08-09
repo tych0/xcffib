@@ -25,14 +25,14 @@ from . import Connection, ConnectionException
 
 
 def lock_path(display):
-    return "/tmp/.X%d-lock" % display
+    return f"/tmp/.X{display}-lock"
 
 
 def find_display():
     display = 10
     while True:
         try:
-            f = open(lock_path(display), "w+")
+            f = open(lock_path(display), "w+")  # noqa: SIM115
             try:
                 fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             except OSError:
@@ -71,7 +71,7 @@ class XvfbTest:
     def setUp(self):
         self._old_display = os.environ.get("DISPLAY")
         self._display, self._display_lock = find_display()
-        os.environ["DISPLAY"] = ":%d" % self._display
+        os.environ["DISPLAY"] = f":{self._display}"
         self._xvfb = self.spawn(self._xvfb_command())
 
         if self.xtrace:
@@ -126,7 +126,7 @@ class XvfbTest:
         """You can override this if you have some extra args for Xvfb or
         whatever. At this point, os.environ['DISPLAY'] is set to something Xvfb
         can use."""
-        screen = "%sx%sx%s" % (self.width, self.height, self.depth)
+        screen = f"{self.width}x{self.height}x{self.depth}"
         return ["Xvfb", os.environ["DISPLAY"], "-screen", "0", screen]
 
     def _connect_to_xvfb(self):

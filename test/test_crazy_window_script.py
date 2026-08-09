@@ -25,9 +25,10 @@ This is mostly stolen from qtile's tests/scripts/window.py
 """
 
 import os
-import sys
 import struct
+import sys
 import time
+
 import xcffib
 import xcffib.xproto
 from xcffib.xproto import EventMask
@@ -42,14 +43,12 @@ class TestWindow:
             except xcffib.ConnectionException:
                 time.sleep(0.1)
                 continue
-            except Exception as v:
+            except Exception as v:  # noqa: BLE001
                 print("Error opening test window: ", type(v), v, file=sys.stderr)
                 sys.exit(1)
             break
         else:
-            print(
-                "Could not open window on display %s" % (sys.argv[1]), file=sys.stderr
-            )
+            print(f"Could not open window on display {sys.argv[1]}", file=sys.stderr)
             sys.exit(1)
 
         screen = conn.get_setup().roots[conn.pref_screen]

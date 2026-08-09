@@ -14,12 +14,12 @@
 # limitations under the License.
 
 import os
-import xcffib
-import xcffib.xproto
-
-from xcffib import ffi
 
 import pytest
+
+import xcffib
+import xcffib.xproto
+from xcffib import ffi
 
 
 class TestConnection:

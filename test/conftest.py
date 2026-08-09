@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 import xcffib
 from xcffib.testing import XvfbTest
 from xcffib.xproto import EventMask
-
-import pytest
 
 
 @pytest.fixture

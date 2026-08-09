@@ -39,3 +39,6 @@ xcffib = ["py.typed"]
 dev = [
     "pytest>=8.4",
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["xcffib"]
