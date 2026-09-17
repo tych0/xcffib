@@ -31,6 +31,6 @@ jobs:
               with:
                   ghc-version: '9.6'
                   cabal-version: latest
-            - run: sudo apt install x11-apps
+            - run: sudo apt install x11-apps x11proto-dev
             - run: git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git proto && cd proto && git checkout ${{ matrix.xcbver }}
             - run: make XCBDIR=./proto/src check

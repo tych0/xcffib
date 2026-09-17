@@ -58,6 +58,7 @@ executable xcffibgen
                  either >= 5.0.2 && < 5.1,
                  pretty >= 1.1 && < 1.2,
                  directory >= 1.3.6 && < 1.4,
+                 process >= 1.6.13 && < 1.7,
                  optparse-applicative >= 0.18.1 && < 0.20
   other-modules: Data.XCB.Python.Parse,
                  Data.XCB.Python.PyHelpers
