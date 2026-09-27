@@ -708,7 +708,7 @@ processXDecl ext (XEvent name opcode _ xge membs noSequence) = do
       eventsUpd = mkDictUpdate "_events" opcode cname
       isxge = fromMaybe False xge
       -- xgeexp = mkAssign "xge" (if fromMaybe False xge then (mkName "True") else (mkName "False"))
-  return [Declaration [ mkXClass cname "xcffib.Event" isxge statements (pack : synthetic)
+  return [Declaration [ mkXEventClass cname isxge opcode statements (pack : synthetic)
                        , eventsUpd
                        ]]
 processXDecl ext (XError name opcode _ membs) = do

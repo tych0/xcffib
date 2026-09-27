@@ -26,6 +26,7 @@ module Data.XCB.Python.PyHelpers (
   mkClass,
   mkEmptyClass,
   mkXClass,
+  mkXEventClass,
   mkStr,
   mkUnpackFrom,
   mkDict,
@@ -72,12 +73,20 @@ mkEnum cname values =
 mkXClass :: String -> String -> Bool -> Suite -> Suite -> Statement
 mkXClass clazz superclazz False [] [] = mkEmptyClass clazz superclazz
 mkXClass clazz superclazz xge constructor methods =
+  mkXClassWithAttrs clazz superclazz [mkXgeAttr xge] constructor methods
+
+mkXEventClass :: String -> Bool -> Int -> Suite -> Suite -> Statement
+mkXEventClass clazz xge eventNumber =
+  mkXClassWithAttrs clazz "xcffib.Event" [mkXgeAttr xge, mkAssign "event_number" (Int eventNumber)]
+
+mkXClassWithAttrs :: String -> String -> Suite -> Suite -> Suite -> Statement
+mkXClassWithAttrs clazz superclazz [] [] [] = mkEmptyClass clazz superclazz
+mkXClassWithAttrs clazz superclazz classAttrs constructor methods =
   let args = [ "self", "unpacker" ]
       super = mkCall (superclazz ++ ".__init__") $ map mkName args
       body = eventToUnpacker : (StmtExpr super) : constructor
-      xgeexp = mkAssign "xge" (if xge then (mkName "True") else (mkName "False"))
       initMethod = Fun "__init__" args body
-  in mkClass clazz superclazz $ xgeexp : initMethod : methods
+  in mkClass clazz superclazz $ classAttrs ++ [initMethod] ++ methods
 
     where
 
@@ -90,6 +99,9 @@ mkXClass clazz superclazz xge constructor methods =
                                                               [mkCall "unpacker.pack" []])
                             cond = mkCall "isinstance" [mkName "unpacker", mkName "xcffib.Protobj"]
                         in mkIf cond [newUnpacker]
+
+mkXgeAttr :: Bool -> Statement
+mkXgeAttr xge = mkAssign "xge" (Bool xge)
 
 
 mkEmptyClass :: String -> String -> Statement
