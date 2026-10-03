@@ -23,3 +23,9 @@ cabal.sandbox.config
 cabal.project.local*
 .ghc.environment*
 uv.lock
+
+# These files are generated from C headers X11/keysymdef.h and X11/XF86keysym.h by `make newtests`,
+# so their contents depend on the installed header versions instead of being deterministically
+# generated from test/generator/*.xml.
+/test/generator/keysymdef.py
+/test/generator/xf86keysym.py
