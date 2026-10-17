@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
 import os
 
 import pytest
@@ -115,6 +116,41 @@ class TestConnection:
 
         e = xproto_test.conn.wait_for_event()
         assert isinstance(e, xcffib.xproto.CreateNotifyEvent)
+
+    def test_poll_for_event_frees_buffer(self, xproto_test, monkeypatch):
+        # Regression test for #210: poll_for_event() used to hand the raw
+        # xcb_poll_for_event() pointer straight to hoist_event(), leaking every
+        # polled event. It must wrap the pointer in ffi.gc() like
+        # wait_for_event() does, so the buffer is freed once the event object is
+        # collected.
+        conn = xproto_test.conn
+
+        freed = []
+        monkeypatch.setattr(xcffib, "c_free", freed.append)
+
+        screen = xproto_test.default_screen
+        pixmap = conn.generate_id()
+        gc_obj = conn.generate_id()
+
+        # Graphics exposures are enabled by default, so each CopyArea emits a
+        # NoExposure event, exactly as in the issue report.
+        conn.core.CreatePixmap(screen.root_depth, pixmap, screen.root, 16, 16)
+        conn.core.CreateGC(gc_obj, pixmap, 0, [])
+        conn.core.CopyArea(pixmap, pixmap, gc_obj, 0, 0, 0, 0, 16, 16)
+        conn.flush()
+
+        event = conn.poll_for_event()
+        assert event is not None
+
+        # The underlying xcb event buffer must stay alive while the event
+        # object references it.
+        gc.collect()
+        assert freed == []
+
+        # Dropping the last reference must free the buffer.
+        del event
+        gc.collect()
+        assert len(freed) == 1
 
     def test_query_invalid_wid_generates_error(self, xproto_test):
         with pytest.raises(xcffib.xproto.WindowError):

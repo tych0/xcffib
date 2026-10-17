@@ -637,7 +637,7 @@ class Connection:
         e = lib.xcb_poll_for_event(self._conn)
         self.invalid()
         if e != ffi.NULL:
-            return self.hoist_event(e)
+            return self.hoist_event(ffi.gc(e, c_free))
         else:
             return None
 
