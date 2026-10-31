@@ -29,7 +29,7 @@ jobs:
                   args: "check --exclude ./test/generator/"
             - uses: haskell-actions/setup@v2
               with:
-                  ghc-version: '9.6'
+                  ghc-version: '9.14'
                   cabal-version: latest
             - run: sudo apt install x11-apps x11proto-dev
             - run: git clone https://gitlab.freedesktop.org/xorg/proto/xcbproto.git proto && cd proto && git checkout ${{ matrix.xcbver }}
