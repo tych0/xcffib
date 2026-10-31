@@ -43,8 +43,9 @@ import Data.XCB.Python.AST (Expr(..), Op(..), Statement(..), Suite, Ident, Pseud
 -- | Make an Expr out of a string like "foo.bar" describing the name.
 mkName :: String -> Expr
 mkName s =
-  let strings = splitOn "." s
-  in foldl mkDot (Var $ head strings) (tail strings)
+  case splitOn "." s of
+    (x : xs) -> foldl mkDot (Var x) xs
+    [] -> Var s
 
 mkDot :: PseudoExpr a => a -> String -> Expr
 mkDot e1 attr = Dot (getExpr e1) attr
