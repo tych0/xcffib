@@ -6,7 +6,7 @@ else
 endif
 NCPUS=$(shell grep -c processor /proc/cpuinfo)
 CABAL=flock xcffib.cabal cabal
-GEN=$(CABAL) new-run --minimize-conflict-set -j$(NCPUS) exe:xcffibgen --
+GEN=$(CABAL) run --minimize-conflict-set -j$(NCPUS) exe:xcffibgen --
 VENV=xcffib_venv
 PYTHON=$(VENV)/bin/python3
 
@@ -21,15 +21,15 @@ xcffib: module/*.py xcffib.cabal $(shell find . -path ./test -prune -false -o -n
 	sed -i "s/__xcb_proto_version__ = .*/__xcb_proto_version__ = \"${XCBVER}\"/" xcffib/__init__.py
 
 dist-newstyle:
-	$(CABAL) new-configure --enable-tests
+	$(CABAL) configure --enable-tests
 
 .PHONY: gen
 gen: dist-newstyle
-	$(CABAL) new-build -j$(NCPUS)
+	$(CABAL) build -j$(NCPUS)
 
 .PHONY: clean
 clean:
-	-$(CABAL) new-clean
+	-$(CABAL) clean
 	-rm -rf xcffib xcffib_venv
 	-rm -rf module/*pyc module/__pycache__
 	-rm -rf test/*pyc test/__pycache__
@@ -52,7 +52,7 @@ lint: $(VENV)
 
 .PHONY: htests
 htests:
-	$(CABAL) new-test -j$(NCPUS) --enable-tests
+	$(CABAL) test -j$(NCPUS) --enable-tests
 
 $(VENV): pyproject.toml
 	# the python in $PATH in CI is the python from the matrix, so it is the
@@ -80,7 +80,7 @@ else
 	git tag v${ver}
 	python3 -m build --sdist
 	twine upload dist/xcffib-${ver}.tar.gz
-	cabal new-sdist
+	cabal sdist
 	cabal upload --publish dist-newstyle/sdist/xcffib-${ver}.tar.gz
 	@echo "remember to push the tag!!!"
 endif
