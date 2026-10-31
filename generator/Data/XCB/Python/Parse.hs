@@ -251,16 +251,21 @@ getConst (Unop o e) = do
 getConst (PopCount e) = fmap popCount $ getConst e
 getConst _ = Nothing
 
+bitCaseCmp :: [XExpression] -> XExpression
+bitCaseCmp (e : _) = e
+bitCaseCmp [] = error "BitCase with no expressions"
+
 xEnumElemsToPyEnum :: (String -> String) -> [XEnumElem] -> [(String, Expr)]
-xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] [0..]
+xEnumElemsToPyEnum accessor membs = reverse $ conv membs [] 0
   where
     exprConv = xExpressionToPyExpr accessor
-    conv :: [XEnumElem] -> [(String, Expr)] -> [Int] -> [(String, Expr)]
-    conv ((EnumElem name expr) : els) acc is =
-      let expr' = fromMaybe (Int (head is)) $ fmap exprConv expr
-          is' = dropWhile (<= (fromIntegral (int_value expr'))) is
+    conv :: [XEnumElem] -> [(String, Expr)] -> Int -> [(String, Expr)]
+    conv ((EnumElem name expr) : els) acc next =
+      let expr' = fromMaybe (Int next) $ fmap exprConv expr
+          value = maybe (Just next) getConst expr
+          next' = maybe next (max next . (+ 1)) value
           acc' = (name, expr') : acc
-      in conv els acc' is'
+      in conv els acc' next'
     conv [] acc _ = acc
 
 -- Add the xcb_generic_{request,reply}_t structure data to the beginning of a
@@ -313,12 +318,12 @@ structElemToPyUnpack _ _ _ (Switch name expr _ bitcases) =
         -- semantics of the multi-expression BitCase, since it's "fake" and
         -- "encoded only once" see b3b5e029e7ad ("XKB: Fix GetKbdByName") for
         -- details. needs some wiresniffing to investigate.
-        let cmpVal = xExpressionToPyExpr id (head bcCmp)
+        let cmpVal = xExpressionToPyExpr id (bitCaseCmp bcCmp)
             equality = BinaryOp BinaryAnd cmp cmpVal
         in (equality, elems)
 
       mkSwitch cmp (BitCase (Just _) bcCmp _ elems) =
-        let cmpVal = xExpressionToPyExpr id (head bcCmp)
+        let cmpVal = xExpressionToPyExpr id (bitCaseCmp bcCmp)
             equality = BinaryOp Equality cmp cmpVal
         in (equality, elems)
 
@@ -378,7 +383,7 @@ structElemToPyPack _ _ accessor (Switch n expr _ bitcases) =
                -> (Expr, [GenStructElem Type])
       mkSwitch cmp (BitCase _ bcCmp _ elems') =
         -- see comment above about head for BitCase
-        let cmpVal = xExpressionToPyExpr accessor (head bcCmp)
+        let cmpVal = xExpressionToPyExpr accessor (bitCaseCmp bcCmp)
             equality = BinaryOp BinaryAnd cmp cmpVal
         in (equality, elems')
 structElemToPyPack ext m accessor (SField n typ _ _) =
@@ -749,7 +754,8 @@ processXDecl ext (XRequest name opcode _ membs reply) = do
       -- a hack to not have to support separate params/exprs
       -- checkedParam = Param (ident "is_checked") Nothing (Just isChecked)
       checkedParam = "is_checked=" ++ (show (isJust reply))
-      allArgs = ("self" : (filter (not . null) args)) ++ [checkedParam]
+      nonEmptyArgs = filter (not . null) args
+      allArgs = ("self" : nonEmptyArgs) ++ [checkedParam]
       ret = mkReturn $ mkCall "self.send_request" ([ Int opcode
                                                    , mkName "buf"
                                                    ]
@@ -757,11 +763,11 @@ processXDecl ext (XRequest name opcode _ membs reply) = do
                                                    ++ [argChecked])
       requestBody = buf ++ packStmts ++ [ret]
       request = mkMethod name allArgs requestBody
-      baseArgs = ("self" : (filter (not . null) args))
+      baseArgs = "self" : nonEmptyArgs
       checkedMethod = mkMethod (name ++ "Checked") baseArgs
-        [mkReturn $ mkCall ("self." ++ name) (map mkName (tail baseArgs) ++ [mkName "is_checked=True"])]
+        [mkReturn $ mkCall ("self." ++ name) (map mkName nonEmptyArgs ++ [mkName "is_checked=True"])]
       uncheckedMethod = mkMethod (name ++ "Unchecked") baseArgs
-        [mkReturn $ mkCall ("self." ++ name) (map mkName (tail baseArgs) ++ [mkName "is_checked=False"])]
+        [mkReturn $ mkCall ("self." ++ name) (map mkName nonEmptyArgs ++ [mkName "is_checked=False"])]
 
   return [Request request replyDecl, Request checkedMethod [], Request uncheckedMethod []]
 processXDecl ext (XUnion name _ membs) = do
@@ -776,7 +782,7 @@ processXDecl ext (XUnion name _ membs) = do
       initMethodStmts = concat $ map (either mkUnionUnpack mkUnionListUnpack) stmts
       -- Here, we only want to pack the first member of the union, since every
       -- member is the same data and we don't want to repeatedly pack it.
-      pack = mkPackMethod ext name m Nothing [head membs] Nothing
+      pack = mkPackMethod ext name m Nothing (Data.List.take 1 membs) Nothing
       decl = [mkXClass name "xcffib.Union" False initMethodStmts [pack]]
   modify $ mkModify ext name (CompositeType ext name)
   return [Declaration decl]
