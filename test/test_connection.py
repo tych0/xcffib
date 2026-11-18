@@ -140,6 +140,29 @@ class TestConnection:
         gc.collect()
         assert len(freed) == 1
 
+    def test_request_check_frees_error(self, xproto_test, monkeypatch):
+        gc.collect()
+
+        freed = []
+        real_free = xcffib.c_free
+
+        def free(p):
+            if p != ffi.NULL:
+                freed.append(p)
+            real_free(p)
+
+        monkeypatch.setattr(xcffib, "c_free", free)
+
+        try:
+            xproto_test.xproto.MapWindowChecked(0xF00).check()
+        except xcffib.xproto.WindowError:
+            pass
+        else:
+            pytest.fail("expected a WindowError")
+
+        gc.collect()
+        assert len(freed) == 1
+
     def test_query_invalid_wid_generates_error(self, xproto_test):
         with pytest.raises(xcffib.xproto.WindowError):
             # query a bad WINDOW
