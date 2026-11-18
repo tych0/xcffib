@@ -545,8 +545,16 @@ class Connection:
         else:
             self._conn = lib.xcb_connect(display, i)
         self.pref_screen = i[0]
-        self.invalid()
-        self._init_x()
+
+        # The caller never gets a Connection to disconnect() if we raise here,
+        # so release the xcb connection (and its socket) ourselves.
+        try:
+            self.invalid()
+            self._init_x()
+        except BaseException:
+            lib.xcb_disconnect(self._conn)
+            self._conn = None
+            raise
 
     def _init_x(self):
         if core is None:

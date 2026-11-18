@@ -23,6 +23,10 @@ import xcffib.xproto
 from xcffib import ffi
 
 
+def open_fds():
+    return len(os.listdir("/proc/self/fd"))
+
+
 class TestConnection:
     def test_invalid_display(self, xproto_test):
         with pytest.raises(xcffib.ConnectionException):
@@ -162,6 +166,16 @@ class TestConnection:
 
         gc.collect()
         assert len(freed) == 1
+
+    def test_failed_init_closes_connection(self, xproto_test, monkeypatch):
+        # Without a core protocol, Connection() connects and then raises from
+        # _init_x(); that must not leak the xcb connection and its socket.
+        monkeypatch.setattr(xcffib, "core", None)
+        before = open_fds()
+        for _ in range(10):
+            with pytest.raises(xcffib.XcffibException, match="No core protocol"):
+                xcffib.Connection(os.environ["DISPLAY"])
+        assert open_fds() == before
 
     def test_query_invalid_wid_generates_error(self, xproto_test):
         with pytest.raises(xcffib.xproto.WindowError):
