@@ -523,10 +523,15 @@ class Connection:
         if auth is not None:
             [name, data] = auth.split(b":")
 
+            # Assigning an ffi.new() result to a struct field does not keep it
+            # alive, so hold references to the buffers until xcb_connect*()
+            # has used them.
             c_auth = ffi.new("xcb_auth_info_t *")
-            c_auth.name = ffi.new("char[]", name)
+            c_auth_name = ffi.new("char[]", name)
+            c_auth_data = ffi.new("char[]", data)
+            c_auth.name = c_auth_name
             c_auth.namelen = len(name)
-            c_auth.data = ffi.new("char[]", data)
+            c_auth.data = c_auth_data
             c_auth.datalen = len(data)
         else:
             c_auth = ffi.NULL
