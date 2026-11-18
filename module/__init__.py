@@ -521,7 +521,7 @@ class Connection:
 
     def __init__(self, display=None, fd=-1, auth=None):
         if auth is not None:
-            [name, data] = auth.split(b":")
+            name, data = auth.split(b":", 1)
 
             # Assigning an ffi.new() result to a struct field does not keep it
             # alive, so hold references to the buffers until xcb_connect*()
