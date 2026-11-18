@@ -15,16 +15,53 @@
 
 import gc
 import os
+import struct
+import time
 
 import pytest
 
 import xcffib
 import xcffib.xproto
 from xcffib import ffi
+from xcffib.testing import XvfbTest
 
 
 def open_fds():
     return len(os.listdir("/proc/self/fd"))
+
+
+class AuthXvfbTest(XvfbTest):
+    """An Xvfb that only accepts clients presenting a MIT-MAGIC-COOKIE-1."""
+
+    auth_name = b"MIT-MAGIC-COOKIE-1"
+    # xcffib splits auth on b":", so keep it out of the cookie.
+    cookie = bytes(range(0x40, 0x50))
+
+    def __init__(self, auth_file):
+        XvfbTest.__init__(self)
+        self.auth_file = auth_file
+
+    def auth(self, cookie=None):
+        return self.auth_name + b":" + (cookie or self.cookie)
+
+    def _xvfb_command(self):
+        def field(b):
+            return struct.pack(">H", len(b)) + b
+
+        # One Xauthority entry with FamilyWild (0xffff).
+        entry = [b"", str(self._display).encode(), self.auth_name, self.cookie]
+        with open(self.auth_file, "wb") as f:
+            f.write(struct.pack(">H", 0xFFFF))
+            f.writelines(field(b) for b in entry)
+        return XvfbTest._xvfb_command(self) + ["-auth", str(self.auth_file)]
+
+    def _connect_to_xvfb(self):
+        for _ in range(100):
+            try:
+                return xcffib.Connection(os.environ["DISPLAY"], auth=self.auth())
+            except xcffib.ConnectionException:
+                time.sleep(0.2)
+        assert False, "couldn't connect to xvfb"
 
 
 class TestConnection:
@@ -176,6 +213,48 @@ class TestConnection:
             with pytest.raises(xcffib.XcffibException, match="No core protocol"):
                 xcffib.Connection(os.environ["DISPLAY"])
         assert open_fds() == before
+
+    def test_connect_with_auth(self, tmp_path):
+        with AuthXvfbTest(tmp_path / "Xauthority") as t:
+            # setUp() already connected using the cookie; make sure it works.
+            t.conn.core.GetInputFocus().reply()
+
+            for _ in range(10):
+                gc.collect()
+                conn = xcffib.Connection(os.environ["DISPLAY"], auth=t.auth())
+                conn.core.GetInputFocus().reply()
+                conn.disconnect()
+
+            with pytest.raises(xcffib.ConnectionException):
+                xcffib.Connection(os.environ["DISPLAY"], auth=t.auth(b"x" * 16))
+
+    def test_auth_buffers_alive_during_connect(self, monkeypatch):
+        # Recycle any memory freed since the auth struct was filled in, then
+        # look at what xcb would read through c_auth.name and c_auth.data.
+        real_lib = xcffib.lib
+        seen = {}
+
+        class Lib:
+            def __getattr__(self, name):
+                return getattr(real_lib, name)
+
+            def xcb_connect_to_display_with_auth_info(self, display, auth, screen):
+                sizes = (auth.namelen, auth.datalen)
+                junk = [
+                    ffi.new("char[]", b"\xff" * n) for n in sizes for _ in range(100)
+                ]
+                seen["name"] = ffi.buffer(auth.name, auth.namelen)[:]
+                seen["data"] = ffi.buffer(auth.data, auth.datalen)[:]
+                del junk
+                return real_lib.xcb_connect_to_display_with_auth_info(
+                    display, auth, screen
+                )
+
+        monkeypatch.setattr(xcffib, "lib", Lib())
+        auth = AuthXvfbTest.auth_name + b":" + AuthXvfbTest.cookie
+        with pytest.raises(xcffib.ConnectionException):
+            xcffib.Connection("notadisplay", auth=auth)
+        assert seen == {"name": AuthXvfbTest.auth_name, "data": AuthXvfbTest.cookie}
 
     def test_query_invalid_wid_generates_error(self, xproto_test):
         with pytest.raises(xcffib.xproto.WindowError):
