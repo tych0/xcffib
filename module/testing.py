@@ -81,7 +81,10 @@ class XvfbTest:
             os.environ["DISPLAY"] = ":9"
         try:
             self.conn = self._connect_to_xvfb()
-        except AssertionError:
+        except BaseException:
+            self._xvfb.kill()
+            self._xvfb.wait()
+            self._xvfb = None
             self.release_display()
             raise
 
