@@ -34,8 +34,8 @@ class AuthXvfbTest(XvfbTest):
     """An Xvfb that only accepts clients presenting a MIT-MAGIC-COOKIE-1."""
 
     auth_name = b"MIT-MAGIC-COOKIE-1"
-    # xcffib splits auth on b":", so keep it out of the cookie.
-    cookie = bytes(range(0x40, 0x50))
+    # Binary cookie; includes b":" (0x3a) to check only the first one splits.
+    cookie = bytes(range(0x30, 0x40))
 
     def __init__(self, auth_file):
         XvfbTest.__init__(self)
