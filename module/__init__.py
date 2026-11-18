@@ -707,6 +707,7 @@ class Connection:
         cookie[0].sequence = sequence
 
         err = lib.xcb_request_check(self._conn, cookie[0])
+        err = ffi.gc(err, c_free)
         self._process_error(err)
 
     def hoist_event(self, e):
