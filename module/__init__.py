@@ -818,7 +818,7 @@ class Event(Response):
                 buffer = ffi.buffer(unpacker.cdata, buffer_size)
 
                 # Copy the event to the new buffer and skip the `full_sequence` field
-                buffer[32 : buffer_size - 5] = buffer[36 : buffer_size - 1]
+                buffer[32 : buffer_size - 4] = buffer[36:buffer_size]
 
                 # Provide the resized buffer to the unpacker
                 unpacker.buf = buffer

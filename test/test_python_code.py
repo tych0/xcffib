@@ -184,6 +184,42 @@ class TestPythonCode:
         assert event.root_x >> 16 == 100
         assert event.root_y >> 16 == 200
 
+    def test_ge_event_keeps_last_byte(self, xcffib_test):
+        # libxcb stores full_sequence at bytes 32-36 of a GenericEvent, and the
+        # rest of the event is shifted down over it before parsing. That used
+        # to copy one byte short, corrupting the last byte of the event.
+        ext = xcffib_test.conn.core.QueryExtension(15, "XInputExtension").reply()
+        event = struct.pack(
+            "=BBHIHHIIIIIIIIH2xiiiIiI",
+            35,  # response_type
+            ext.major_opcode,  # extension
+            1,  # sequence
+            9,  # length
+            xcffib.xinput.BarrierHitEvent.event_number,  # event_type
+            2,  # device_id
+            0,  # time
+            1,  # event_id
+            0,  # root
+            0,  # event
+            0,  # barrier
+            1,  # full_sequence, stored here by libxcb
+            0,  # d_time
+            0,  # flags
+            11,  # source_id
+            100 << 16,  # root_x
+            200 << 16,  # root_y
+            5,  # dx.integral
+            0x11111111,  # dx.frac
+            7,  # dy.integral
+            0x01020304,  # dy.frac: its last byte is the last byte of the event
+        )
+        cdata = ffi.new("char[]", event)
+        e = xcffib_test.conn.hoist_event(ffi.cast("xcb_generic_event_t *", cdata))
+
+        assert isinstance(e, xcffib.xinput.BarrierHitEvent)
+        assert (e.dx.integral, e.dx.frac) == (5, 0x11111111)
+        assert (e.dy.integral, e.dy.frac) == (7, 0x01020304)
+
     def test_core_event_response_type(self, xcffib_test):
         for response_type in (2, 0x82):
             event_bytes = struct.pack(
