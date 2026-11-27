@@ -37,6 +37,7 @@ xcffib = ["py.typed"]
 
 [project.optional-dependencies]
 dev = [
+    "build>=1.6.1",
     "pytest>=8.4",
 ]
 
